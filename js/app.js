@@ -630,7 +630,7 @@ function renderBenchmarkEntry(entry) {
   if (!entry.compare_url) {
     return `
       <div class="benchmark-value">
-        #${rank} ${value}
+        ${value}
       </div>
       <div class="benchmark-muted">
         ${player}
@@ -640,7 +640,7 @@ function renderBenchmarkEntry(entry) {
 
   return `
     <div class="benchmark-value">
-      #${rank} ${value}
+      ${value}
     </div>
 
     <div class="benchmark-muted">
