@@ -635,17 +635,21 @@ function renderTimelineTab(timeline, playerLookup) {
           <tr>
             <th>Time</th>
             <th>Type</th>
-            <th>Player</th>
+            <th>Source</th>
+            <th>Target</th>
+            <th>Spell</th>
             <th>Event</th>
           </tr>
         </thead>
         <tbody>
           ${timeline.map(event => `
             <tr>
-              <td>${formatTimelineTime(event.time ?? event.timestamp ?? event.relative_time)}</td>
-              <td>${escapeHtml(event.type || event.category || "Event")}</td>
-              <td>${event.player ? renderPlayerName(event.player, playerLookup) : "—"}</td>
-              <td>${escapeHtml(event.message || event.description || event.name || "Unknown event")}</td>
+              <td>${escapeHtml(event.time || "—")}</td>
+              <td>${escapeHtml(event.type || "Event")}</td>
+              <td>${event.source ? renderPlayerName(event.source, playerLookup) : "—"}</td>
+              <td>${event.target ? renderPlayerName(event.target, playerLookup) : "—"}</td>
+              <td>${escapeHtml(event.spell_name || "—")}</td>
+              <td>${escapeHtml(event.summary || "Unknown event")}</td>
             </tr>
           `).join("")}
         </tbody>
