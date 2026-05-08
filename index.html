@@ -1,163 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
+   <head>
+      <meta charset="UTF-8" />
 
-  <title>ShortParse</title>
+      <title>ShortParse</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link
-    rel="stylesheet"
-    href="css/styles.css"
-  />
-</head>
+      <link rel="stylesheet" href="css/styles.css" />
+   </head>
 
-<body>
-  <main class="container">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Warcraft Logs Analysis</p>
+   <body>
+      <main class="container">
+         <header class="hero">
+            <div>
+               <p class="eyebrow">Warcraft Logs Analysis</p>
 
-        <h1>ShortParse</h1>
+               <h1>ShortParse</h1>
 
-        <p class="subtitle">
-          Paste a Warcraft Logs report URL to generate a raid-performance summary.
-        </p>
-      </div>
-    </header>
+               <p class="subtitle">
+                  Paste a Warcraft Logs report URL to generate a
+                  raid-performance summary.
+               </p>
+            </div>
+         </header>
 
-    <section class="card">
-      <div class="section-header">
-        <div>
-          <h2>Analyze Report</h2>
-          <p class="section-description">
-            ShortParse will select boss kills and best progression wipes, then build a readable raid review.
-          </p>
-        </div>
-      </div>
+         <section class="card">
+            <div class="section-header">
+               <div>
+                  <h2>Analyze Report</h2>
+                  <p class="section-description">
+                     ShortParse will select boss kills and best progression
+                     wipes, then build a readable raid review.
+                  </p>
+               </div>
+            </div>
 
-      <div class="input-row">
-        <input
-          id="reportUrl"
-          placeholder="https://www.warcraftlogs.com/reports/..."
-          autocomplete="off"
-        />
+            <div class="input-row">
+               <input
+                  id="reportUrl"
+                  placeholder="https://www.warcraftlogs.com/reports/..."
+                  autocomplete="off"
+               />
 
-        <button
-          id="analyzeButton"
-          type="button"
-        >
-          Analyze Report
-        </button>
-      </div>
-    </section>
+               <button id="analyzeButton" type="button">Analyze Report</button>
+            </div>
+         </section>
 
-    <section class="card">
-      <div class="section-header">
-        <div>
-          <h2>Status</h2>
-          <p
-            id="status"
-            class="status"
-          >
-            Waiting for report...
-          </p>
-        </div>
-      </div>
-    </section>
+         <section class="card">
+            <div class="section-header">
+               <div>
+                  <h2>Status</h2>
+                  <p id="status" class="status">Waiting for report...</p>
+               </div>
+            </div>
+         </section>
 
-    <section
-      id="bossTilesCard"
-      class="card hidden"
-    >
-      <div class="section-header">
-        <div>
-          <h2>Encounters</h2>
-          <p class="section-description">
-            Select a boss encounter to view its scorecard, issues, and summaries.
-          </p>
-        </div>
-      </div>
+         <section id="bossTilesCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2>Encounters</h2>
+                  <p class="section-description">
+                     Select a boss encounter to view its scorecard, issues, and
+                     summaries.
+                  </p>
+               </div>
+            </div>
 
-      <div
-        id="bossTiles"
-        class="boss-grid"
-      ></div>
-    </section>
+            <div id="bossTiles" class="boss-grid"></div>
+         </section>
 
-    <section
-      id="resultCard"
-      class="card hidden"
-    >
-      <div class="section-header">
-        <div>
-          <h2 id="selectedBossTitle">Report Summary</h2>
-          <p
-            id="selectedBossSubtitle"
-            class="section-description"
-          ></p>
-        </div>
-      </div>
+         <section id="resultCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2 id="selectedBossTitle">Report Summary</h2>
+                  <p id="selectedBossSubtitle" class="section-description"></p>
+               </div>
+            </div>
 
-      <div
-        id="summaryGrid"
-        class="stat-grid"
-      ></div>
-    </section>
+            <div id="summaryGrid" class="stat-grid"></div>
+         </section>
 
-    <section
-      id="scorecardCard"
-      class="card hidden"
-    >
-      <div class="section-header">
-        <div>
-          <h2>Scorecard</h2>
-          <p class="section-description">
-            Players are sorted by highest issue score first.
-          </p>
-        </div>
-      </div>
+         <section id="scorecardCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2>Scorecard</h2>
+                  <p class="section-description">
+                     Players are sorted by highest issue score first.
+                  </p>
+               </div>
+            </div>
 
-      <div id="scorecardTable"></div>
-    </section>
+            <div id="scorecardTable"></div>
+         </section>
 
-    <section
-      id="issuesCard"
-      class="card hidden"
-    >
-      <div class="section-header">
-        <div>
-          <h2>Top Issues</h2>
-          <p class="section-description">
-            Highest-priority issues detected for the selected boss encounter.
-          </p>
-        </div>
-      </div>
+         <section id="benchmarksCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2>Benchmark Comparisons</h2>
+                  <p class="section-description">
+                     Compare each player against Top 1, Top 5, and Top 10
+                     Warcraft Logs benchmark parses.
+                  </p>
+               </div>
+            </div>
 
-      <div id="issuesTable"></div>
-    </section>
+            <div id="benchmarksTable"></div>
+         </section>
 
-    <section
-      id="debugCard"
-      class="card hidden"
-    >
-      <div class="section-header">
-        <div>
-          <h2>Raw Result</h2>
-          <p class="section-description">
-            Debug output for development.
-          </p>
-        </div>
-      </div>
+         <section id="issuesCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2>Top Issues</h2>
+                  <p class="section-description">
+                     Highest-priority issues detected for the selected boss
+                     encounter.
+                  </p>
+               </div>
+            </div>
 
-      <pre id="rawResult"></pre>
-    </section>
-  </main>
+            <div id="issuesTable"></div>
+         </section>
 
-  <script src="js/app.js"></script>
-</body>
+         <section id="debugCard" class="card hidden">
+            <div class="section-header">
+               <div>
+                  <h2>Raw Result</h2>
+                  <p class="section-description">
+                     Debug output for development.
+                  </p>
+               </div>
+            </div>
+
+            <pre id="rawResult"></pre>
+         </section>
+      </main>
+
+      <script src="js/app.js"></script>
+   </body>
 </html>

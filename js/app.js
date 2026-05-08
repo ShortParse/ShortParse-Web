@@ -305,6 +305,11 @@ function renderSelectedAnalysis(index) {
     playerLookup
   );
 
+  renderBenchmarks(
+      analysis.benchmarks || {},
+      playerLookup
+  );
+
   renderIssues(
     analysis.issues || [],
     playerLookup
@@ -518,6 +523,159 @@ function renderScorecard(
     .remove("hidden");
 }
 
+function renderBenchmarks(
+  benchmarks,
+  playerLookup
+) {
+  const benchmarkEntries =
+    Object.entries(benchmarks || {});
+
+  if (!benchmarkEntries.length) {
+    document
+      .getElementById("benchmarksCard")
+      .classList
+      .add("hidden");
+
+    return;
+  }
+
+  const html = `
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Metric</th>
+            <th>Player Value</th>
+            <th>Top 1</th>
+            <th>Top 5</th>
+            <th>Top 10</th>
+            <th>Average</th>
+            <th>% Avg</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${benchmarkEntries.map(([playerName, comparison]) => {
+            const benchmark = comparison.benchmark || {};
+
+            return `
+              <tr>
+                <td>
+                  ${renderPlayerName(playerName, playerLookup)}
+                </td>
+
+                <td>
+                  ${escapeHtml((comparison.metric || "").toUpperCase())}
+                </td>
+
+                <td class="benchmark-value">
+                  ${formatNumber(comparison.player_value)}
+                </td>
+
+                <td>
+                  ${renderBenchmarkEntry(benchmark.top_1)}
+                </td>
+
+                <td>
+                  ${renderBenchmarkEntry(benchmark.top_5)}
+                </td>
+
+                <td>
+                  ${renderBenchmarkEntry(benchmark.top_10)}
+                </td>
+
+                <td class="benchmark-value">
+                  ${formatNumber(benchmark.average_baseline)}
+                </td>
+
+                <td>
+                  ${comparison.percent_of_average ?? "N/A"}%
+                </td>
+
+                <td>
+                  <span class="pill grade-${escapeHtml(comparison.grade)}">
+                    ${escapeHtml(comparison.grade)}
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document
+    .getElementById("benchmarksTable")
+    .innerHTML = html;
+
+  document
+    .getElementById("benchmarksCard")
+    .classList
+    .remove("hidden");
+}
+
+
+function renderBenchmarkEntry(entry) {
+  if (!entry) {
+    return `<span class="benchmark-muted">N/A</span>`;
+  }
+
+  const value = formatNumber(entry.value);
+  const player = escapeHtml(entry.player_name || "Unknown");
+  const rank = escapeHtml(entry.rank || "");
+
+  if (!entry.compare_url) {
+    return `
+      <div class="benchmark-value">
+        #${rank} ${value}
+      </div>
+      <div class="benchmark-muted">
+        ${player}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="benchmark-value">
+      #${rank} ${value}
+    </div>
+
+    <div class="benchmark-muted">
+      ${player}
+    </div>
+
+    <a
+      class="compare-link"
+      href="${escapeHtml(entry.compare_url)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View Compare
+    </a>
+  `;
+}
+
+
+function formatNumber(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    Number.isNaN(Number(value))
+  ) {
+    return "N/A";
+  }
+
+  return Number(value).toLocaleString(
+    undefined,
+    {
+      maximumFractionDigits: 1
+    }
+  );
+}
+
 function renderIssues(
   issues,
   playerLookup
@@ -714,9 +872,18 @@ function clearRenderedResults() {
     .add("hidden");
 
   document
-    .getElementById("issuesCard")
-    .classList
-    .add("hidden");
+      .getElementById("benchmarksCard")
+      .classList
+      .add("hidden");
+
+  document
+      .getElementById("benchmarksTable")
+      .innerHTML = "";
+
+  document
+      .getElementById("issuesCard")
+      .classList
+      .add("hidden");
 
   document
     .getElementById("debugCard")

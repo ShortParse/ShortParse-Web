@@ -445,6 +445,56 @@ tbody tr:hover td {
 }
 
 /* =========================
+   Benchmark Comparisons
+========================= */
+
+.compare-link {
+	color: var(--blue);
+
+	font-weight: 700;
+
+	text-decoration: none;
+
+	transition:
+		color 0.12s ease,
+		opacity 0.12s ease;
+}
+
+.compare-link:hover {
+	color: var(--blue-hover);
+
+	text-decoration: underline;
+}
+
+.benchmark-value {
+	font-weight: 700;
+
+	font-size: 15px;
+}
+
+.benchmark-muted {
+	color: var(--muted);
+
+	font-size: 13px;
+
+	margin-top: 4px;
+}
+
+.benchmark-block {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.benchmark-block a {
+	width: fit-content;
+}
+
+#benchmarksTable td {
+	vertical-align: top;
+}
+
+/* =========================
    Raw Debug
 ========================= */
 
