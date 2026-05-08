@@ -546,7 +546,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
                 <td>${formatNumber(performance.hps)}</td>
                 <td>${formatNumber(performance.dtps)}</td>
                 <td>${escapeHtml(performance.deaths ?? "N/A")}</td>
-                <td>${formatPercent(active_time_pct)}</td>
+                <td>${formatPercent(activity.active_time_pct)}</td>
                 <td>${escapeHtml(performance.avoidable_hit_count ?? "N/A")}</td>
                 <td>${formatNumber(performance.avoidable_damage_taken)}</td>
                 <td>${escapeHtml(consumables.combat_potions ?? "N/A")}</td>
