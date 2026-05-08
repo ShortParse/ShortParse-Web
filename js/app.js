@@ -606,8 +606,8 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
               <td>${escapeHtml(row.cooldownName)}</td>
               <td>${escapeHtml(row.category || "Unknown")}</td>
               <td>${escapeHtml(row.casts ?? row.count ?? "N/A")}</td>
-              <td>${escapeHtml(row.expected_uses ?? row.possible_uses ?? "N/A")}</td>
-              <td>${formatPercent(row.efficiency_percent)}</td>
+              <td>${escapeHtml(row.possible_casts ?? "N/A")}</td>
+              <td>${formatPercent(row.efficiency_pct)}</td>
             </tr>
           `).join("")}
         </tbody>
