@@ -246,6 +246,16 @@ button:disabled {
 		background 0.12s ease;
 }
 
+.boss-tile {
+	color: var(--text);
+	text-align: left;
+	font: inherit;
+}
+
+.boss-tile * {
+	color: inherit;
+}
+
 .boss-tile:hover {
 	border-color: var(--blue);
 	transform: translateY(-2px);
