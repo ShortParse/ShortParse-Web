@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ShortParse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #10131a;
+      color: #f4f4f5;
+      margin: 0;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: #181c25;
+      border: 1px solid #2a3040;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #7dd3fc;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid #3b4255;
+      background: #0f1218;
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 14px;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 8px;
+      background: #38bdf8;
+      color: #081018;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #0b0e13;
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+    }
+
+    .status {
+      color: #facc15;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>ShortParse</h1>
+      <p>Paste a Warcraft Logs report URL to analyze raid performance.</p>
+
+      <input
+        id="reportUrl"
+        placeholder="https://www.warcraftlogs.com/reports/..."
+      />
+
+      <button id="analyzeButton" onclick="startAnalysis()">
+        Analyze Report
+      </button>
+    </div>
+
+    <div class="card">
+      <h2>Status</h2>
+      <p id="status" class="status">Waiting for report...</p>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <pre id="result">No result yet.</pre>
+    </div>
+  </div>
+
+  <script>
+    let currentJobId = null;
+    let pollTimer = null;
+
+    async function startAnalysis() {
+      const reportUrl = document.getElementById("reportUrl").value.trim();
+      const button = document.getElementById("analyzeButton");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+
+      if (!reportUrl) {
+        status.textContent = "Please paste a Warcraft Logs URL.";
+        return;
+      }
+
+      button.disabled = true;
+      status.textContent = "Creating job...";
+      result.textContent = "Waiting for analysis...";
+
+      try {
+        const response = await fetch("/api/jobs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            report_url: reportUrl
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to create job: ${response.status}`);
+        }
+
+        const job = await response.json();
+        currentJobId = job.job_id;
+
+        status.textContent = `Job created: ${currentJobId}`;
+        pollJob();
+
+        pollTimer = setInterval(pollJob, 3000);
+      } catch (error) {
+        status.textContent = error.message;
+        button.disabled = false;
+      }
+    }
+
+    async function pollJob() {
+      const button = document.getElementById("analyzeButton");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+
+      if (!currentJobId) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/jobs/${currentJobId}/summary`);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch job summary: ${response.status}`);
+        }
+
+        const summary = await response.json();
+        status.textContent = `Status: ${summary.status}`;
+
+        if (summary.status === "completed") {
+          clearInterval(pollTimer);
+
+          const resultResponse = await fetch(`/api/jobs/${currentJobId}/result`);
+
+          if (!resultResponse.ok) {
+            throw new Error(`Failed to fetch result: ${resultResponse.status}`);
+          }
+
+          const analysis = await resultResponse.json();
+          result.textContent = JSON.stringify(analysis, null, 2);
+          button.disabled = false;
+        }
+
+if (summary.status === "failed") {
+  clearInterval(pollTimer);
+
+  status.textContent = "Status: failed";
+
+  result.textContent =
+    "Analysis failed.\n\n" +
+    "Reason:\n" +
+    (summary.error || "Unknown error.");
+
+  button.disabled = false;
+
+  return;
+}
+      } catch (error) {
+        status.textContent = error.message;
+        button.disabled = false;
+        clearInterval(pollTimer);
+      }
+    }
+  </script>
+</body>
+</html>
