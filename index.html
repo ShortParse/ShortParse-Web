@@ -2,516 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <title>ShortParse</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    :root {
-      --bg: #0f1218;
-      --panel: #181c25;
-      --panel-2: #10141d;
-      --border: #2a3040;
-      --text: #f4f4f5;
-      --muted: #a1a1aa;
-      --blue: #38bdf8;
-      --yellow: #facc15;
-      --red: #fb7185;
-      --green: #4ade80;
-      --orange: #fb923c;
-    }
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
-    body {
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #172033 0, var(--bg) 45%);
-      color: var(--text);
-      margin: 0;
-      padding: 40px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    .hero {
-      margin-bottom: 24px;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      color: var(--blue);
-      font-size: 42px;
-    }
-
-    h2 {
-      margin-top: 0;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      margin-top: 0;
-    }
-
-    .card {
-      background: rgba(24, 28, 37, 0.95);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-    }
-
-    input {
-      width: 100%;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #3b4255;
-      background: #0b0f17;
-      color: white;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    button {
-      margin-top: 14px;
-      padding: 12px 20px;
-      border: 0;
-      border-radius: 10px;
-      background: var(--blue);
-      color: #081018;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .status {
-      color: var(--yellow);
-      font-weight: bold;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
-
-    .stat {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .stat-label {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
-
-    .stat-value {
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
-      overflow: hidden;
-      border-radius: 12px;
-    }
-
-    th, td {
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      font-size: 14px;
-    }
-
-    th {
-      color: var(--muted);
-      background: #111722;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    tr:hover td {
-      background: #151b27;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-      background: #222838;
-      border: 1px solid var(--border);
-    }
-
-    .grade-A { color: var(--green); }
-    .grade-B { color: #a3e635; }
-    .grade-C { color: var(--yellow); }
-    .grade-D { color: var(--orange); }
-    .grade-F { color: var(--red); }
-
-    .severity-Major {
-      color: var(--orange);
-      font-weight: bold;
-    }
-
-    .severity-Warning {
-      color: var(--yellow);
-      font-weight: bold;
-    }
-
-    .severity-Critical {
-      color: var(--red);
-      font-weight: bold;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    pre {
-      white-space: pre-wrap;
-      background: #0b0e13;
-      border-radius: 8px;
-      padding: 14px;
-      overflow-x: auto;
-    }
-
-    @media (max-width: 900px) {
-      body {
-        padding: 20px;
-      }
-
-      .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 600px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-      }
-    }
-  </style>
+  <link
+    rel="stylesheet"
+    href="css/styles.css"
+  />
 </head>
 
 <body>
-  <div class="container">
-    <div class="hero">
-      <h1>ShortParse</h1>
-      <p class="subtitle">
-        Paste a Warcraft Logs report URL to generate a raid-performance summary.
-      </p>
-    </div>
+  <main class="container">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Warcraft Logs Analysis</p>
 
-    <div class="card">
-      <h2>Analyze Report</h2>
+        <h1>ShortParse</h1>
 
-      <input
-        id="reportUrl"
-        placeholder="https://www.warcraftlogs.com/reports/..."
-      />
+        <p class="subtitle">
+          Paste a Warcraft Logs report URL to generate a raid-performance summary.
+        </p>
+      </div>
+    </header>
 
-      <button id="analyzeButton" onclick="startAnalysis()">
-        Analyze Report
-      </button>
-    </div>
-
-    <div class="card">
-      <h2>Status</h2>
-      <p id="status" class="status">Waiting for report...</p>
-    </div>
-
-    <div id="resultCard" class="card hidden">
-      <h2>Report Summary</h2>
-      <div id="summaryGrid" class="grid"></div>
-    </div>
-
-    <div id="scorecardCard" class="card hidden">
-      <h2>Scorecard</h2>
-      <div id="scorecardTable"></div>
-    </div>
-
-    <div id="issuesCard" class="card hidden">
-      <h2>Top Issues</h2>
-      <div id="issuesTable"></div>
-    </div>
-
-    <div id="debugCard" class="card hidden">
-      <h2>Raw Result</h2>
-      <pre id="rawResult"></pre>
-    </div>
-  </div>
-
-  <script>
-    let currentJobId = null;
-    let pollTimer = null;
-
-    async function startAnalysis() {
-      const reportUrl = document.getElementById("reportUrl").value.trim();
-      const button = document.getElementById("analyzeButton");
-      const status = document.getElementById("status");
-
-      clearRenderedResults();
-
-      if (!reportUrl) {
-        status.textContent = "Please paste a Warcraft Logs URL.";
-        return;
-      }
-
-      button.disabled = true;
-      status.textContent = "Creating job...";
-
-      try {
-        const response = await fetch("/api/jobs", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            report_url: reportUrl
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to create job: ${response.status}`);
-        }
-
-        const job = await response.json();
-        currentJobId = job.job_id;
-
-        status.textContent = "Job queued. Starting analysis...";
-        pollJob();
-
-        pollTimer = setInterval(pollJob, 3000);
-      } catch (error) {
-        status.textContent = error.message;
-        button.disabled = false;
-      }
-    }
-
-    async function pollJob() {
-      const button = document.getElementById("analyzeButton");
-      const status = document.getElementById("status");
-
-      if (!currentJobId) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/jobs/${currentJobId}/summary`);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch job summary: ${response.status}`);
-        }
-
-        const summary = await response.json();
-        status.textContent = `Status: ${summary.status}`;
-
-        if (summary.status === "completed") {
-          clearInterval(pollTimer);
-
-          const resultResponse = await fetch(`/api/jobs/${currentJobId}/result`);
-
-          if (!resultResponse.ok) {
-            throw new Error(`Failed to fetch result: ${resultResponse.status}`);
-          }
-
-          const analysis = await resultResponse.json();
-          renderAnalysis(analysis);
-
-          button.disabled = false;
-          return;
-        }
-
-        if (summary.status === "failed") {
-          clearInterval(pollTimer);
-
-          status.textContent = "Status: failed";
-
-          showDebug(
-            "Analysis failed.\n\n" +
-            "Reason:\n" +
-            (summary.error || "Unknown error.")
-          );
-
-          button.disabled = false;
-          return;
-        }
-      } catch (error) {
-        status.textContent = error.message;
-        button.disabled = false;
-        clearInterval(pollTimer);
-      }
-    }
-
-    function clearRenderedResults() {
-      document.getElementById("resultCard").classList.add("hidden");
-      document.getElementById("scorecardCard").classList.add("hidden");
-      document.getElementById("issuesCard").classList.add("hidden");
-      document.getElementById("debugCard").classList.add("hidden");
-
-      document.getElementById("summaryGrid").innerHTML = "";
-      document.getElementById("scorecardTable").innerHTML = "";
-      document.getElementById("issuesTable").innerHTML = "";
-      document.getElementById("rawResult").textContent = "";
-    }
-
-    function renderAnalysis(data) {
-      const firstAnalysis = data.analyses && data.analyses[0];
-
-      if (!firstAnalysis) {
-        showDebug(JSON.stringify(data, null, 2));
-        return;
-      }
-
-      renderSummary(data, firstAnalysis);
-      renderScorecard(firstAnalysis.scorecard || []);
-      renderIssues(firstAnalysis.issues || []);
-
-      document.getElementById("rawResult").textContent =
-        JSON.stringify(data, null, 2);
-    }
-
-    function renderSummary(data, analysis) {
-      const report = data.report || {};
-      const fight = analysis.fight || {};
-      const raid = analysis.raid || {};
-      const scorecard = analysis.scorecard || [];
-      const issues = analysis.issues || [];
-
-      const worstPlayer = scorecard[0];
-
-      const stats = [
-        ["Report", report.title || "Unknown"],
-        ["Raid", raid.name || "Unknown"],
-        ["Fight", fight.name || "Unknown"],
-        ["Result", fight.kill ? "Kill" : "Best Wipe"],
-        ["Duration", `${Math.round(fight.duration_seconds || 0)}s`],
-        ["Boss HP Left", fight.boss_percentage != null ? `${fight.boss_percentage}%` : "Unknown"],
-        ["Players", String(scorecard.length)],
-        ["Top Concern", worstPlayer ? worstPlayer.player : "None"],
-        ["Issues", String(issues.length)]
-      ];
-
-      const grid = document.getElementById("summaryGrid");
-      grid.innerHTML = stats.map(([label, value]) => `
-        <div class="stat">
-          <div class="stat-label">${escapeHtml(label)}</div>
-          <div class="stat-value">${escapeHtml(value)}</div>
+    <section class="card">
+      <div class="section-header">
+        <div>
+          <h2>Analyze Report</h2>
+          <p class="section-description">
+            ShortParse will select boss kills and best progression wipes, then build a readable raid review.
+          </p>
         </div>
-      `).join("");
+      </div>
 
-      document.getElementById("resultCard").classList.remove("hidden");
-    }
+      <div class="input-row">
+        <input
+          id="reportUrl"
+          placeholder="https://www.warcraftlogs.com/reports/..."
+          autocomplete="off"
+        />
 
-    function renderScorecard(scorecard) {
-      if (!scorecard.length) {
-        return;
-      }
+        <button
+          id="analyzeButton"
+          type="button"
+        >
+          Analyze Report
+        </button>
+      </div>
+    </section>
 
-      const html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Grade</th>
-              <th>Issue Score</th>
-              <th>Major</th>
-              <th>Warnings</th>
-              <th>Top Issue</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${scorecard.map(row => `
-              <tr>
-                <td>${escapeHtml(row.player)}</td>
-                <td>
-                  <span class="pill grade-${escapeHtml(row.grade)}">
-                    ${escapeHtml(row.grade)}
-                  </span>
-                </td>
-                <td>${escapeHtml(row.issue_score)}</td>
-                <td>${escapeHtml(row.major_count)}</td>
-                <td>${escapeHtml(row.warning_count)}</td>
-                <td>${escapeHtml(row.top_issue || "")}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
+    <section class="card">
+      <div class="section-header">
+        <div>
+          <h2>Status</h2>
+          <p
+            id="status"
+            class="status"
+          >
+            Waiting for report...
+          </p>
+        </div>
+      </div>
+    </section>
 
-      document.getElementById("scorecardTable").innerHTML = html;
-      document.getElementById("scorecardCard").classList.remove("hidden");
-    }
+    <section
+      id="bossTilesCard"
+      class="card hidden"
+    >
+      <div class="section-header">
+        <div>
+          <h2>Encounters</h2>
+          <p class="section-description">
+            Select a boss encounter to view its scorecard, issues, and summaries.
+          </p>
+        </div>
+      </div>
 
-    function renderIssues(issues) {
-      if (!issues.length) {
-        return;
-      }
+      <div
+        id="bossTiles"
+        class="boss-grid"
+      ></div>
+    </section>
 
-      const topIssues = issues.slice(0, 15);
+    <section
+      id="resultCard"
+      class="card hidden"
+    >
+      <div class="section-header">
+        <div>
+          <h2 id="selectedBossTitle">Report Summary</h2>
+          <p
+            id="selectedBossSubtitle"
+            class="section-description"
+          ></p>
+        </div>
+      </div>
 
-      const html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Severity</th>
-              <th>Score</th>
-              <th>Player</th>
-              <th>Category</th>
-              <th>Issue</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${topIssues.map(issue => `
-              <tr>
-                <td class="severity-${escapeHtml(issue.severity)}">
-                  ${escapeHtml(issue.severity)}
-                </td>
-                <td>${escapeHtml(issue.score)}</td>
-                <td>${escapeHtml(issue.player)}</td>
-                <td>${escapeHtml(issue.category)}</td>
-                <td>${escapeHtml(issue.message)}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
+      <div
+        id="summaryGrid"
+        class="stat-grid"
+      ></div>
+    </section>
 
-      document.getElementById("issuesTable").innerHTML = html;
-      document.getElementById("issuesCard").classList.remove("hidden");
-    }
+    <section
+      id="scorecardCard"
+      class="card hidden"
+    >
+      <div class="section-header">
+        <div>
+          <h2>Scorecard</h2>
+          <p class="section-description">
+            Players are sorted by highest issue score first.
+          </p>
+        </div>
+      </div>
 
-    function showDebug(text) {
-      document.getElementById("rawResult").textContent = text;
-      document.getElementById("debugCard").classList.remove("hidden");
-    }
+      <div id="scorecardTable"></div>
+    </section>
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-  </script>
+    <section
+      id="issuesCard"
+      class="card hidden"
+    >
+      <div class="section-header">
+        <div>
+          <h2>Top Issues</h2>
+          <p class="section-description">
+            Highest-priority issues detected for the selected boss encounter.
+          </p>
+        </div>
+      </div>
+
+      <div id="issuesTable"></div>
+    </section>
+
+    <section
+      id="debugCard"
+      class="card hidden"
+    >
+      <div class="section-header">
+        <div>
+          <h2>Raw Result</h2>
+          <p class="section-description">
+            Debug output for development.
+          </p>
+        </div>
+      </div>
+
+      <pre id="rawResult"></pre>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
 </body>
 </html>
