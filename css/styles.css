@@ -24,6 +24,73 @@
 	--radius: 16px;
 }
 
+.app-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 24px;
+}
+
+.header-actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	margin-top: 42px;
+}
+
+.tab-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 20px;
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 14px;
+}
+
+.tab-button {
+	background: #111722;
+	color: var(--muted);
+	border: 1px solid var(--border);
+	padding: 10px 14px;
+}
+
+.tab-button:hover {
+	color: var(--text);
+	border-color: var(--blue);
+	background: #162235;
+}
+
+.tab-button.active {
+	background: var(--blue);
+	color: #081018;
+	border-color: var(--blue);
+}
+
+.tab-panel-title {
+	margin-bottom: 6px;
+}
+
+.tab-panel-description {
+	color: var(--muted);
+	margin-bottom: 18px;
+}
+
+@media (max-width: 900px) {
+	.app-header {
+		flex-direction: column;
+	}
+
+	.header-actions {
+		margin-top: 0;
+		width: 100%;
+		flex-direction: column;
+	}
+
+	.header-actions button {
+		width: 100%;
+	}
+}
+
 /* =========================
    Base
 ========================= */

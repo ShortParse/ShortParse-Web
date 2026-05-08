@@ -2,6 +2,8 @@ let currentJobId = null;
 let pollTimer = null;
 let currentReportData = null;
 let selectedAnalysisIndex = 0;
+let selectedTab = "scorecard";
+let currentShareUrl = "";
 
 const CLASS_COLORS = {
   "DeathKnight": "#C41E3A",
@@ -22,43 +24,47 @@ const CLASS_COLORS = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  document
-      .getElementById("copyShareButton")
-      .addEventListener("click", copyShareLink);
-  loadSharedJobFromUrl();
+  document.getElementById("analyzeButton").addEventListener("click", startAnalysis);
+  document.getElementById("copyShareButton").addEventListener("click", copyShareLink);
+  document.getElementById("analyzeAnotherButton").addEventListener("click", resetToAnalyzeMode);
 
-  document
-    .getElementById("analyzeButton")
-    .addEventListener("click", startAnalysis);
+  document.querySelectorAll(".tab-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedTab = button.dataset.tab;
+      renderActiveTab();
+    });
+  });
+
+  loadSharedJobFromUrl();
 });
 
 function statusCard() {
-  return document
-    .querySelector(".status")
-    .closest(".card");
+  return document.getElementById("statusCard");
+}
+
+function analyzeCard() {
+  return document.getElementById("analyzeCard");
+}
+
+function headerActions() {
+  return document.getElementById("headerActions");
 }
 
 async function startAnalysis() {
   statusCard().classList.remove("hidden");
 
-  const reportUrl = document
-    .getElementById("reportUrl")
-    .value
-    .trim();
-
+  const reportUrl = document.getElementById("reportUrl").value.trim();
   const button = document.getElementById("analyzeButton");
   const status = document.getElementById("status");
 
   clearRenderedResults();
 
   if (!reportUrl) {
-    status.textContent =
-      "Please paste a Warcraft Logs URL.";
+    status.textContent = "Please paste a Warcraft Logs URL.";
     return;
   }
 
   button.disabled = true;
-
   status.textContent = "Creating job...";
 
   try {
@@ -73,25 +79,17 @@ async function startAnalysis() {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to create job: ${response.status}`
-      );
+      throw new Error(`Failed to create job: ${response.status}`);
     }
 
     const job = await response.json();
 
     currentJobId = job.job_id;
-
-    status.textContent =
-      "Job queued. Starting analysis...";
+    status.textContent = "Job queued. Starting analysis...";
 
     await pollJob();
 
-    pollTimer = setInterval(
-      pollJob,
-      3000
-    );
-
+    pollTimer = setInterval(pollJob, 3000);
   } catch (error) {
     status.textContent = error.message;
     button.disabled = false;
@@ -99,69 +97,49 @@ async function startAnalysis() {
 }
 
 async function pollJob() {
-  const button =
-    document.getElementById("analyzeButton");
-
-  const status =
-    document.getElementById("status");
+  const button = document.getElementById("analyzeButton");
+  const status = document.getElementById("status");
 
   if (!currentJobId) {
     return;
   }
 
   try {
-    const response = await fetch(
-      `/api/jobs/${currentJobId}/summary`
-    );
+    const response = await fetch(`/api/jobs/${currentJobId}/summary`);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch job summary: ${response.status}`
-      );
+      throw new Error(`Failed to fetch job summary: ${response.status}`);
     }
 
     const summary = await response.json();
-
-    status.textContent =
-      `Status: ${summary.status}`;
+    status.textContent = `Status: ${summary.status}`;
 
     if (summary.status === "completed") {
-
       clearInterval(pollTimer);
 
-      const resultResponse = await fetch(
-        `/api/jobs/${currentJobId}/result`
-      );
+      const resultResponse = await fetch(`/api/jobs/${currentJobId}/result`);
 
       if (!resultResponse.ok) {
-        throw new Error(
-          `Failed to fetch result: ${resultResponse.status}`
-        );
+        throw new Error(`Failed to fetch result: ${resultResponse.status}`);
       }
 
-      const analysis =
-        await resultResponse.json();
+      const analysis = await resultResponse.json();
 
       currentReportData = analysis;
       selectedAnalysisIndex = 0;
+      selectedTab = "scorecard";
 
-      statusCard().classList.add("hidden");
-
+      enterReportMode(currentJobId);
       renderReport(analysis);
 
-      showShareLink(currentJobId);
-
       button.disabled = false;
-
       return;
     }
 
     if (summary.status === "failed") {
-
       clearInterval(pollTimer);
 
-      status.textContent =
-        "Status: failed";
+      status.textContent = "Status: failed";
 
       showDebug(
         "Analysis failed.\n\n" +
@@ -171,12 +149,9 @@ async function pollJob() {
 
       button.disabled = false;
     }
-
   } catch (error) {
     status.textContent = error.message;
-
     button.disabled = false;
-
     clearInterval(pollTimer);
   }
 }
@@ -194,7 +169,6 @@ async function loadSharedJobFromUrl() {
   statusCard().classList.remove("hidden");
 
   const status = document.getElementById("status");
-
   status.textContent = "Loading shared report...";
 
   try {
@@ -208,308 +182,217 @@ async function loadSharedJobFromUrl() {
 
     currentReportData = analysis;
     selectedAnalysisIndex = 0;
+    selectedTab = "scorecard";
 
-    statusCard().classList.add("hidden");
-
-    showShareLink(jobId);
+    enterReportMode(jobId);
     renderReport(analysis);
-
   } catch (error) {
     status.textContent = error.message;
   }
 }
 
-function showShareLink(jobId) {
-  const shareCard = document.getElementById("shareCard");
-  const shareUrl = document.getElementById("shareUrl");
+function enterReportMode(jobId) {
+  currentShareUrl = `${window.location.origin}${window.location.pathname}?job=${jobId}`;
 
-  const url = `${window.location.origin}${window.location.pathname}?job=${jobId}`;
+  analyzeCard().classList.add("hidden");
+  statusCard().classList.add("hidden");
+  headerActions().classList.remove("hidden");
+}
 
-  shareUrl.value = url;
+function resetToAnalyzeMode() {
+  clearRenderedResults();
 
-  shareCard.classList.remove("hidden");
+  currentJobId = null;
+  currentShareUrl = "";
+
+  analyzeCard().classList.remove("hidden");
+  statusCard().classList.remove("hidden");
+  headerActions().classList.add("hidden");
+
+  document.getElementById("status").textContent = "Waiting for report...";
+  document.getElementById("analyzeButton").disabled = false;
+
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 async function copyShareLink() {
-  const shareUrl = document.getElementById("shareUrl");
+  if (!currentShareUrl && currentJobId) {
+    currentShareUrl = `${window.location.origin}${window.location.pathname}?job=${currentJobId}`;
+  }
 
-  await navigator.clipboard.writeText(shareUrl.value);
+  await navigator.clipboard.writeText(currentShareUrl);
 
   const button = document.getElementById("copyShareButton");
   button.textContent = "Copied!";
 
   setTimeout(() => {
-    button.textContent = "Copy Link";
+    button.textContent = "Share This Report";
   }, 1500);
 }
 
 function renderReport(data) {
-  if (
-    !data.analyses ||
-    !data.analyses.length
-  ) {
-    showDebug(
-      JSON.stringify(data, null, 2)
-    );
-
+  if (!data.analyses || !data.analyses.length) {
+    showDebug(JSON.stringify(data, null, 2));
     return;
   }
 
   renderBossTiles(data);
-
   renderSelectedAnalysis(0);
 }
 
 function renderBossTiles(data) {
-  const bossTilesCard =
-    document.getElementById("bossTilesCard");
+  const bossTilesCard = document.getElementById("bossTilesCard");
+  const bossTiles = document.getElementById("bossTiles");
 
-  const bossTiles =
-    document.getElementById("bossTiles");
+  bossTiles.innerHTML = data.analyses.map((analysis, index) => {
+    const fight = analysis.fight || {};
+    const raid = analysis.raid || {};
+    const scorecard = analysis.scorecard || [];
+    const issues = analysis.issues || [];
 
-  bossTiles.innerHTML =
-    data.analyses.map((analysis, index) => {
+    const result = fight.kill ? "Kill" : "Best Wipe";
+    const duration = formatDurationSeconds(fight.duration_seconds);
 
-      const fight = analysis.fight || {};
-      const raid = analysis.raid || {};
-      const scorecard =
-        analysis.scorecard || [];
+    const hp = fight.boss_percentage != null
+      ? `${fight.boss_percentage}% HP`
+      : "HP unknown";
 
-      const issues =
-        analysis.issues || [];
+    return `
+      <button
+        class="boss-tile ${index === selectedAnalysisIndex ? "active" : ""}"
+        type="button"
+        onclick="selectBoss(${index})"
+      >
+        <div class="boss-name">${escapeHtml(fight.name || "Unknown Boss")}</div>
 
-      const result =
-        fight.kill
-          ? "Kill"
-          : "Best Wipe";
+        <div class="boss-meta">
+          <span class="meta-pill">${escapeHtml(raid.name || "Unknown Raid")}</span>
+          <span class="meta-pill">${escapeHtml(result)}</span>
+          <span class="meta-pill">${escapeHtml(duration)}</span>
+          <span class="meta-pill">${escapeHtml(hp)}</span>
+          <span class="meta-pill">${scorecard.length} players</span>
+          <span class="meta-pill">${issues.length} issues</span>
+        </div>
+      </button>
+    `;
+  }).join("");
 
-      const duration =
-        formatDurationSeconds(
-          fight.duration_seconds
-        );
-
-      const hp =
-        fight.boss_percentage != null
-          ? `${fight.boss_percentage}% HP`
-          : "HP unknown";
-
-      return `
-        <button
-          class="boss-tile ${index === selectedAnalysisIndex ? "active" : ""}"
-          type="button"
-          onclick="selectBoss(${index})"
-        >
-          <div class="boss-name">
-            ${escapeHtml(fight.name || "Unknown Boss")}
-          </div>
-
-          <div class="boss-meta">
-            <span class="meta-pill">
-              ${escapeHtml(raid.name || "Unknown Raid")}
-            </span>
-
-            <span class="meta-pill">
-              ${escapeHtml(result)}
-            </span>
-
-            <span class="meta-pill">
-              ${escapeHtml(duration)}
-            </span>
-
-            <span class="meta-pill">
-              ${escapeHtml(hp)}
-            </span>
-
-            <span class="meta-pill">
-              ${scorecard.length} players
-            </span>
-
-            <span class="meta-pill">
-              ${issues.length} issues
-            </span>
-          </div>
-        </button>
-      `;
-    }).join("");
-
-  bossTilesCard
-    .classList
-    .remove("hidden");
+  bossTilesCard.classList.remove("hidden");
 }
 
 function selectBoss(index) {
   selectedAnalysisIndex = index;
+  selectedTab = "scorecard";
 
   renderBossTiles(currentReportData);
-
   renderSelectedAnalysis(index);
 
-  document
-    .getElementById("resultCard")
-    .scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+  document.getElementById("resultCard").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 function renderSelectedAnalysis(index) {
-  const analysis =
-    currentReportData.analyses[index];
+  const analysis = currentReportData.analyses[index];
 
   if (!analysis) {
     return;
   }
 
-  const playerLookup =
-    buildPlayerLookup(analysis);
+  const playerLookup = buildPlayerLookup(analysis);
 
-  renderSummary(
-    currentReportData,
-    analysis,
-    playerLookup
-  );
+  renderSummary(currentReportData, analysis, playerLookup);
+  renderActiveTab();
 
-  renderScorecard(
-    analysis.scorecard || [],
-    playerLookup
-  );
-
-  renderBenchmarks(
-      analysis.benchmarks || {},
-      playerLookup
-  );
-
-  renderIssues(
-    analysis.issues || [],
-    playerLookup
-  );
-
-  document
-    .getElementById("rawResult")
-    .textContent =
-      JSON.stringify(
-        currentReportData,
-        null,
-        2
-      );
+  document.getElementById("detailsCard").classList.remove("hidden");
 }
 
-function renderSummary(
-  data,
-  analysis,
-  playerLookup
-) {
+function renderActiveTab() {
+  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+
+  if (!analysis) {
+    return;
+  }
+
+  const playerLookup = buildPlayerLookup(analysis);
+
+  document.querySelectorAll(".tab-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === selectedTab);
+  });
+
+  if (selectedTab === "scorecard") {
+    renderScorecardTab(analysis.scorecard || [], playerLookup);
+    return;
+  }
+
+  if (selectedTab === "benchmarks") {
+    renderBenchmarksTab(analysis.benchmarks || {}, playerLookup);
+    return;
+  }
+
+  if (selectedTab === "issues") {
+    renderIssuesTab(analysis.issues || [], playerLookup);
+    return;
+  }
+
+  if (selectedTab === "raw") {
+    renderRawTab();
+  }
+}
+
+function renderSummary(data, analysis, playerLookup) {
   const report = data.report || {};
   const fight = analysis.fight || {};
   const raid = analysis.raid || {};
-  const scorecard =
-    analysis.scorecard || [];
+  const scorecard = analysis.scorecard || [];
+  const issues = analysis.issues || [];
+  const timelineSummary = analysis.timeline_summary || {};
+  const worstPlayer = scorecard[0];
 
-  const issues =
-    analysis.issues || [];
+  document.getElementById("selectedBossTitle").textContent =
+    fight.name || "Report Summary";
 
-  const timelineSummary =
-    analysis.timeline_summary || {};
-
-  const worstPlayer =
-    scorecard[0];
-
-  document
-    .getElementById("selectedBossTitle")
-    .textContent =
-      fight.name || "Report Summary";
-
-  document
-    .getElementById("selectedBossSubtitle")
-    .textContent =
-      `${raid.name || "Unknown Raid"} • ${fight.kill ? "Kill" : "Best Wipe"}`;
+  document.getElementById("selectedBossSubtitle").textContent =
+    `${raid.name || "Unknown Raid"} • ${fight.kill ? "Kill" : "Best Wipe"}`;
 
   const stats = [
     ["Report", report.title || "Unknown"],
     ["Raid", raid.name || "Unknown"],
     ["Fight", fight.name || "Unknown"],
     ["Result", fight.kill ? "Kill" : "Best Wipe"],
-    [
-      "Duration",
-      formatDurationSeconds(
-        fight.duration_seconds
-      )
-    ],
-    [
-      "Boss HP Left",
-      fight.boss_percentage != null
-        ? `${fight.boss_percentage}%`
-        : "Unknown"
-    ],
+    ["Duration", formatDurationSeconds(fight.duration_seconds)],
+    ["Boss HP Left", fight.boss_percentage != null ? `${fight.boss_percentage}%` : "Unknown"],
     ["Players", String(scorecard.length)],
-    [
-      "Top Concern",
-      worstPlayer
-        ? getPlayerDisplayName(
-            worstPlayer.player,
-            playerLookup
-          )
-        : "None"
-    ],
+    ["Top Concern", worstPlayer ? getPlayerDisplayName(worstPlayer.player, playerLookup) : "None"],
     ["Issues", String(issues.length)],
-    [
-      "Deaths",
-      String(
-        timelineSummary.deaths ?? "N/A"
-      )
-    ],
-    [
-      "Mechanics",
-      String(
-        timelineSummary.mechanics ?? "N/A"
-      )
-    ],
-    [
-      "Cooldowns",
-      String(
-        timelineSummary.cooldowns ?? "N/A"
-      )
-    ]
+    ["Deaths", String(timelineSummary.deaths ?? "N/A")],
+    ["Mechanics", String(timelineSummary.mechanics ?? "N/A")],
+    ["Cooldowns", String(timelineSummary.cooldowns ?? "N/A")]
   ];
 
-  const grid =
-    document.getElementById("summaryGrid");
+  const grid = document.getElementById("summaryGrid");
 
-  grid.innerHTML = stats.map(
-    ([label, value]) => `
-      <div class="stat">
-        <div class="stat-label">
-          ${escapeHtml(label)}
-        </div>
+  grid.innerHTML = stats.map(([label, value]) => `
+    <div class="stat">
+      <div class="stat-label">${escapeHtml(label)}</div>
+      <div class="stat-value">${value}</div>
+    </div>
+  `).join("");
 
-        <div class="stat-value">
-          ${value}
-        </div>
-      </div>
-    `
-  ).join("");
-
-  document
-    .getElementById("resultCard")
-    .classList
-    .remove("hidden");
+  document.getElementById("resultCard").classList.remove("hidden");
 }
 
-function renderScorecard(
-  scorecard,
-  playerLookup
-) {
+function renderScorecardTab(scorecard, playerLookup) {
   if (!scorecard.length) {
-
-    document
-      .getElementById("scorecardCard")
-      .classList
-      .add("hidden");
-
+    renderEmptyTab("Scorecard", "No scorecard data available.");
     return;
   }
 
-  const html = `
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Scorecard</h2>
+    <p class="tab-panel-description">Players are sorted by highest issue score first.</p>
+
     <div class="table-wrapper">
       <table>
         <thead>
@@ -525,55 +408,21 @@ function renderScorecard(
             <th>Top Issue</th>
           </tr>
         </thead>
-
         <tbody>
           ${scorecard.map(row => {
-
-            const player =
-              playerLookup[row.player] || {};
+            const player = playerLookup[row.player] || {};
 
             return `
               <tr>
-                <td>
-                  ${renderPlayerName(
-                    row.player,
-                    playerLookup
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(player.className || "Unknown")}
-                </td>
-
-                <td>
-                  ${escapeHtml(player.spec || "Unknown")}
-                </td>
-
-                <td>
-                  ${escapeHtml(player.role || "Unknown")}
-                </td>
-
-                <td>
-                  <span class="pill grade-${escapeHtml(row.grade)}">
-                    ${escapeHtml(row.grade)}
-                  </span>
-                </td>
-
-                <td>
-                  ${escapeHtml(row.issue_score)}
-                </td>
-
-                <td>
-                  ${escapeHtml(row.major_count)}
-                </td>
-
-                <td>
-                  ${escapeHtml(row.warning_count)}
-                </td>
-
-                <td>
-                  ${escapeHtml(row.top_issue || "")}
-                </td>
+                <td>${renderPlayerName(row.player, playerLookup)}</td>
+                <td>${escapeHtml(player.className || "Unknown")}</td>
+                <td>${escapeHtml(player.spec || "Unknown")}</td>
+                <td>${escapeHtml(player.role || "Unknown")}</td>
+                <td><span class="pill grade-${escapeHtml(row.grade)}">${escapeHtml(row.grade)}</span></td>
+                <td>${escapeHtml(row.issue_score)}</td>
+                <td>${escapeHtml(row.major_count)}</td>
+                <td>${escapeHtml(row.warning_count)}</td>
+                <td>${escapeHtml(row.top_issue || "")}</td>
               </tr>
             `;
           }).join("")}
@@ -581,34 +430,22 @@ function renderScorecard(
       </table>
     </div>
   `;
-
-  document
-    .getElementById("scorecardTable")
-    .innerHTML = html;
-
-  document
-    .getElementById("scorecardCard")
-    .classList
-    .remove("hidden");
 }
 
-function renderBenchmarks(
-  benchmarks,
-  playerLookup
-) {
-  const benchmarkEntries =
-    Object.entries(benchmarks || {});
+function renderBenchmarksTab(benchmarks, playerLookup) {
+  const benchmarkEntries = Object.entries(benchmarks || {});
 
   if (!benchmarkEntries.length) {
-    document
-      .getElementById("benchmarksCard")
-      .classList
-      .add("hidden");
-
+    renderEmptyTab("Benchmark Comparisons", "No benchmark data available.");
     return;
   }
 
-  const html = `
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Benchmark Comparisons</h2>
+    <p class="tab-panel-description">
+      Compare each player against Top 1, Top 5, and Top 10 Warcraft Logs benchmark parses.
+    </p>
+
     <div class="table-wrapper">
       <table>
         <thead>
@@ -624,50 +461,21 @@ function renderBenchmarks(
             <th>Grade</th>
           </tr>
         </thead>
-
         <tbody>
           ${benchmarkEntries.map(([playerName, comparison]) => {
             const benchmark = comparison.benchmark || {};
 
             return `
               <tr>
-                <td>
-                  ${renderPlayerName(playerName, playerLookup)}
-                </td>
-
-                <td>
-                  ${escapeHtml((comparison.metric || "").toUpperCase())}
-                </td>
-
-                <td class="benchmark-value">
-                  ${formatNumber(comparison.player_value)}
-                </td>
-
-                <td>
-                  ${renderBenchmarkEntry(benchmark.top_1)}
-                </td>
-
-                <td>
-                  ${renderBenchmarkEntry(benchmark.top_5)}
-                </td>
-
-                <td>
-                  ${renderBenchmarkEntry(benchmark.top_10)}
-                </td>
-
-                <td class="benchmark-value">
-                  ${formatNumber(benchmark.average_baseline)}
-                </td>
-
-                <td>
-                  ${comparison.percent_of_average ?? "N/A"}%
-                </td>
-
-                <td>
-                  <span class="pill grade-${escapeHtml(comparison.grade)}">
-                    ${escapeHtml(comparison.grade)}
-                  </span>
-                </td>
+                <td>${renderPlayerName(playerName, playerLookup)}</td>
+                <td>${escapeHtml((comparison.metric || "").toUpperCase())}</td>
+                <td class="benchmark-value">${formatNumber(comparison.player_value)}</td>
+                <td>${renderBenchmarkEntry(benchmark.top_1)}</td>
+                <td>${renderBenchmarkEntry(benchmark.top_5)}</td>
+                <td>${renderBenchmarkEntry(benchmark.top_10)}</td>
+                <td class="benchmark-value">${formatNumber(benchmark.average_baseline)}</td>
+                <td>${comparison.percent_of_average ?? "N/A"}%</td>
+                <td><span class="pill grade-${escapeHtml(comparison.grade)}">${escapeHtml(comparison.grade)}</span></td>
               </tr>
             `;
           }).join("")}
@@ -675,94 +483,22 @@ function renderBenchmarks(
       </table>
     </div>
   `;
-
-  document
-    .getElementById("benchmarksTable")
-    .innerHTML = html;
-
-  document
-    .getElementById("benchmarksCard")
-    .classList
-    .remove("hidden");
 }
 
-
-function renderBenchmarkEntry(entry) {
-  if (!entry) {
-    return `<span class="benchmark-muted">N/A</span>`;
-  }
-
-  const value = formatNumber(entry.value);
-  const player = escapeHtml(entry.player_name || "Unknown");
-  const rank = escapeHtml(entry.rank || "");
-
-  if (!entry.compare_url) {
-    return `
-      <div class="benchmark-value">
-        ${value}
-      </div>
-      <div class="benchmark-muted">
-        ${player}
-      </div>
-    `;
-  }
-
-  return `
-    <div class="benchmark-value">
-      ${value}
-    </div>
-
-    <div class="benchmark-muted">
-      ${player}
-    </div>
-
-    <a
-      class="compare-link"
-      href="${escapeHtml(entry.compare_url)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      View Compare
-    </a>
-  `;
-}
-
-
-function formatNumber(value) {
-  if (
-    value === null ||
-    value === undefined ||
-    Number.isNaN(Number(value))
-  ) {
-    return "N/A";
-  }
-
-  return Number(value).toLocaleString(
-    undefined,
-    {
-      maximumFractionDigits: 1
-    }
-  );
-}
-
-function renderIssues(
-  issues,
-  playerLookup
-) {
+function renderIssuesTab(issues, playerLookup) {
   if (!issues.length) {
-
-    document
-      .getElementById("issuesCard")
-      .classList
-      .add("hidden");
-
+    renderEmptyTab("Top Issues", "No issues detected.");
     return;
   }
 
-  const topIssues =
-    issues.slice(0, 20);
+  const topIssues = issues.slice(0, 20);
 
-  const html = `
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Top Issues</h2>
+    <p class="tab-panel-description">
+      Highest-priority issues detected for the selected boss encounter.
+    </p>
+
     <div class="table-wrapper">
       <table>
         <thead>
@@ -774,61 +510,72 @@ function renderIssues(
             <th>Issue</th>
           </tr>
         </thead>
-
         <tbody>
           ${topIssues.map(issue => `
             <tr>
-              <td class="severity-${escapeHtml(issue.severity)}">
-                ${escapeHtml(issue.severity)}
-              </td>
-
-              <td>
-                ${escapeHtml(issue.score)}
-              </td>
-
-              <td>
-                ${renderPlayerName(
-                  issue.player,
-                  playerLookup
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(issue.category)}
-              </td>
-
-              <td>
-                ${escapeHtml(issue.message)}
-              </td>
+              <td class="severity-${escapeHtml(issue.severity)}">${escapeHtml(issue.severity)}</td>
+              <td>${escapeHtml(issue.score)}</td>
+              <td>${renderPlayerName(issue.player, playerLookup)}</td>
+              <td>${escapeHtml(issue.category)}</td>
+              <td>${escapeHtml(issue.message)}</td>
             </tr>
           `).join("")}
         </tbody>
       </table>
     </div>
   `;
-
-  document
-    .getElementById("issuesTable")
-    .innerHTML = html;
-
-  document
-    .getElementById("issuesCard")
-    .classList
-    .remove("hidden");
 }
 
-function buildPlayerLookup(
-  analysis
-) {
+function renderRawTab() {
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Raw JSON</h2>
+    <p class="tab-panel-description">Debug output for development.</p>
+    <pre>${escapeHtml(JSON.stringify(currentReportData, null, 2))}</pre>
+  `;
+}
+
+function renderEmptyTab(title, message) {
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">${escapeHtml(title)}</h2>
+    <p class="tab-panel-description">${escapeHtml(message)}</p>
+  `;
+}
+
+function renderBenchmarkEntry(entry) {
+  if (!entry) {
+    return `<span class="benchmark-muted">N/A</span>`;
+  }
+
+  const value = formatNumber(entry.value);
+  const player = escapeHtml(entry.player_name || "Unknown");
+
+  if (!entry.compare_url) {
+    return `
+      <div class="benchmark-value">${value}</div>
+      <div class="benchmark-muted">${player}</div>
+    `;
+  }
+
+  return `
+    <div class="benchmark-value">${value}</div>
+    <div class="benchmark-muted">${player}</div>
+    <a
+      class="compare-link"
+      href="${escapeHtml(entry.compare_url)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View Compare
+    </a>
+  `;
+}
+
+function buildPlayerLookup(analysis) {
   const lookup = {};
 
-  for (
-    const player of analysis.roster || []
-  ) {
+  for (const player of analysis.roster || []) {
     lookup[player.name] = {
-      className:
-        normalizeClassName(player.class),
-
+      className: normalizeClassName(player.class),
       spec: player.spec,
       role: player.role
     };
@@ -837,167 +584,85 @@ function buildPlayerLookup(
   return lookup;
 }
 
-function renderPlayerName(
-  playerName,
-  playerLookup
-) {
-  const player =
-    playerLookup[playerName];
-
-  const color =
-    getClassColor(
-      player?.className
-    );
+function renderPlayerName(playerName, playerLookup) {
+  const player = playerLookup[playerName];
+  const color = getClassColor(player?.className);
 
   return `
-    <span
-      class="player-name"
-      style="color: ${color}"
-    >
+    <span class="player-name" style="color: ${color}">
       ${escapeHtml(playerName)}
     </span>
   `;
 }
 
-function getPlayerDisplayName(
-  playerName,
-  playerLookup
-) {
-  return renderPlayerName(
-    playerName,
-    playerLookup
-  );
+function getPlayerDisplayName(playerName, playerLookup) {
+  return renderPlayerName(playerName, playerLookup);
 }
 
-function getClassColor(
-  className
-) {
-  return (
-    CLASS_COLORS[className]
-    || "#FFFFFF"
-  );
+function getClassColor(className) {
+  return CLASS_COLORS[className] || "#FFFFFF";
 }
 
-function normalizeClassName(
-  className
-) {
+function normalizeClassName(className) {
   if (!className) {
     return "Unknown";
   }
 
   const classMap = {
-    "DeathKnight":
-      "Death Knight",
-
-    "DemonHunter":
-      "Demon Hunter"
+    "DeathKnight": "Death Knight",
+    "DemonHunter": "Demon Hunter"
   };
 
-  return (
-    classMap[className]
-    || className
-  );
+  return classMap[className] || className;
 }
 
-function formatDurationSeconds(
-  seconds
-) {
-  if (
-    seconds == null ||
-    Number.isNaN(Number(seconds))
-  ) {
+function formatDurationSeconds(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds))) {
     return "Unknown";
   }
 
-  const totalSeconds =
-    Math.round(Number(seconds));
-
-  const minutes =
-    Math.floor(totalSeconds / 60);
-
-  const remainder =
-    totalSeconds % 60;
+  const totalSeconds = Math.round(Number(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainder = totalSeconds % 60;
 
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function formatNumber(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    Number.isNaN(Number(value))
+  ) {
+    return "N/A";
+  }
+
+  return Number(value).toLocaleString(undefined, {
+    maximumFractionDigits: 1
+  });
 }
 
 function clearRenderedResults() {
   currentReportData = null;
   selectedAnalysisIndex = 0;
+  selectedTab = "scorecard";
 
-  document
-      .getElementById("shareCard")
-      .classList
-      .add("hidden");
+  document.getElementById("bossTilesCard").classList.add("hidden");
+  document.getElementById("resultCard").classList.add("hidden");
+  document.getElementById("detailsCard").classList.add("hidden");
 
-  document
-      .getElementById("shareUrl")
-      .value = "";
-
-  document
-    .getElementById("bossTilesCard")
-    .classList
-    .add("hidden");
-
-  document
-    .getElementById("resultCard")
-    .classList
-    .add("hidden");
-
-  document
-    .getElementById("scorecardCard")
-    .classList
-    .add("hidden");
-
-  document
-      .getElementById("benchmarksCard")
-      .classList
-      .add("hidden");
-
-  document
-      .getElementById("benchmarksTable")
-      .innerHTML = "";
-
-  document
-      .getElementById("issuesCard")
-      .classList
-      .add("hidden");
-
-  document
-    .getElementById("debugCard")
-    .classList
-    .add("hidden");
-
-  document
-    .getElementById("bossTiles")
-    .innerHTML = "";
-
-  document
-    .getElementById("summaryGrid")
-    .innerHTML = "";
-
-  document
-    .getElementById("scorecardTable")
-    .innerHTML = "";
-
-  document
-    .getElementById("issuesTable")
-    .innerHTML = "";
-
-  document
-    .getElementById("rawResult")
-    .textContent = "";
+  document.getElementById("bossTiles").innerHTML = "";
+  document.getElementById("summaryGrid").innerHTML = "";
+  document.getElementById("tabContent").innerHTML = "";
 }
 
 function showDebug(text) {
-  document
-    .getElementById("rawResult")
-    .textContent = text;
+  document.getElementById("detailsCard").classList.remove("hidden");
 
-  document
-    .getElementById("debugCard")
-    .classList
-    .remove("hidden");
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Debug Output</h2>
+    <pre>${escapeHtml(text)}</pre>
+  `;
 }
 
 function escapeHtml(value) {
