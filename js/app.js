@@ -331,6 +331,21 @@ function renderActiveTab() {
     return;
   }
 
+  if (selectedTab === "playerMetrics") {
+    renderPlayerMetricsTab(analysis.player_metrics || {}, playerLookup);
+    return;
+  }
+
+  if (selectedTab === "cooldowns") {
+    renderCooldownsTab(analysis.player_metrics || {}, playerLookup);
+    return;
+  }
+
+  if (selectedTab === "timeline") {
+    renderTimelineTab(analysis.timeline || [], playerLookup);
+    return;
+  }
+
   if (selectedTab === "issues") {
     renderIssuesTab(analysis.issues || [], playerLookup);
     return;
@@ -485,6 +500,160 @@ function renderBenchmarksTab(benchmarks, playerLookup) {
   `;
 }
 
+function renderPlayerMetricsTab(playerMetrics, playerLookup) {
+  const entries = Object.entries(playerMetrics || {});
+
+  if (!entries.length) {
+    renderEmptyTab("Player Metrics", "No player metric data available.");
+    return;
+  }
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Player Metrics</h2>
+    <p class="tab-panel-description">
+      Core performance, survival, activity, and consumable data for each player.
+    </p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Role</th>
+            <th>DPS</th>
+            <th>HPS</th>
+            <th>DTPS</th>
+            <th>Deaths</th>
+            <th>Active %</th>
+            <th>Avoidable Hits</th>
+            <th>Avoidable Damage</th>
+            <th>Potions</th>
+            <th>Healthstone</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries.map(([playerName, data]) => {
+            const identity = data.identity || {};
+            const performance = data.performance || {};
+            const activity = data.activity || {};
+            const consumables = data.consumables || {};
+
+            return `
+              <tr>
+                <td>${renderPlayerName(playerName, playerLookup)}</td>
+                <td>${escapeHtml(identity.role || "Unknown")}</td>
+                <td>${formatNumber(performance.dps)}</td>
+                <td>${formatNumber(performance.hps)}</td>
+                <td>${formatNumber(performance.dtps)}</td>
+                <td>${escapeHtml(performance.deaths ?? "N/A")}</td>
+                <td>${formatPercent(activity.active_percent)}</td>
+                <td>${escapeHtml(performance.avoidable_hit_count ?? "N/A")}</td>
+                <td>${formatNumber(performance.avoidable_damage_taken)}</td>
+                <td>${escapeHtml(consumables.combat_potions ?? "N/A")}</td>
+                <td>${consumables.healthstone_used ? "Yes" : "No"}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+
+function renderCooldownsTab(playerMetrics, playerLookup) {
+  const rows = [];
+
+  for (const [playerName, data] of Object.entries(playerMetrics || {})) {
+    const cooldowns = data.cooldowns || {};
+
+    for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
+      rows.push({
+        playerName,
+        cooldownName,
+        ...cooldownData
+      });
+    }
+  }
+
+  if (!rows.length) {
+    renderEmptyTab("Cooldowns", "No cooldown data available.");
+    return;
+  }
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Cooldowns</h2>
+    <p class="tab-panel-description">
+      Defensive, offensive, and utility cooldown usage detected during the selected fight.
+    </p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Cooldown</th>
+            <th>Category</th>
+            <th>Casts</th>
+            <th>Expected</th>
+            <th>Efficiency</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td>${renderPlayerName(row.playerName, playerLookup)}</td>
+              <td>${escapeHtml(row.cooldownName)}</td>
+              <td>${escapeHtml(row.category || "Unknown")}</td>
+              <td>${escapeHtml(row.casts ?? row.count ?? "N/A")}</td>
+              <td>${escapeHtml(row.expected_uses ?? row.possible_uses ?? "N/A")}</td>
+              <td>${formatPercent(row.efficiency_percent)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+
+function renderTimelineTab(timeline, playerLookup) {
+  if (!timeline || !timeline.length) {
+    renderEmptyTab("Timeline", "No timeline data available.");
+    return;
+  }
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Timeline</h2>
+    <p class="tab-panel-description">
+      Important fight events detected during the selected boss encounter.
+    </p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Player</th>
+            <th>Event</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${timeline.map(event => `
+            <tr>
+              <td>${formatTimelineTime(event.time ?? event.timestamp ?? event.relative_time)}</td>
+              <td>${escapeHtml(event.type || event.category || "Event")}</td>
+              <td>${event.player ? renderPlayerName(event.player, playerLookup) : "—"}</td>
+              <td>${escapeHtml(event.message || event.description || event.name || "Unknown event")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderIssuesTab(issues, playerLookup) {
   if (!issues.length) {
     renderEmptyTab("Top Issues", "No issues detected.");
@@ -626,6 +795,37 @@ function formatDurationSeconds(seconds) {
   const remainder = totalSeconds % 60;
 
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function formatPercent(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    Number.isNaN(Number(value))
+  ) {
+    return "N/A";
+  }
+
+  return `${Number(value).toFixed(1)}%`;
+}
+
+
+function formatTimelineTime(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    Number.isNaN(Number(value))
+  ) {
+    return "—";
+  }
+
+  const seconds = Number(value);
+
+  if (seconds > 1000000) {
+    return "—";
+  }
+
+  return formatDurationSeconds(seconds);
 }
 
 function formatNumber(value) {
