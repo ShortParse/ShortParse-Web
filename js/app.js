@@ -23,6 +23,11 @@ const CLASS_COLORS = {
 
 document.addEventListener("DOMContentLoaded", () => {
   document
+      .getElementById("copyShareButton")
+      .addEventListener("click", copyShareLink);
+  loadSharedJobFromUrl();
+
+  document
     .getElementById("analyzeButton")
     .addEventListener("click", startAnalysis);
 });
@@ -144,6 +149,8 @@ async function pollJob() {
 
       renderReport(analysis);
 
+      showShareLink(currentJobId);
+
       button.disabled = false;
 
       return;
@@ -172,6 +179,68 @@ async function pollJob() {
 
     clearInterval(pollTimer);
   }
+}
+
+async function loadSharedJobFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const jobId = params.get("job");
+
+  if (!jobId) {
+    return;
+  }
+
+  currentJobId = jobId;
+
+  statusCard().classList.remove("hidden");
+
+  const status = document.getElementById("status");
+
+  status.textContent = "Loading shared report...";
+
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/result`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to load shared report: ${response.status}`);
+    }
+
+    const analysis = await response.json();
+
+    currentReportData = analysis;
+    selectedAnalysisIndex = 0;
+
+    statusCard().classList.add("hidden");
+
+    showShareLink(jobId);
+    renderReport(analysis);
+
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+function showShareLink(jobId) {
+  const shareCard = document.getElementById("shareCard");
+  const shareUrl = document.getElementById("shareUrl");
+
+  const url = `${window.location.origin}${window.location.pathname}?job=${jobId}`;
+
+  shareUrl.value = url;
+
+  shareCard.classList.remove("hidden");
+}
+
+async function copyShareLink() {
+  const shareUrl = document.getElementById("shareUrl");
+
+  await navigator.clipboard.writeText(shareUrl.value);
+
+  const button = document.getElementById("copyShareButton");
+  button.textContent = "Copied!";
+
+  setTimeout(() => {
+    button.textContent = "Copy Link";
+  }, 1500);
 }
 
 function renderReport(data) {
@@ -855,6 +924,15 @@ function formatDurationSeconds(
 function clearRenderedResults() {
   currentReportData = null;
   selectedAnalysisIndex = 0;
+
+  document
+      .getElementById("shareCard")
+      .classList
+      .add("hidden");
+
+  document
+      .getElementById("shareUrl")
+      .value = "";
 
   document
     .getElementById("bossTilesCard")
