@@ -336,6 +336,11 @@ function renderActiveTab() {
     return;
   }
 
+  if (selectedTab === "mechanics") {
+    renderMechanicsTab(analysis.mechanics || {});
+    return;
+  }
+
   if (selectedTab === "cooldowns") {
     renderCooldownsTab(analysis.player_metrics || {}, playerLookup);
     return;
@@ -560,6 +565,55 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
   `;
 }
 
+function renderMechanicsTab(mechanics) {
+  const raidMechanics = mechanics.raid_mechanics || {};
+  const rows = Object.entries(raidMechanics);
+
+  if (!rows.length) {
+    renderEmptyTab("Mechanics", "No tracked mechanic data available.");
+    return;
+  }
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Mechanics</h2>
+    <p class="tab-panel-description">
+      Raid-wide tracked mechanics for the selected boss encounter.
+    </p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Mechanic</th>
+            <th>Severity</th>
+            <th>Hits</th>
+            <th>Damage Taken</th>
+            <th>Players Hit</th>
+            <th>Worst Player</th>
+            <th>Worst Hits</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(([mechanicName, data]) => `
+            <tr>
+              <td>${escapeHtml(mechanicName)}</td>
+              <td class="severity-${escapeHtml(data.severity || "Info")}">
+                ${escapeHtml(data.severity || "Info")}
+              </td>
+              <td>${formatNumber(data.hits)}</td>
+              <td>${formatNumber(data.damage)}</td>
+              <td>${Array.isArray(data.players_hit) ? data.players_hit.length : 0}</td>
+              <td>${escapeHtml(data.worst_player || "—")}</td>
+              <td>${formatNumber(data.worst_hits)}</td>
+              <td>${escapeHtml(data.note || "")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
 
 function renderCooldownsTab(playerMetrics, playerLookup) {
   const rows = [];
