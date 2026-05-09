@@ -495,13 +495,15 @@ function renderBenchmarksTab(benchmarks, playerLookup) {
                 <td>${renderBenchmarkEntry(benchmark.top_10)}</td>
                 <td class="benchmark-value">${formatNumber(benchmark.average_baseline)}</td>
                 <td>${comparison.percent_of_average ?? "N/A"}%</td>
-                <td><span class="pill grade-${escapeHtml(comparison.grade)}">${escapeHtml(comparison.grade)}</span></td>
+                <td>${renderBenchmarkGrade(comparison)}</td>
               </tr>
             `;
           }).join("")}
         </tbody>
-      </table>
+      </table>     
     </div>
+    
+    ${hasRelaxedBenchmarkFilters(benchmarkEntries) ? ` <p class="benchmark-disclaimer"> * Benchmark filters were broadened for one or more players to ensure enough comparison parses were available. </p> ` : ""}
   `;
 }
 
@@ -923,6 +925,45 @@ function showDebug(text) {
     <pre>${escapeHtml(text)}</pre>
   `;
 }
+
+
+function renderBenchmarkGrade(comparison) {
+  const grade = comparison.grade || "N/A";
+
+  const needsDisclaimer =
+    comparison.used_relaxed_filters === true;
+
+  const tier =
+    comparison.filter_tier_used || "Unknown";
+
+  const matches =
+    comparison.filter_match_count ?? "N/A";
+
+  return `
+    <span
+      class="pill grade-${escapeHtml(grade)} benchmark-grade"
+      title="${
+        needsDisclaimer
+          ? `Benchmark filters broadened. Tier: ${tier}. Matches: ${matches}.`
+          : "Strict benchmark filters used."
+      }"
+    >
+      ${escapeHtml(grade)}
+      ${
+        needsDisclaimer
+          ? '<span class="benchmark-asterisk">*</span>'
+          : ""
+      }
+    </span>
+  `;
+}
+
+function hasRelaxedBenchmarkFilters(benchmarkEntries) {
+  return benchmarkEntries.some(([, comparison]) => {
+    return comparison.used_relaxed_filters === true;
+  });
+}
+
 
 function escapeHtml(value) {
   return String(value ?? "")

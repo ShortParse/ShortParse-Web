@@ -561,6 +561,24 @@ tbody tr:hover td {
 	vertical-align: top;
 }
 
+.benchmark-grade {
+	gap: 2px;
+}
+
+.benchmark-asterisk {
+	color: var(--blue);
+	font-weight: 900;
+	margin-left: 2px;
+}
+
+.benchmark-disclaimer {
+	color: var(--muted);
+	font-size: 13px;
+	line-height: 1.5;
+	margin-top: 14px;
+	margin-bottom: 0;
+}
+
 /* =========================
    Raw Debug
 ========================= */
