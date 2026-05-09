@@ -566,6 +566,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 }
 
 function renderMechanicsTab(mechanics) {
+  console.log("ShortParse renderMechanicsTab fired", mechanics);
   const raidMechanics = mechanics.raid_mechanics || {};
   const rows = Object.entries(raidMechanics);
 
