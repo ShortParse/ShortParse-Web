@@ -73,17 +73,40 @@ async function startAnalysis() {
 
   const reportUrl = document.getElementById("reportUrl").value.trim();
   const button = document.getElementById("analyzeButton");
-  const status = document.getElementById("status");
 
   clearRenderedResults();
 
   if (!reportUrl) {
-    status.textContent = "Please paste a Warcraft Logs URL.";
+    renderAnalysisConsole({
+      status: "waiting",
+      progress: 0,
+      current_step: "Missing Report URL",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "warning",
+          message: "Please paste a Warcraft Logs URL."
+        }
+      ]
+    });
+
     return;
   }
 
   button.disabled = true;
-  status.textContent = "Creating job...";
+
+  renderAnalysisConsole({
+    status: "queued",
+    progress: 0,
+    current_step: "Creating job",
+    logs: [
+      {
+        time: new Date().toISOString(),
+        level: "info",
+        message: "Creating analysis job..."
+      }
+    ]
+  });
 
   try {
     const response = await fetch("/api/jobs", {
@@ -103,20 +126,43 @@ async function startAnalysis() {
     const job = await response.json();
 
     currentJobId = job.job_id;
-    status.textContent = "Job queued. Starting analysis...";
+
+    renderAnalysisConsole({
+      status: "queued",
+      progress: job.progress ?? 0,
+      current_step: job.current_step || "Job queued",
+      logs: job.logs || [
+        {
+          time: new Date().toISOString(),
+          level: "info",
+          message: "Job queued. Starting analysis..."
+        }
+      ]
+    });
 
     await pollJob();
 
     pollTimer = setInterval(pollJob, 3000);
   } catch (error) {
-    status.textContent = error.message;
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Error",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message: error.message
+        }
+      ]
+    });
+
     button.disabled = false;
   }
 }
 
 async function pollJob() {
   const button = document.getElementById("analyzeButton");
-  const status = document.getElementById("status");
 
   if (!currentJobId) {
     return;
@@ -130,7 +176,6 @@ async function pollJob() {
     }
 
     const summary = await response.json();
-    status.textContent = `Status: ${summary.status}`;
 
     renderAnalysisConsole(summary);
 
@@ -159,7 +204,7 @@ async function pollJob() {
     if (summary.status === "failed") {
       clearInterval(pollTimer);
 
-      status.textContent = "Status: failed";
+      renderAnalysisConsole(summary);
 
       showDebug(
         "Analysis failed.\n\n" +
@@ -170,7 +215,19 @@ async function pollJob() {
       button.disabled = false;
     }
   } catch (error) {
-    status.textContent = error.message;
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Error",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message: error.message
+        }
+      ]
+    });
+
     button.disabled = false;
     clearInterval(pollTimer);
   }
@@ -276,7 +333,15 @@ function resetToAnalyzeMode() {
   statusCard().classList.remove("hidden");
   headerActions().classList.add("hidden");
 
-  document.getElementById("status").textContent = "Waiting for report...";
+  statusCard().innerHTML = `
+    <div class="section-header">
+      <div>
+        <h2>Status</h2>
+        <p id="status" class="status">Waiting for report...</p>
+      </div>
+    </div>
+  `;
+
   document.getElementById("analyzeButton").disabled = false;
 
   window.history.replaceState({}, "", window.location.pathname);
