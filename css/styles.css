@@ -825,3 +825,76 @@ pre {
 		transform: translateY(0);
 	}
 }
+
+/* =========================
+   Raid Coach
+========================= */
+
+.raid-coach-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.raid-coach-card {
+	background: var(--panel-2);
+
+	border: 1px solid var(--border);
+
+	border-radius: 14px;
+
+	padding: 20px;
+}
+
+.raid-coach-overall {
+	border-color: rgba(56, 189, 248, 0.25);
+
+	background:
+		linear-gradient(
+			180deg,
+			rgba(56, 189, 248, 0.06),
+			rgba(16, 20, 29, 1)
+		);
+}
+
+.raid-coach-title {
+	font-size: 18px;
+	font-weight: 800;
+	margin-bottom: 14px;
+	color: var(--blue);
+}
+
+.raid-coach-overall-text {
+	line-height: 1.7;
+	color: var(--text);
+	font-size: 15px;
+}
+
+.raid-coach-list {
+	margin: 0;
+	padding-left: 20px;
+
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.raid-coach-item {
+	line-height: 1.6;
+}
+
+.raid-coach-priority {
+	color: #fda4af;
+}
+
+.raid-coach-success {
+	color: #86efac;
+}
+
+.raid-coach-warning {
+	color: #fde68a;
+}
+
+.raid-coach-focus {
+	color: #7dd3fc;
+}

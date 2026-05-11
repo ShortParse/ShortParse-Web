@@ -497,6 +497,11 @@ function renderActiveTab() {
     return;
   }
 
+  if (selectedTab === "raidCoach") {
+    renderRaidCoachTab(analysis.raid_coach || {});
+    return;
+  }
+
   if (selectedTab === "benchmarks") {
     renderBenchmarksTab(analysis.benchmarks || {}, playerLookup);
     return;
@@ -572,6 +577,100 @@ function renderSummary(data, analysis, playerLookup) {
   `).join("");
 
   document.getElementById("resultCard").classList.remove("hidden");
+}
+
+function renderRaidCoachTab(raidCoach) {
+  if (!raidCoach || !Object.keys(raidCoach).length) {
+    renderEmptyTab("Raid Coach", "No raid coach summary available.");
+    return;
+  }
+
+  const overallRead =
+    raidCoach.overall_read || "No overall summary available.";
+
+  const topPriorities =
+    raidCoach.top_priorities || [];
+
+  const whatWentWell =
+    raidCoach.what_went_well || [];
+
+  const needsAttention =
+    raidCoach.needs_attention || [];
+
+  const nextPullFocus =
+    raidCoach.next_pull_focus || [];
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Raid Coach</h2>
+
+    <p class="tab-panel-description">
+      Automatically generated raid-analysis insights and recommendations.
+    </p>
+
+    <div class="raid-coach-layout">
+
+      <div class="raid-coach-card raid-coach-overall">
+        <div class="raid-coach-title">
+          Overall Read
+        </div>
+
+        <div class="raid-coach-overall-text">
+          ${escapeHtml(overallRead)}
+        </div>
+      </div>
+
+      ${renderRaidCoachSection(
+        "Top Priorities",
+        topPriorities,
+        "priority"
+      )}
+
+      ${renderRaidCoachSection(
+        "What Went Well",
+        whatWentWell,
+        "success"
+      )}
+
+      ${renderRaidCoachSection(
+        "Needs Attention",
+        needsAttention,
+        "warning"
+      )}
+
+      ${renderRaidCoachSection(
+        "Next Pull Focus",
+        nextPullFocus,
+        "focus"
+      )}
+
+    </div>
+  `;
+}
+
+function renderRaidCoachSection(
+  title,
+  items,
+  type = "default"
+) {
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <div class="raid-coach-card">
+      <div class="raid-coach-title">
+        ${escapeHtml(title)}
+      </div>
+
+      <ul class="raid-coach-list">
+        ${items.map(item => `
+          <li class="raid-coach-item raid-coach-${escapeHtml(type)}">
+            ${escapeHtml(item)}
+          </li>
+        `).join("")}
+      </ul>
+    </div>
+  `;
 }
 
 function renderScorecardTab(scorecard, playerLookup) {
