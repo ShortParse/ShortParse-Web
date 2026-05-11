@@ -702,6 +702,8 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 function renderMechanicsTab(mechanics) {
   console.log("ShortParse renderMechanicsTab fired", mechanics);
 
+  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const playerLookup = buildPlayerLookup(analysis || {});
   const raidMechanics = mechanics.raid_mechanics || {};
   const rows = Object.entries(raidMechanics);
 
@@ -793,7 +795,7 @@ ${escapeHtml(mechanicName)}
                       <tbody>
                         ${failures.map(([playerName, playerData]) => `
                           <tr>
-                            <td>${escapeHtml(playerName)}</td>
+                            <td>${renderPlayerName(playerName, playerLookup)}</td>
                             <td>${formatNumber(playerData.hits)}</td>
                             <td>${formatNumber(playerData.damage)}</td>
                           </tr>
