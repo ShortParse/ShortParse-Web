@@ -638,3 +638,61 @@ pre {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* =========================
+   Mechanics Expandable Rows
+========================= */
+
+.mechanic-name-button {
+	background: none;
+	border: none;
+	color: var(--text);
+	font: inherit;
+	font-weight: 700;
+	padding: 0;
+	cursor: pointer;
+	text-align: left;
+	width: 100%;
+}
+
+.mechanic-name-button:hover {
+	color: var(--blue);
+	transform: none;
+	background: none;
+}
+
+.mechanic-expanded-row td {
+	background: #101722;
+	padding: 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.mechanic-expanded-content {
+	padding: 18px;
+}
+
+.mechanic-expanded-title {
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: 12px;
+	color: var(--blue);
+}
+
+.mechanic-player-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.mechanic-player-table th,
+.mechanic-player-table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid #1f2937;
+}
+
+.mechanic-player-table th {
+	font-size: 11px;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	background: #0f172a;
+}

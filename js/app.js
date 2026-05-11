@@ -569,6 +569,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 
 function renderMechanicsTab(mechanics) {
   console.log("ShortParse renderMechanicsTab fired", mechanics);
+
   const raidMechanics = mechanics.raid_mechanics || {};
   const rows = Object.entries(raidMechanics);
 
@@ -597,25 +598,95 @@ function renderMechanicsTab(mechanics) {
             <th>Note</th>
           </tr>
         </thead>
+
         <tbody>
-          ${rows.map(([mechanicName, data]) => `
-            <tr>
-              <td>${escapeHtml(mechanicName)}</td>
-              <td class="severity-${escapeHtml(data.severity || "Info")}">
-                ${escapeHtml(data.severity || "Info")}
-              </td>
-              <td>${formatNumber(data.hits)}</td>
-              <td>${formatNumber(data.damage)}</td>
-              <td>${Array.isArray(data.players_hit) ? data.players_hit.length : 0}</td>
-              <td>${escapeHtml(data.worst_player || "—")}</td>
-              <td>${formatNumber(data.worst_hits)}</td>
-              <td>${escapeHtml(data.note || "")}</td>
-            </tr>
-          `).join("")}
+          ${rows.map(([mechanicName, data], index) => {
+            const failures = Object.entries(
+              data.player_failures || {}
+            );
+
+            return `
+              <tr>
+                <td>
+                  <button
+                    class="mechanic-name-button"
+                    onclick="toggleMechanicRow(${index})"
+                  >
+                    ▼ ${escapeHtml(mechanicName)}
+                  </button>
+                </td>
+
+                <td class="severity-${escapeHtml(data.severity || "Info")}">
+                  ${escapeHtml(data.severity || "Info")}
+                </td>
+
+                <td>${formatNumber(data.hits)}</td>
+
+                <td>${formatNumber(data.damage)}</td>
+
+                <td>
+                  ${Array.isArray(data.players_hit)
+                    ? data.players_hit.length
+                    : 0}
+                </td>
+
+                <td>${escapeHtml(data.worst_player || "—")}</td>
+
+                <td>${formatNumber(data.worst_hits)}</td>
+
+                <td>${escapeHtml(data.note || "")}</td>
+              </tr>
+
+              <tr
+                id="mechanic-expand-${index}"
+                class="mechanic-expanded-row hidden"
+              >
+                <td colspan="8">
+                  <div class="mechanic-expanded-content">
+
+                    <div class="mechanic-expanded-title">
+                      Player Failures
+                    </div>
+
+                    <table class="mechanic-player-table">
+                      <thead>
+                        <tr>
+                          <th>Player</th>
+                          <th>Hits</th>
+                          <th>Damage Taken</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        ${failures.map(([playerName, playerData]) => `
+                          <tr>
+                            <td>${escapeHtml(playerName)}</td>
+                            <td>${formatNumber(playerData.hits)}</td>
+                            <td>${formatNumber(playerData.damage)}</td>
+                          </tr>
+                        `).join("")}
+                      </tbody>
+                    </table>
+
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join("")}
         </tbody>
       </table>
     </div>
   `;
+}
+
+function toggleMechanicRow(index) {
+  const row = document.getElementById(`mechanic-expand-${index}`);
+
+  if (!row) {
+    return;
+  }
+
+  row.classList.toggle("hidden");
 }
 
 function renderCooldownsTab(playerMetrics, playerLookup) {
