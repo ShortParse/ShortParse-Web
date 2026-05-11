@@ -608,12 +608,13 @@ function renderMechanicsTab(mechanics) {
             return `
               <tr>
                 <td>
-                  <button
-                    class="mechanic-name-button"
-                    onclick="toggleMechanicRow(${index})"
-                  >
-                    ▼ ${escapeHtml(mechanicName)}
-                  </button>
+                <button
+                  class="mechanic-name-button"
+                  onclick="toggleMechanicRow(${index})"
+                >
+                  <span id="mechanic-arrow-${index}">▶</span>
+${escapeHtml(mechanicName)}
+</button>
                 </td>
 
                 <td class="severity-${escapeHtml(data.severity || "Info")}">
@@ -681,12 +682,19 @@ function renderMechanicsTab(mechanics) {
 
 function toggleMechanicRow(index) {
   const row = document.getElementById(`mechanic-expand-${index}`);
+  const arrow = document.getElementById(`mechanic-arrow-${index}`);
 
-  if (!row) {
+  if (!row || !arrow) {
     return;
   }
 
+  const isHidden = row.classList.contains("hidden");
+
   row.classList.toggle("hidden");
+
+  arrow.textContent = isHidden
+    ? "▼"
+    : "▶";
 }
 
 function renderCooldownsTab(playerMetrics, playerLookup) {
