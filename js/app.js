@@ -251,11 +251,23 @@ async function pollJob() {
 
 function renderAnalysisConsole(summary) {
   const statusCard = document.getElementById("statusCard");
+  const existingConsole = document.getElementById("analysisConsole");
+
+  let previousScrollTop = 0;
+  let wasNearBottom = true;
+
+  if (existingConsole) {
+    previousScrollTop = existingConsole.scrollTop;
+
+    wasNearBottom =
+      existingConsole.scrollHeight -
+      existingConsole.scrollTop -
+      existingConsole.clientHeight <
+      120;
+  }
 
   const progress = summary.progress ?? 0;
   const currentStep = summary.current_step || summary.status || "Working...";
-  const fightCurrent = summary.fight_current ?? null;
-  const fightTotal = summary.fight_total ?? null;
   const logs = summary.logs || [];
 
   statusCard.innerHTML = `
@@ -271,18 +283,7 @@ function renderAnalysisConsole(summary) {
     <div class="analysis-status-row">
       <div>
         <div class="analysis-status-label">Current Step</div>
-        <div class="analysis-current-step">
-        ${escapeHtml(currentStep)}
-          ${
-            fightCurrent && fightTotal
-              ? `
-                <span class="analysis-fight-badge">
-                  Fight ${fightCurrent}/${fightTotal}
-                </span>
-              `
-              : ""
-          }
-        </div>
+        <div class="analysis-current-step">${escapeHtml(currentStep)}</div>
       </div>
 
       <div class="analysis-progress-number">${escapeHtml(progress)}%</div>
@@ -296,29 +297,25 @@ function renderAnalysisConsole(summary) {
       ${logs.map(log => `
         <div class="analysis-log-line analysis-log-${escapeHtml(log.level || "info")}">
           <span class="analysis-log-icon">
-              ${getLogIcon(log.level || "info")}
+            ${getLogIcon(log.level || "info")}
           </span>
-          <span class="analysis-log-time">
-              ${formatLogTime(log.time)}
-          </span>
+          <span class="analysis-log-time">${formatLogTime(log.time)}</span>
           <span class="analysis-log-message">${escapeHtml(log.message)}</span>
         </div>
       `).join("")}
     </div>
   `;
 
-  const consoleBox = document.getElementById("analysisConsole");
+  const newConsole = document.getElementById("analysisConsole");
 
-  if (consoleBox) {
-    const nearBottom =
-        consoleBox.scrollHeight -
-        consoleBox.scrollTop -
-        consoleBox.clientHeight <
-        120;
+  if (!newConsole) {
+    return;
+  }
 
-    if (nearBottom) {
-      consoleBox.scrollTop = consoleBox.scrollHeight;
-    }
+  if (wasNearBottom) {
+    newConsole.scrollTop = newConsole.scrollHeight;
+  } else {
+    newConsole.scrollTop = previousScrollTop;
   }
 }
 
