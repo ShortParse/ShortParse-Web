@@ -38,6 +38,24 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSharedJobFromUrl();
 });
 
+function formatLogTime(value) {
+  if (!value) {
+    return "--:--:--";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "--:--:--";
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
 function statusCard() {
   return document.getElementById("statusCard");
 }
@@ -114,6 +132,8 @@ async function pollJob() {
     const summary = await response.json();
     status.textContent = `Status: ${summary.status}`;
 
+    renderAnalysisConsole(summary);
+
     if (summary.status === "completed") {
       clearInterval(pollTimer);
 
@@ -153,6 +173,53 @@ async function pollJob() {
     status.textContent = error.message;
     button.disabled = false;
     clearInterval(pollTimer);
+  }
+}
+
+function renderAnalysisConsole(summary) {
+  const statusCard = document.getElementById("statusCard");
+
+  const progress = summary.progress ?? 0;
+  const currentStep = summary.current_step || summary.status || "Working...";
+  const logs = summary.logs || [];
+
+  statusCard.innerHTML = `
+    <div class="section-header">
+      <div>
+        <h2>Analysis Console</h2>
+        <p class="section-description">
+          ShortParse is working through the report. This updates live while the job runs.
+        </p>
+      </div>
+    </div>
+
+    <div class="analysis-status-row">
+      <div>
+        <div class="analysis-status-label">Current Step</div>
+        <div class="analysis-current-step">${escapeHtml(currentStep)}</div>
+      </div>
+
+      <div class="analysis-progress-number">${escapeHtml(progress)}%</div>
+    </div>
+
+    <div class="analysis-progress-bar">
+      <div class="analysis-progress-fill" style="width: ${escapeHtml(progress)}%;"></div>
+    </div>
+
+    <div id="analysisConsole" class="analysis-console">
+      ${logs.map(log => `
+        <div class="analysis-log-line analysis-log-${escapeHtml(log.level || "info")}">
+          <span class="analysis-log-time">${formatLogTime(log.time)}</span>
+          <span class="analysis-log-message">${escapeHtml(log.message)}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  const consoleBox = document.getElementById("analysisConsole");
+
+  if (consoleBox) {
+    consoleBox.scrollTop = consoleBox.scrollHeight;
   }
 }
 
