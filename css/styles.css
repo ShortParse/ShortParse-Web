@@ -390,23 +390,7 @@ button:disabled {
 	opacity: 0.65;
 }
 
-.encounter-difficulty.difficulty-mythic {
-	color: #d946ef;
-}
-
-.encounter-difficulty.difficulty-heroic {
-	color: var(--orange);
-}
-
-.encounter-difficulty.difficulty-normal {
-	color: var(--green);
-}
-
-.encounter-difficulty.difficulty-lfr {
-	color: var(--blue);
-}
-
-.encounter-difficulty.difficulty-unknown {
+.encounter-difficulty {
 	color: var(--muted);
 }
 
