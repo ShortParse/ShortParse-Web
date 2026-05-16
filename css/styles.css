@@ -98,7 +98,6 @@
 	display: inline-flex;
 	align-items: center;
 
-	margin-left: 14px;
 	padding: 4px 10px;
 
 	border: 1px solid rgba(56, 189, 248, 0.35);
@@ -116,6 +115,17 @@
 	text-transform: uppercase;
 
 	vertical-align: middle;
+}
+
+.title-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+
+.title-row h1 {
+	margin-bottom: 0;
 }
 
 /* =========================
