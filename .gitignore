@@ -11,7 +11,7 @@ storage/
 storage/logs
 storage/logs/*
 
-#
+# Idea
 .idea
 .idea/
 .idea/*
