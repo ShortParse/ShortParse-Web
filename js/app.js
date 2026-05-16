@@ -484,9 +484,9 @@ function formatDifficulty(value) {
   const difficultyMap = {
     1: "LFR",
     2: "Normal",
-    3: "Heroic",
-    4: "Mythic",
-    5: "Timewalking",
+    3: "Normal",
+    4: "Heroic",
+    5: "Mythic",
     10: "Normal",
     14: "Normal",
     15: "Heroic",
