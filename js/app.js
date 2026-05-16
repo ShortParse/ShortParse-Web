@@ -415,40 +415,38 @@ function renderBossTiles(data) {
   const bossTilesCard = document.getElementById("bossTilesCard");
   const bossTiles = document.getElementById("bossTiles");
 
-  bossTiles.innerHTML = data.analyses.map((analysis, index) => {
-    const fight = analysis.fight || {};
-    const raid = analysis.raid || {};
-    const scorecard = analysis.scorecard || [];
-    const issues = analysis.issues || [];
+bossTiles.innerHTML = data.analyses.map((analysis, index) => {
+  const fight = analysis.fight || {};
 
-    const result = fight.kill ? "Kill" : "Best Wipe";
-    const duration = formatDurationSeconds(fight.duration_seconds);
-
-    const hp = fight.boss_percentage != null
-      ? `${fight.boss_percentage}% HP`
-      : "HP unknown";
-
-    return `
-      <button
-        class="boss-tile ${index === selectedAnalysisIndex ? "active" : ""}"
-        type="button"
-        onclick="selectBoss(${index})"
-      >
-        <div class="boss-name">${escapeHtml(fight.name || "Unknown Boss")}</div>
-
-        <div class="boss-meta">
-          <span class="meta-pill">${escapeHtml(raid.name || "Unknown Raid")}</span>
-          <span class="meta-pill">${escapeHtml(result)}</span>
-          <span class="meta-pill">${escapeHtml(duration)}</span>
-          <span class="meta-pill">${escapeHtml(hp)}</span>
-          <span class="meta-pill">${scorecard.length} players</span>
-          <span class="meta-pill">${issues.length} issues</span>
-        </div>
-      </button>
-    `;
-  }).join("");
+  return `
+    <button
+      class="encounter-nav-button ${index === selectedAnalysisIndex ? "active" : ""}"
+      type="button"
+      onclick="selectBoss(${index})"
+    >
+      ${escapeHtml(fight.name || "Unknown Boss")}
+    </button>
+  `;
+}).join("");
 
   bossTilesCard.classList.remove("hidden");
+
+  const scrollLeftButton = document.getElementById("bossScrollLeft");
+const scrollRightButton = document.getElementById("bossScrollRight");
+
+scrollLeftButton.onclick = () => {
+  bossTiles.scrollBy({
+    left: -300,
+    behavior: "smooth"
+  });
+};
+
+scrollRightButton.onclick = () => {
+  bossTiles.scrollBy({
+    left: 300,
+    behavior: "smooth"
+  });
+};
 }
 
 function selectBoss(index) {

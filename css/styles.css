@@ -295,76 +295,78 @@ button:disabled {
    Boss Tiles
 ========================= */
 
-.boss-grid {
-	display: grid;
-
-	grid-template-columns:
-		repeat(auto-fit, minmax(260px, 1fr));
-
-	gap: 16px;
+.encounter-nav-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 14px;
 }
 
-.boss-tile {
+.encounter-nav {
+	display: flex;
+	gap: 14px;
+	overflow-x: auto;
+	scrollbar-width: none;
+	flex: 1;
+}
+
+.encounter-nav::-webkit-scrollbar {
+	display: none;
+}
+
+.encounter-nav-button {
+	flex: 0 0 auto;
+
 	background: var(--panel-2);
 
 	border: 1px solid var(--border);
 
 	border-radius: 14px;
 
-	padding: 18px;
+	padding: 16px 22px;
 
-	cursor: pointer;
+	font-size: 18px;
+	font-weight: 700;
 
-  	color: var(--text);
-	text-align: left;
-	font: inherit;
+	color: var(--text);
 
 	transition:
 		border-color 0.12s ease,
-		transform 0.12s ease,
-		background 0.12s ease;
+		background 0.12s ease,
+		transform 0.12s ease;
 }
 
-.boss-tile * {
-	color: inherit;
-}
-
-.boss-tile:hover {
+.encounter-nav-button:hover {
 	border-color: var(--blue);
 	transform: translateY(-2px);
 }
 
-.boss-tile.active {
+.encounter-nav-button.active {
 	border-color: var(--blue);
 	background: #162235;
+	color: var(--blue);
 }
 
-.boss-name {
-	font-size: 20px;
-	font-weight: 700;
-	margin-bottom: 12px;
-}
+.encounter-scroll-button {
+	flex: 0 0 auto;
 
-.boss-meta {
+	width: 54px;
+	height: 54px;
+
 	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-}
-
-.meta-pill {
-	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 
-	padding: 5px 10px;
-
-	border-radius: 999px;
-
-	font-size: 12px;
+	font-size: 24px;
 	font-weight: 700;
 
-	background: #1b2230;
+	padding: 0;
+}
 
-	border: 1px solid var(--border);
+.encounter-scroll-hint {
+	text-align: center;
+	margin-top: 16px;
+	color: var(--muted);
+	font-size: 14px;
 }
 
 /* =========================
