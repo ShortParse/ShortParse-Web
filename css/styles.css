@@ -323,18 +323,22 @@ button:disabled {
 .encounter-nav-button {
 	flex: 0 0 auto;
 
-	height: 48px;
+	min-width: 184px;
+	height: 58px;
 
-	padding: 0 20px;
+	padding: 8px 18px;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 3px;
 
 	background: var(--panel-2);
 
 	border: 1px solid var(--border);
 
 	border-radius: 12px;
-
-	font-size: 16px;
-	font-weight: 700;
 
 	color: var(--text);
 
@@ -343,18 +347,75 @@ button:disabled {
 	transition:
 		border-color 0.12s ease,
 		background 0.12s ease,
+		box-shadow 0.12s ease,
 		transform 0.12s ease;
 }
 
 .encounter-nav-button:hover {
 	border-color: var(--blue);
+	box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
 	transform: translateY(-1px);
 }
 
 .encounter-nav-button.active {
 	border-color: var(--blue);
 	background: #162235;
+	box-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
+}
+
+.encounter-nav-name {
+	font-size: 15px;
+	font-weight: 800;
+	line-height: 1.1;
+}
+
+.encounter-nav-button.active .encounter-nav-name {
 	color: var(--blue);
+}
+
+.encounter-nav-meta {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+
+	font-size: 10px;
+	font-weight: 800;
+	line-height: 1;
+
+	text-transform: none;
+}
+
+.encounter-meta-divider {
+	color: var(--muted);
+	opacity: 0.65;
+}
+
+.encounter-difficulty.difficulty-mythic {
+	color: #d946ef;
+}
+
+.encounter-difficulty.difficulty-heroic {
+	color: var(--orange);
+}
+
+.encounter-difficulty.difficulty-normal {
+	color: var(--green);
+}
+
+.encounter-difficulty.difficulty-lfr {
+	color: var(--blue);
+}
+
+.encounter-difficulty.difficulty-unknown {
+	color: var(--muted);
+}
+
+.encounter-result.kill {
+	color: var(--green);
+}
+
+.encounter-result.wipe {
+	color: var(--red);
 }
 
 .encounter-scroll-button {

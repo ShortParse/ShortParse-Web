@@ -401,52 +401,90 @@ async function copyShareLink() {
   }, 1500);
 }
 
-function renderReport(data) {
-  if (!data.analyses || !data.analyses.length) {
-    showDebug(JSON.stringify(data, null, 2));
-    return;
-  }
-
-  renderBossTiles(data);
-  renderSelectedAnalysis(0);
-}
-
 function renderBossTiles(data) {
   const bossTilesCard = document.getElementById("bossTilesCard");
   const bossTiles = document.getElementById("bossTiles");
 
-bossTiles.innerHTML = data.analyses.map((analysis, index) => {
-  const fight = analysis.fight || {};
+  bossTiles.innerHTML = data.analyses.map((analysis, index) => {
+    const fight = analysis.fight || {};
 
-  return `
-    <button
-      class="encounter-nav-button ${index === selectedAnalysisIndex ? "active" : ""}"
-      type="button"
-      onclick="selectBoss(${index})"
-    >
-      ${escapeHtml(fight.name || "Unknown Boss")}
-    </button>
-  `;
-}).join("");
+    const difficulty = formatDifficulty(fight.difficulty);
+    const resultClass = fight.kill ? "kill" : "wipe";
+    const resultLabel = fight.kill
+      ? "Kill"
+      : `Wipe (${fight.boss_percentage ?? "?"}%)`;
+
+    return `
+      <button
+        class="encounter-nav-button ${index === selectedAnalysisIndex ? "active" : ""}"
+        type="button"
+        onclick="selectBoss(${index})"
+      >
+        <span class="encounter-nav-name">
+          ${escapeHtml(fight.name || "Unknown Boss")}
+        </span>
+
+        <span class="encounter-nav-meta">
+          <span class="encounter-difficulty difficulty-${escapeHtml(difficulty.toLowerCase())}">
+            ${escapeHtml(difficulty)}
+          </span>
+
+          <span class="encounter-meta-divider">|</span>
+
+          <span class="encounter-result ${resultClass}">
+            ${escapeHtml(resultLabel)}
+          </span>
+        </span>
+      </button>
+    `;
+  }).join("");
 
   bossTilesCard.classList.remove("hidden");
 
   const scrollLeftButton = document.getElementById("bossScrollLeft");
-const scrollRightButton = document.getElementById("bossScrollRight");
+  const scrollRightButton = document.getElementById("bossScrollRight");
 
-scrollLeftButton.onclick = () => {
-  bossTiles.scrollBy({
-    left: -300,
-    behavior: "smooth"
-  });
-};
+  scrollLeftButton.onclick = () => {
+    bossTiles.scrollBy({
+      left: -300,
+      behavior: "smooth"
+    });
+  };
 
-scrollRightButton.onclick = () => {
-  bossTiles.scrollBy({
-    left: 300,
-    behavior: "smooth"
-  });
-};
+  scrollRightButton.onclick = () => {
+    bossTiles.scrollBy({
+      left: 300,
+      behavior: "smooth"
+    });
+  };
+
+  bossTiles.onwheel = (event) => {
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      event.preventDefault();
+
+      bossTiles.scrollBy({
+        left: event.deltaY,
+        behavior: "smooth"
+      });
+    }
+  };
+}
+
+function formatDifficulty(value) {
+  const difficultyMap = {
+    1: "LFR",
+    2: "Normal",
+    3: "Heroic",
+    4: "Mythic",
+    5: "Timewalking",
+    10: "Normal",
+    14: "Normal",
+    15: "Heroic",
+    16: "Mythic",
+    17: "LFR"
+  };
+
+  return difficultyMap[value] || "Unknown";
 }
 
 function selectBoss(index) {
