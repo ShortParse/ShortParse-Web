@@ -401,6 +401,16 @@ async function copyShareLink() {
   }, 1500);
 }
 
+function renderReport(data) {
+  if (!data.analyses || !data.analyses.length) {
+    showDebug(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  renderBossTiles(data);
+  renderSelectedAnalysis(0);
+}
+
 function renderBossTiles(data) {
   const bossTilesCard = document.getElementById("bossTilesCard");
   const bossTiles = document.getElementById("bossTiles");
