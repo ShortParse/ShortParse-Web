@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     button.addEventListener("click", () => {
       selectedTab = button.dataset.tab;
       renderActiveTab();
+      updateAddressBar();
     });
   });
 
@@ -384,14 +385,58 @@ function renderAnalysisConsole(summary) {
   }
 }
 
+function normalizeTabName(tab) {
+  if (!tab) return "scorecard";
+  const t = tab.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (t === "scorecard") return "scorecard";
+  if (t === "raidcoach" || t === "coach") return "raidCoach";
+  if (t === "benchmarks" || t === "benchmark" || t === "benchmarkcomparisons") return "benchmarks";
+  if (t === "playermetrics" || t === "metrics") return "playerMetrics";
+  if (t === "mechanics" || t === "mechanic") return "mechanics";
+  if (t === "cooldowns" || t === "cooldown") return "cooldowns";
+  if (t === "timeline") return "timeline";
+  if (t === "issues" || t === "topissues") return "issues";
+  if (t === "raw" || t === "rawjson" || t === "json") return "raw";
+
+  return "scorecard";
+}
+
+function updateAddressBar() {
+  if (currentJobId) {
+    let path = `/report/${currentJobId}`;
+    if (selectedAnalysisIndex > 0 || selectedTab !== "scorecard") {
+      path += `/${selectedAnalysisIndex}`;
+    }
+    if (selectedTab !== "scorecard") {
+      path += `/${selectedTab}`;
+    }
+    window.history.replaceState({}, "", path);
+    currentShareUrl = `${window.location.origin}${path}`;
+  }
+}
+
 async function loadSharedJobFromUrl() {
   let jobId = null;
+  let bossIndex = 0;
+  let tabName = "scorecard";
 
-  // 1. Try clean path routing (e.g. /report/UUID or /reports/UUID)
+  // 1. Try clean path routing (e.g. /report/UUID/bossIndex/tabName)
   const pathParts = window.location.pathname.split("/");
   const reportIndex = pathParts.findIndex(part => part === "report" || part === "reports");
   if (reportIndex !== -1 && pathParts[reportIndex + 1]) {
     jobId = pathParts[reportIndex + 1];
+
+    if (pathParts[reportIndex + 2]) {
+      const parsedIdx = parseInt(pathParts[reportIndex + 2], 10);
+      if (!Number.isNaN(parsedIdx)) {
+        bossIndex = parsedIdx;
+      }
+    }
+
+    if (pathParts[reportIndex + 3]) {
+      tabName = normalizeTabName(pathParts[reportIndex + 3]);
+    }
   }
 
   // 2. Try query parameter fallback (e.g. ?job=UUID) for backward compatibility
@@ -420,38 +465,35 @@ async function loadSharedJobFromUrl() {
   try {
     const response = await fetch(`/api/jobs/${jobId}/result`);
 
-if (!response.ok) {
+    if (!response.ok) {
+      if (response.status >= 500) {
+        setOfflineMode(true);
+        renderAnalysisConsole({
+          status: "failed",
+          progress: 100,
+          current_step: "Server Offline",
+          logs: [
+            {
+              time: new Date().toISOString(),
+              level: "error",
+              message: "ShortParse backend is currently offline or restarting."
+            }
+          ]
+        });
 
-  if (response.status >= 500) {
+        const button = document.getElementById("analyzeButton");
+        if (button) button.disabled = false;
+        return;
+      }
 
-    setOfflineMode(true);
-
-    renderAnalysisConsole({
-      status: "failed",
-      progress: 100,
-      current_step: "Server Offline",
-      logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message:
-            "ShortParse backend is currently offline or restarting."
-        }
-      ]
-    });
-
-    button.disabled = false;
-    return;
-  }
-
-  throw new Error(`Failed to create job: ${response.status}`);
-}
+      throw new Error(`Failed to load shared report: ${response.status}`);
+    }
 
     const analysis = await response.json();
 
     currentReportData = analysis;
-    selectedAnalysisIndex = 0;
-    selectedTab = "scorecard";
+    selectedAnalysisIndex = Math.min(Math.max(0, bossIndex), (analysis.analyses || []).length - 1);
+    selectedTab = tabName;
 
     enterReportMode(jobId);
     renderReport(analysis);
@@ -461,10 +503,7 @@ if (!response.ok) {
 }
 
 function enterReportMode(jobId) {
-  currentShareUrl = `${window.location.origin}/report/${jobId}`;
-
-  // Update browser address bar to show the clean URL path
-  window.history.replaceState({}, "", `/report/${jobId}`);
+  updateAddressBar();
 
   analyzeCard().classList.add("hidden");
   statusCard().classList.add("hidden");
@@ -497,9 +536,7 @@ function resetToAnalyzeMode() {
 }
 
 async function copyShareLink() {
-  if (!currentShareUrl && currentJobId) {
-    currentShareUrl = `${window.location.origin}/report/${currentJobId}`;
-  }
+  updateAddressBar();
 
   await navigator.clipboard.writeText(currentShareUrl);
 
@@ -613,6 +650,7 @@ function selectBoss(index) {
 
   renderBossTiles(currentReportData);
   renderSelectedAnalysis(index);
+  updateAddressBar();
 
   document.getElementById("resultCard").scrollIntoView({
     behavior: "smooth",
