@@ -149,8 +149,31 @@ async function startAnalysis() {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create job: ${response.status}`);
-    }
+
+      if (response.status >= 500) {
+
+        setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const job = await response.json();
 
@@ -203,9 +226,32 @@ async function pollJob() {
   try {
     const response = await fetch(`/api/jobs/${currentJobId}/summary`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job summary: ${response.status}`);
-    }
+if (!response.ok) {
+
+  if (response.status >= 500) {
+
+    setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const summary = await response.json();
 
@@ -356,9 +402,32 @@ async function loadSharedJobFromUrl() {
   try {
     const response = await fetch(`/api/jobs/${jobId}/result`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to load shared report: ${response.status}`);
-    }
+if (!response.ok) {
+
+  if (response.status >= 500) {
+
+    setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const analysis = await response.json();
 
