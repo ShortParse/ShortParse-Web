@@ -1119,3 +1119,44 @@ body {
 		justify-content: center;
 	}
 }
+
+/* =========================
+   Offline Banner
+========================= */
+
+.offline-banner {
+	background:
+		linear-gradient(
+			180deg,
+			rgba(251, 113, 133, 0.14),
+			rgba(127, 29, 29, 0.12)
+		);
+
+	border: 1px solid rgba(251, 113, 133, 0.35);
+
+	border-radius: 16px;
+
+	padding: 20px;
+
+	margin-bottom: 20px;
+
+	box-shadow:
+		0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.offline-title {
+	color: #fda4af;
+
+	font-size: 22px;
+	font-weight: 800;
+
+	margin-bottom: 8px;
+}
+
+.offline-message {
+	color: #fecdd3;
+
+	line-height: 1.6;
+
+	font-size: 15px;
+}

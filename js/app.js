@@ -4,6 +4,19 @@ let currentReportData = null;
 let selectedAnalysisIndex = 0;
 let selectedTab = "scorecard";
 let currentShareUrl = "";
+let offlineMode = false;
+
+function setOfflineMode(enabled) {
+  offlineMode = enabled;
+
+  const banner = document.getElementById("offlineBanner");
+
+  if (!banner) {
+    return;
+  }
+
+  banner.classList.toggle("hidden", !enabled);
+}
 
 const CLASS_COLORS = {
   "DeathKnight": "#C41E3A",
@@ -136,8 +149,31 @@ async function startAnalysis() {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create job: ${response.status}`);
-    }
+
+      if (response.status >= 500) {
+
+        setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const job = await response.json();
 
@@ -160,17 +196,20 @@ async function startAnalysis() {
 
     pollTimer = setInterval(pollJob, 3000);
   } catch (error) {
+    setOfflineMode(true);
+
     renderAnalysisConsole({
       status: "failed",
       progress: 100,
-      current_step: "Error",
+      current_step: "Server Offline",
       logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message: error.message
-        }
-      ]
+          {
+            time: new Date().toISOString(),
+            level: "error",
+            message:
+                "Unable to reach the ShortParse API server."
+          }
+          ]
     });
 
     button.disabled = false;
@@ -187,9 +226,32 @@ async function pollJob() {
   try {
     const response = await fetch(`/api/jobs/${currentJobId}/summary`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job summary: ${response.status}`);
-    }
+if (!response.ok) {
+
+  if (response.status >= 500) {
+
+    setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const summary = await response.json();
 
@@ -231,17 +293,20 @@ async function pollJob() {
       button.disabled = false;
     }
   } catch (error) {
+    setOfflineMode(true);
+
     renderAnalysisConsole({
       status: "failed",
       progress: 100,
-      current_step: "Error",
+      current_step: "Server Offline",
       logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message: error.message
-        }
-      ]
+          {
+            time: new Date().toISOString(),
+            level: "error",
+            message:
+                "Unable to reach the ShortParse API server."
+          }
+          ]
     });
 
     button.disabled = false;
@@ -355,9 +420,32 @@ async function loadSharedJobFromUrl() {
   try {
     const response = await fetch(`/api/jobs/${jobId}/result`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to load shared report: ${response.status}`);
-    }
+if (!response.ok) {
+
+  if (response.status >= 500) {
+
+    setOfflineMode(true);
+
+    renderAnalysisConsole({
+      status: "failed",
+      progress: 100,
+      current_step: "Server Offline",
+      logs: [
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "ShortParse backend is currently offline or restarting."
+        }
+      ]
+    });
+
+    button.disabled = false;
+    return;
+  }
+
+  throw new Error(`Failed to create job: ${response.status}`);
+}
 
     const analysis = await response.json();
 
