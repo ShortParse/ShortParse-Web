@@ -4,6 +4,19 @@ let currentReportData = null;
 let selectedAnalysisIndex = 0;
 let selectedTab = "scorecard";
 let currentShareUrl = "";
+let offlineMode = false;
+
+function setOfflineMode(enabled) {
+  offlineMode = enabled;
+
+  const banner = document.getElementById("offlineBanner");
+
+  if (!banner) {
+    return;
+  }
+
+  banner.classList.toggle("hidden", !enabled);
+}
 
 const CLASS_COLORS = {
   "DeathKnight": "#C41E3A",
@@ -160,17 +173,20 @@ async function startAnalysis() {
 
     pollTimer = setInterval(pollJob, 3000);
   } catch (error) {
+    setOfflineMode(true);
+
     renderAnalysisConsole({
       status: "failed",
       progress: 100,
-      current_step: "Error",
+      current_step: "Server Offline",
       logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message: error.message
-        }
-      ]
+          {
+            time: new Date().toISOString(),
+            level: "error",
+            message:
+                "Unable to reach the ShortParse API server."
+          }
+          ]
     });
 
     button.disabled = false;
@@ -231,17 +247,20 @@ async function pollJob() {
       button.disabled = false;
     }
   } catch (error) {
+    setOfflineMode(true);
+
     renderAnalysisConsole({
       status: "failed",
       progress: 100,
-      current_step: "Error",
+      current_step: "Server Offline",
       logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message: error.message
-        }
-      ]
+          {
+            time: new Date().toISOString(),
+            level: "error",
+            message:
+                "Unable to reach the ShortParse API server."
+          }
+          ]
     });
 
     button.disabled = false;
