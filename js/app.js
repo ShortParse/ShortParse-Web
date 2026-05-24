@@ -320,10 +320,28 @@ function renderAnalysisConsole(summary) {
 }
 
 async function loadSharedJobFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const jobId = params.get("job");
+  let jobId = null;
+
+  // 1. Try clean path routing (e.g. /report/UUID or /reports/UUID)
+  const pathParts = window.location.pathname.split("/");
+  const reportIndex = pathParts.findIndex(part => part === "report" || part === "reports");
+  if (reportIndex !== -1 && pathParts[reportIndex + 1]) {
+    jobId = pathParts[reportIndex + 1];
+  }
+
+  // 2. Try query parameter fallback (e.g. ?job=UUID) for backward compatibility
+  if (!jobId) {
+    const params = new URLSearchParams(window.location.search);
+    jobId = params.get("job");
+  }
 
   if (!jobId) {
+    return;
+  }
+
+  // Validate UUID format before trying to fetch
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(jobId)) {
     return;
   }
 
@@ -355,7 +373,10 @@ async function loadSharedJobFromUrl() {
 }
 
 function enterReportMode(jobId) {
-  currentShareUrl = `${window.location.origin}${window.location.pathname}?job=${jobId}`;
+  currentShareUrl = `${window.location.origin}/report/${jobId}`;
+
+  // Update browser address bar to show the clean URL path
+  window.history.replaceState({}, "", `/report/${jobId}`);
 
   analyzeCard().classList.add("hidden");
   statusCard().classList.add("hidden");
@@ -383,12 +404,13 @@ function resetToAnalyzeMode() {
 
   document.getElementById("analyzeButton").disabled = false;
 
-  window.history.replaceState({}, "", window.location.pathname);
+  // Revert address bar URL to clean root path
+  window.history.replaceState({}, "", "/");
 }
 
 async function copyShareLink() {
   if (!currentShareUrl && currentJobId) {
-    currentShareUrl = `${window.location.origin}${window.location.pathname}?job=${currentJobId}`;
+    currentShareUrl = `${window.location.origin}/report/${currentJobId}`;
   }
 
   await navigator.clipboard.writeText(currentShareUrl);
