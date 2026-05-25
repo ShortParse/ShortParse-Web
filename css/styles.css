@@ -1632,7 +1632,10 @@ body {
 	font-weight: 900;
 	font-size: 32px;
 	position: relative;
+	flex-shrink: 0;
+	background: #10141d;
 	box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+	z-index: 1;
 }
 
 .coach-grade-circle::before {
