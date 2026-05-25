@@ -1544,12 +1544,15 @@ async function checkUserSession() {
       `;
 
       document.getElementById("logoutButton").addEventListener("click", logoutUser);
+      loadGuildDashboard();
     } else {
       renderLoginButton();
+      hideGuildDashboard();
     }
   } catch (error) {
     console.error("Failed to query user authentication status:", error);
     renderLoginButton();
+    hideGuildDashboard();
   }
 }
 
@@ -1577,6 +1580,7 @@ async function logoutUser() {
     });
     if (response.ok) {
       renderLoginButton();
+      hideGuildDashboard();
     } else {
       console.error("Failed to log out:", response.status);
       if (button) button.disabled = false;
@@ -1585,4 +1589,216 @@ async function logoutUser() {
     console.error("Logout request failed:", error);
     if (button) button.disabled = false;
   }
+}
+
+function hideGuildDashboard() {
+  const card = document.getElementById("guildDashboardCard");
+  if (card) card.classList.add("hidden");
+}
+
+async function loadGuildDashboard() {
+  const dashboardCard = document.getElementById("guildDashboardCard");
+  const tabContainer = document.getElementById("guildTabContainer");
+  const reportsContainer = document.getElementById("guildReportsContainer");
+
+  if (!dashboardCard || !tabContainer || !reportsContainer) return;
+
+  // Render skeleton tabs and grid first to give an extremely fast premium loading feel!
+  tabContainer.innerHTML = `<div class="guild-tab-button" style="width: 120px; height: 38px; animation: skeletonShimmer 1.5s infinite; background: rgba(255,255,255,0.01); border: 1px solid var(--border);"></div>`;
+  renderReportsSkeleton();
+  dashboardCard.classList.remove("hidden");
+
+  try {
+    const response = await fetch("/api/auth/guilds");
+    if (!response.ok) {
+      throw new Error(`Failed to load guilds: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const guilds = data.guilds || [];
+
+    if (guilds.length === 0) {
+      tabContainer.innerHTML = "";
+      reportsContainer.innerHTML = `
+        <div class="no-guilds-msg">
+          No guilds associated with your Warcraft Logs characters were found. Make sure your characters are linked in your Warcraft Logs profile.
+        </div>
+      `;
+      return;
+    }
+
+    renderGuildTabs(guilds);
+  } catch (error) {
+    console.error("Error loading Guild Dashboard:", error);
+    tabContainer.innerHTML = "";
+    reportsContainer.innerHTML = `
+      <div class="no-guilds-msg" style="color: var(--red); border-color: rgba(251, 113, 133, 0.2);">
+        Failed to fetch your guilds from Warcraft Logs. Please try refreshing or reconnecting your account.
+      </div>
+    `;
+  }
+}
+
+function renderReportsSkeleton() {
+  const reportsContainer = document.getElementById("guildReportsContainer");
+  if (!reportsContainer) return;
+
+  let skeletonHtml = "";
+  for (let i = 0; i < 3; i++) {
+    skeletonHtml += `
+      <div class="guild-skeleton-card">
+        <div class="guild-report-info">
+          <div class="guild-skeleton-line guild-skeleton-title"></div>
+          <div class="guild-skeleton-line guild-skeleton-meta1"></div>
+          <div class="guild-skeleton-line guild-skeleton-meta2"></div>
+        </div>
+        <div class="guild-skeleton-line guild-skeleton-button"></div>
+      </div>
+    `;
+  }
+  reportsContainer.innerHTML = skeletonHtml;
+}
+
+function renderGuildTabs(guilds) {
+  const tabContainer = document.getElementById("guildTabContainer");
+  if (!tabContainer) return;
+
+  tabContainer.innerHTML = "";
+
+  guilds.forEach((guild, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "guild-tab-button";
+    
+    // Alliance = Faction 1, Horde = Faction 2. Assign classes for faction colors!
+    const factionId = guild.faction ? guild.faction.id : 0;
+    if (factionId === 1) {
+      btn.classList.add("alliance");
+    } else if (factionId === 2) {
+      btn.classList.add("horde");
+    }
+
+    // Shield/faction emblem indicators
+    const shieldSvg = factionId === 1 
+      ? `<svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`
+      : `<svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 5l6.5 11H5.5L12 7z"/></svg>`;
+
+    btn.innerHTML = `
+      ${shieldSvg}
+      <span>${escapeHtml(guild.name)}</span>
+      <span style="font-size: 11px; opacity: 0.5;">(${escapeHtml(guild.region ? guild.region.compact : "")}-${escapeHtml(guild.server ? guild.server.name : "")})</span>
+    `;
+
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".guild-tab-button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      loadGuildReports(guild.id);
+    });
+
+    tabContainer.appendChild(btn);
+
+    // Auto-select first guild on load
+    if (idx === 0) {
+      btn.classList.add("active");
+      loadGuildReports(guild.id);
+    }
+  });
+}
+
+async function loadGuildReports(guildId) {
+  renderReportsSkeleton();
+
+  const reportsContainer = document.getElementById("guildReportsContainer");
+  if (!reportsContainer) return;
+
+  try {
+    const response = await fetch(`/api/auth/guilds/${guildId}/reports?limit=6`);
+    if (!response.ok) {
+      throw new Error(`Failed to load reports: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reports = data.reports || [];
+
+    if (reports.length === 0) {
+      reportsContainer.innerHTML = `
+        <div class="no-reports-msg">
+          No combat log reports have been uploaded for this guild yet.
+        </div>
+      `;
+      return;
+    }
+
+    reportsContainer.innerHTML = "";
+    reports.forEach(report => {
+      const card = document.createElement("div");
+      card.className = "guild-report-card";
+
+      // Formatted Date
+      const dateText = report.startTime 
+        ? new Date(report.startTime).toLocaleDateString(undefined, {
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          })
+        : "Unknown Date";
+
+      card.innerHTML = `
+        <div class="guild-report-info">
+          <h3 class="guild-report-title">${escapeHtml(report.title || "Raid Report")}</h3>
+          <div class="guild-report-meta">
+            <div class="guild-report-time">
+              <svg style="width: 14px; height: 14px; opacity: 0.6;" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+              </svg>
+              ${escapeHtml(dateText)}
+            </div>
+            <div class="guild-report-owner">
+              <svg style="width: 14px; height: 14px; opacity: 0.6;" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+              <span>${escapeHtml(report.owner ? report.owner.name : "Unknown")}</span>
+            </div>
+          </div>
+        </div>
+        <button class="guild-analyze-btn" type="button" data-code="${escapeHtml(report.code)}">
+          <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          Analyze Report
+        </button>
+      `;
+
+      card.querySelector(".guild-analyze-btn").addEventListener("click", () => {
+        analyzeReportFromHub(report.code);
+      });
+
+      reportsContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error("Error loading guild reports:", error);
+    reportsContainer.innerHTML = `
+      <div class="no-reports-msg" style="color: var(--red); border-color: rgba(251, 113, 133, 0.2);">
+        Failed to load combat reports. Please try again.
+      </div>
+    `;
+  }
+}
+
+function analyzeReportFromHub(code) {
+  const urlInput = document.getElementById("reportUrl");
+  const analyzeBtn = document.getElementById("analyzeButton");
+
+  if (!urlInput || !analyzeBtn) return;
+
+  // Populate input row
+  urlInput.value = `https://www.warcraftlogs.com/reports/${code}`;
+
+  // Scroll to analyze section smoothly
+  const analyzeSection = document.getElementById("analyzeCard");
+  if (analyzeSection) {
+    analyzeSection.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // Trigger analysis immediately
+  startAnalysis();
 }
