@@ -944,6 +944,8 @@ function renderBenchmarksTab(benchmarks, playerLookup) {
       Compare each player against Top 1, Top 5, and Top 10 Warcraft Logs benchmark parses.
     </p>
 
+    <div id="rosterChartContainer" class="chart-container"></div>
+
     <div class="table-wrapper">
       <table>
         <thead>
@@ -983,6 +985,8 @@ function renderBenchmarksTab(benchmarks, playerLookup) {
     
     ${hasRelaxedBenchmarkFilters(benchmarkEntries) ? ` <p class="benchmark-disclaimer"> * Benchmark filters were broadened for one or more players to ensure enough comparison parses were available. </p> ` : ""}
   `;
+
+  drawRosterDistributionChart(benchmarks, playerLookup);
 }
 
 function renderPlayerMetricsTab(playerMetrics, playerLookup) {
@@ -998,6 +1002,8 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
     <p class="tab-panel-description">
       Core performance, survival, activity, and consumable data for each player.
     </p>
+
+    <div id="avoidableDamageChartContainer" class="chart-container"></div>
 
     <div class="table-wrapper">
       <table>
@@ -1043,6 +1049,8 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
       </table>
     </div>
   `;
+
+  drawAvoidableDamageChart(playerMetrics, playerLookup);
 }
 
 function renderMechanicsTab(mechanics) {
@@ -2019,4 +2027,316 @@ function analyzeReportFromHub(code) {
 
   // Trigger analysis immediately
   startAnalysis();
+}
+
+/* =============================================================================
+   Interactive Performance Charts Drawing & Tooltip Engine
+   ============================================================================= */
+
+function getOrCreateTooltip() {
+  let tooltip = document.getElementById("chartTooltip");
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.id = "chartTooltip";
+    tooltip.className = "chart-tooltip";
+    document.body.appendChild(tooltip);
+  }
+  return tooltip;
+}
+
+function showTooltip(e, title, rows) {
+  const tooltip = getOrCreateTooltip();
+  
+  const rowsHtml = rows.map(r => `
+    <div class="tooltip-row">
+      <span class="tooltip-label">${escapeHtml(r.label)}</span>
+      <span class="tooltip-value">${escapeHtml(r.value)}</span>
+    </div>
+  `).join("");
+  
+  tooltip.innerHTML = `
+    <div class="tooltip-title">${escapeHtml(title)}</div>
+    ${rowsHtml}
+  `;
+  
+  tooltip.classList.add("active");
+  tooltip.style.left = `${e.pageX}px`;
+  tooltip.style.top = `${e.pageY}px`;
+}
+
+function moveTooltip(e) {
+  const tooltip = document.getElementById("chartTooltip");
+  if (tooltip) {
+    tooltip.style.left = `${e.pageX}px`;
+    tooltip.style.top = `${e.pageY}px`;
+  }
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById("chartTooltip");
+  if (tooltip) {
+    tooltip.classList.remove("active");
+  }
+}
+
+function drawRosterDistributionChart(benchmarks, playerLookup) {
+  const container = document.getElementById("rosterChartContainer");
+  if (!container) return;
+
+  const sortedPlayers = Object.entries(benchmarks || {})
+    .map(([name, comp]) => {
+      const benchmark = comp.benchmark || {};
+      return {
+        name,
+        value: comp.player_value || 0,
+        metric: (comp.metric || "DPS").toUpperCase(),
+        grade: comp.grade || "N/A",
+        top1: benchmark.top_1 ? benchmark.top_1.value : 0,
+        top10: benchmark.top_10 ? benchmark.top_10.value : 0,
+        avg: benchmark.average_baseline || 0,
+        classColor: getClassColor(playerLookup[name]?.className)
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+
+  if (sortedPlayers.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 30px;">No roster benchmark comparisons recorded.</div>`;
+    return;
+  }
+
+  const margin = { top: 30, right: 30, bottom: 65, left: 60 };
+  const width = 1000;
+  const height = 285;
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  // Find scale ceilings
+  const maxVal = Math.max(...sortedPlayers.map(p => Math.max(p.value, p.top1, p.top10, p.avg))) * 1.1 || 100000;
+
+  const yToSvg = (val) => chartHeight - (val / maxVal) * chartHeight + margin.top;
+
+  const numPlayers = sortedPlayers.length;
+  const barGapPct = 0.25;
+  const totalBarSpace = chartWidth / numPlayers;
+  const barWidth = totalBarSpace * (1 - barGapPct);
+  const barGap = totalBarSpace * barGapPct;
+
+  const ref = sortedPlayers[0];
+  const top1Y = yToSvg(ref.top1);
+  const top10Y = yToSvg(ref.top10);
+  const avgY = yToSvg(ref.avg);
+  const metricLabel = ref.metric;
+
+  // Horizontal Grid Lines
+  const gridTicks = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal];
+  const gridLinesHtml = gridTicks.map(tick => {
+    const y = yToSvg(tick);
+    return `
+      <line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="chart-grid-line" />
+      <text x="${margin.left - 10}" y="${y + 4}" class="chart-axis-text" text-anchor="end">${formatNumber(tick)}</text>
+    `;
+  }).join("");
+
+  const barsHtml = sortedPlayers.map((player, idx) => {
+    const x = margin.left + idx * totalBarSpace + barGap / 2;
+    const y = yToSvg(player.value);
+    const rectHeight = Math.max(2, chartHeight - (player.value / maxVal) * chartHeight);
+
+    return `
+      <g>
+        <rect
+          x="${x}"
+          y="${y}"
+          width="${barWidth}"
+          height="${rectHeight}"
+          fill="${player.classColor}"
+          fill-opacity="0.8"
+          class="chart-bar"
+          onclick="showPlayerCoachCard('${escapeHtml(player.name)}')"
+          onmouseenter="showRosterTooltip(event, ${idx})"
+          onmousemove="moveTooltip(event)"
+          onmouseleave="hideTooltip()"
+        />
+        <text
+          x="${x + barWidth / 2}"
+          y="${chartHeight + margin.top + 16}"
+          transform="rotate(30, ${x + barWidth / 2}, ${chartHeight + margin.top + 16})"
+          class="chart-axis-text"
+          text-anchor="start"
+        >${escapeHtml(player.name.substring(0, 10))}</text>
+      </g>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="chart-header">
+      <div>
+        <h3 class="chart-title">Roster Throughput Distribution</h3>
+        <div class="chart-subtitle">Direct HPS/DPS comparison. Horizontal lines mark WCL global targets. Click bar to inspect.</div>
+      </div>
+    </div>
+    <div class="chart-svg-wrapper">
+      <svg viewBox="0 0 ${width} ${height}" class="chart-svg">
+        ${gridLinesHtml}
+
+        <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+        <line x1="${margin.left}" y1="${chartHeight + margin.top}" x2="${width - margin.right}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+
+        <line x1="${margin.left}" y1="${top1Y}" x2="${width - margin.right}" y2="${top1Y}" class="chart-threshold-line" stroke="#ffd700" stroke-opacity="0.65" />
+        <text x="${width - margin.right}" y="${top1Y - 6}" class="chart-axis-text" fill="#ffd700" text-anchor="end">Top 1% Global (${formatNumber(ref.top1)})</text>
+
+        <line x1="${margin.left}" y1="${top10Y}" x2="${width - margin.right}" y2="${top10Y}" class="chart-threshold-line" stroke="#38bdf8" stroke-opacity="0.65" />
+        <text x="${width - margin.right}" y="${top10Y - 6}" class="chart-axis-text" fill="#38bdf8" text-anchor="end">Top 10% (Grade A: ${formatNumber(ref.top10)})</text>
+
+        <line x1="${margin.left}" y1="${avgY}" x2="${width - margin.right}" y2="${avgY}" class="chart-threshold-line" stroke="#9ca3af" stroke-opacity="0.65" />
+        <text x="${width - margin.right}" y="${avgY - 6}" class="chart-axis-text" fill="#9ca3af" text-anchor="end">Average Baseline (${formatNumber(ref.avg)})</text>
+
+        ${barsHtml}
+      </svg>
+    </div>
+  `;
+
+  window.showRosterTooltip = (e, index) => {
+    const p = sortedPlayers[index];
+    showTooltip(e, p.name, [
+      { label: "Grade", value: p.grade },
+      { label: `Throughput (${metricLabel})`, value: formatNumber(p.value) },
+      { label: "Top 10% target", value: formatNumber(p.top10) },
+      { label: "vs Average Baseline", value: `${p.avg > 0 ? ((p.value - p.avg) / p.avg * 100).toFixed(1) : 0}%` }
+    ]);
+  };
+}
+
+function drawAvoidableDamageChart(playerMetrics, playerLookup) {
+  const container = document.getElementById("avoidableDamageChartContainer");
+  if (!container) return;
+
+  const activePlayers = Object.entries(playerMetrics || {}).map(([name, data]) => {
+    const performance = data.performance || {};
+    const identity = data.identity || {};
+    const output = Math.max(performance.dps || 0, performance.hps || 0);
+    const avoidableDamage = performance.avoidable_damage_taken || 0;
+    const rawMetric = performance.dps > performance.hps ? "DPS" : "HPS";
+    return {
+      name,
+      output,
+      avoidableDamage,
+      metric: rawMetric,
+      role: identity.role || "DPS",
+      classColor: getClassColor(playerLookup[name]?.className)
+    };
+  });
+
+  if (activePlayers.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 30px;">No visual metrics recorded.</div>`;
+    return;
+  }
+
+  const margin = { top: 30, right: 30, bottom: 40, left: 60 };
+  const width = 1000;
+  const height = 280;
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  const maxOutput = Math.max(...activePlayers.map(p => p.output)) * 1.1 || 100000;
+  const maxAvoidable = Math.max(...activePlayers.map(p => p.avoidableDamage)) * 1.15 || 5000000;
+
+  const xToSvg = (val) => margin.left + (val / maxAvoidable) * chartWidth;
+  const yToSvg = (val) => chartHeight - (val / maxOutput) * chartHeight + margin.top;
+
+  // Split calculations based on dynamic roster averages
+  const avgAvoidable = activePlayers.reduce((sum, p) => sum + p.avoidableDamage, 0) / activePlayers.length || (maxAvoidable / 2);
+  const avgOutput = activePlayers.reduce((sum, p) => sum + p.output, 0) / activePlayers.length || (maxOutput / 2);
+
+  const splitX = xToSvg(avgAvoidable);
+  const splitY = yToSvg(avgOutput);
+
+  // Y Grid
+  const yGridTicks = [0, maxOutput * 0.25, maxOutput * 0.5, maxOutput * 0.75, maxOutput];
+  const yGridHtml = yGridTicks.map(tick => {
+    const y = yToSvg(tick);
+    return `
+      <line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="chart-grid-line" />
+      <text x="${margin.left - 10}" y="${y + 4}" class="chart-axis-text" text-anchor="end">${formatNumber(tick)}</text>
+    `;
+  }).join("");
+
+  // X Grid
+  const xGridTicks = [0, maxAvoidable * 0.25, maxAvoidable * 0.5, maxAvoidable * 0.75, maxAvoidable];
+  const xGridHtml = xGridTicks.map(tick => {
+    const x = xToSvg(tick);
+    return `
+      <line x1="${x}" y1="${margin.top}" x2="${x}" y2="${chartHeight + margin.top}" class="chart-grid-line" />
+      <text x="${x}" y="${chartHeight + margin.top + 16}" class="chart-axis-text" text-anchor="middle">${formatDamageMillions(tick)}</text>
+    `;
+  }).join("");
+
+  const nodesHtml = activePlayers.map((player, idx) => {
+    const cx = xToSvg(player.avoidableDamage);
+    const cy = yToSvg(player.output);
+
+    return `
+      <circle
+        cx="${cx}"
+        cy="${cy}"
+        r="6"
+        fill="${player.classColor}"
+        fill-opacity="0.85"
+        stroke="#ffffff"
+        stroke-width="1.5"
+        class="chart-node"
+        onclick="showPlayerCoachCard('${escapeHtml(player.name)}')"
+        onmouseenter="showScatterTooltip(event, ${idx})"
+        onmousemove="moveTooltip(event)"
+        onmouseleave="hideTooltip()"
+      />
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="chart-header">
+      <div>
+        <h3 class="chart-title">Avoidable Damage vs. Throughput Quadrants</h3>
+        <div class="chart-subtitle">Mapping survival vs performance. Dividers represent roster averages. Click node to inspect.</div>
+      </div>
+    </div>
+    <div class="chart-svg-wrapper">
+      <svg viewBox="0 0 ${width} ${height}" class="chart-svg">
+        ${yGridHtml}
+        ${xGridHtml}
+
+        <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+        <line x1="${margin.left}" y1="${chartHeight + margin.top}" x2="${width - margin.right}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+
+        <!-- Quadrant Dividers -->
+        <line x1="${splitX}" y1="${margin.top}" x2="${splitX}" y2="${chartHeight + margin.top}" class="chart-quadrant-divider" />
+        <line x1="${margin.left}" y1="${splitY}" x2="${width - margin.right}" y2="${splitY}" class="chart-quadrant-divider" />
+
+        <!-- Quadrant Labels -->
+        <text x="${margin.left + 15}" y="${margin.top + 20}" class="chart-quadrant-label quadrant-tl">Perfect Execution</text>
+        <text x="${width - margin.right - 15}" y="${margin.top + 20}" class="chart-quadrant-label quadrant-tr" text-anchor="end">Glass Cannons</text>
+        <text x="${margin.left + 15}" y="${chartHeight + margin.top - 15}" class="chart-quadrant-label quadrant-bl">Passive Survival</text>
+        <text x="${width - margin.right - 15}" y="${chartHeight + margin.top - 15}" class="chart-quadrant-label quadrant-br" text-anchor="end">High Risk Zone</text>
+
+        ${nodesHtml}
+      </svg>
+    </div>
+  `;
+
+  window.showScatterTooltip = (e, index) => {
+    const p = activePlayers[index];
+    showTooltip(e, p.name, [
+      { label: "Role", value: p.role },
+      { label: `Throughput (${p.metric})`, value: formatNumber(p.output) },
+      { label: "Avoidable Damage Taken", value: formatNumber(p.avoidableDamage) }
+    ]);
+  };
+}
+
+function formatDamageMillions(val) {
+  if (val === 0) return "0";
+  if (val >= 1000000) {
+    return `${(val / 1000000).toFixed(1)}M`;
+  }
+  return `${(val / 1000).toFixed(0)}K`;
 }
