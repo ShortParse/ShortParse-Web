@@ -2110,8 +2110,10 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
-  // Find scale ceilings
-  const maxVal = Math.max(...sortedPlayers.map(p => Math.max(p.value, p.top1, p.top10, p.avg))) * 1.1 || 100000;
+  // Find scale ceilings based strictly on plotted bars and drawn reference thresholds
+  const maxPlottedValue = Math.max(...sortedPlayers.map(p => p.value));
+  const maxThresholdValue = Math.max(ref.top1, ref.top10, ref.avg);
+  const maxVal = Math.max(maxPlottedValue, maxThresholdValue) * 1.05 || 100000;
 
   const yToSvg = (val) => chartHeight - (val / maxVal) * chartHeight + margin.top;
 
