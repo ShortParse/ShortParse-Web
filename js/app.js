@@ -49,6 +49,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Player Coach Drawer Close Triggers
+  const closeBtn = document.getElementById("closeCoachDrawer");
+  if (closeBtn) closeBtn.addEventListener("click", closePlayerCoachCard);
+  
+  const overlay = document.getElementById("coachDrawerOverlay");
+  if (overlay) overlay.addEventListener("click", closePlayerCoachCard);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closePlayerCoachCard();
+    }
+  });
+
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
 });
@@ -1098,7 +1111,7 @@ ${escapeHtml(mechanicName)}
                     : 0}
                 </td>
 
-                <td>${escapeHtml(data.worst_player || "—")}</td>
+                <td>${data.worst_player ? renderPlayerName(data.worst_player, playerLookup) : "—"}</td>
 
                 <td>${formatNumber(data.worst_hits)}</td>
 
@@ -1361,14 +1374,206 @@ function buildPlayerLookup(analysis) {
 }
 
 function renderPlayerName(playerName, playerLookup) {
-  const player = playerLookup[playerName];
+  if (!playerName) return "—";
+  const player = playerLookup?.[playerName];
   const color = getClassColor(player?.className);
 
   return `
-    <span class="player-name" style="color: ${color}">
+    <button type="button" class="player-name-btn" style="color: ${color}" onclick="showPlayerCoachCard(this.innerText.trim())">
       ${escapeHtml(playerName)}
-    </span>
+    </button>
   `;
+}
+
+function showPlayerCoachCard(playerName) {
+  if (!currentReportData) return;
+  const analysis = currentReportData.analyses[selectedAnalysisIndex];
+  if (!analysis) return;
+
+  const playerLookup = buildPlayerLookup(analysis);
+  const player = playerLookup[playerName] || {};
+
+  // 1. Title and Spec Details
+  const nameEl = document.getElementById("coachPlayerName");
+  if (nameEl) {
+    nameEl.textContent = playerName;
+    nameEl.style.color = getClassColor(player.className);
+  }
+
+  const subEl = document.getElementById("coachPlayerSub");
+  if (subEl) {
+    const spec = player.spec || "Unknown Spec";
+    const className = player.className || "Player";
+    const role = player.role || "Role";
+    subEl.textContent = `${spec} ${className} · ${role}`;
+  }
+
+  // 2. Performance Grade & Glow Setup
+  const scorecardEntry = (analysis.scorecard || []).find(row => row.player === playerName) || {};
+  const grade = scorecardEntry.grade || "-";
+
+  const gradeEl = document.getElementById("coachPlayerGrade");
+  if (gradeEl) {
+    gradeEl.textContent = grade;
+  }
+
+  const titleEl = document.getElementById("coachGradeTitle");
+  const descEl = document.getElementById("coachGradeDesc");
+
+  let tierClass = "tier-df";
+  let gradeTitle = "Performance Recorded";
+  let gradeDesc = "Review priority targets and rotational uptime to raise grade.";
+
+  if (grade === "S" || grade === "A") {
+    tierClass = "tier-sa";
+    gradeTitle = "Outstanding Execution";
+    gradeDesc = "Performing in the elite percentile of active players globally.";
+  } else if (grade === "B" || grade === "C") {
+    tierClass = "tier-bc";
+    gradeTitle = "Solid Performance";
+    gradeDesc = "Executing core mechanics with stable throughput and solid uptime.";
+  } else if (grade === "D" || grade === "F") {
+    tierClass = "tier-df";
+    gradeTitle = "Rotational Gaps Detected";
+    gradeDesc = "Uptime or mechanical faults are heavily impacting performance.";
+  }
+
+  if (titleEl) titleEl.textContent = gradeTitle;
+  if (descEl) descEl.textContent = gradeDesc;
+
+  const drawer = document.getElementById("playerCoachDrawer");
+  if (drawer) {
+    drawer.className = "coach-drawer"; // reset classes
+    if (tierClass) drawer.classList.add(tierClass);
+  }
+
+  // 3. Action Items Extraction
+  const coachActionItems = document.getElementById("coachActionItems");
+  if (coachActionItems) {
+    const playerIssues = (analysis.issues || []).filter(issue => issue.player === playerName);
+
+    if (playerIssues.length === 0) {
+      coachActionItems.innerHTML = `
+        <div class="coach-perfect-play">
+          <div class="coach-perfect-icon">🛡️</div>
+          <div class="coach-perfect-title">Perfect Mechanical Run</div>
+          <div class="coach-perfect-desc">Flawless performance! Zero rotational or mechanical issues detected in this fight.</div>
+        </div>
+      `;
+    } else {
+      const severityWeights = {
+        "Critical": 4,
+        "Major": 3,
+        "Warning": 2,
+        "Info": 1
+      };
+
+      const sortedIssues = [...playerIssues].sort((a, b) => {
+        return (severityWeights[b.severity] || 0) - (severityWeights[a.severity] || 0);
+      });
+
+      const topIssues = sortedIssues.slice(0, 3);
+
+      coachActionItems.innerHTML = topIssues.map(issue => {
+        const sevClass = (issue.severity || "warning").toLowerCase();
+        let icon = "✦";
+        if (issue.severity === "Critical") icon = "☠";
+        else if (issue.severity === "Major") icon = "⚠";
+        else if (issue.severity === "Info") icon = "ℹ";
+
+        return `
+          <div class="coach-action-item ${sevClass}">
+            <div class="coach-action-icon">${icon}</div>
+            <div class="coach-action-content">
+              <div class="coach-action-label">${escapeHtml(issue.severity)}</div>
+              <div class="coach-action-msg">${escapeHtml(issue.message)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  // 4. Grade Progression Metrics
+  const coachProgressionCard = document.getElementById("coachProgressionCard");
+  if (coachProgressionCard) {
+    const benchmarkComparison = (analysis.benchmarks || {})[playerName] || {};
+    const benchmark = benchmarkComparison.benchmark || {};
+
+    const playerVal = benchmarkComparison.player_value || 0;
+    const top10Val = benchmark.top_10 ? benchmark.top_10.value : 0;
+    const top5Val = benchmark.top_5 ? benchmark.top_5.value : 0;
+    const top1Val = benchmark.top_1 ? benchmark.top_1.value : 0;
+    const avgVal = benchmark.average_baseline || 0;
+    const rawMetric = benchmarkComparison.metric || "DPS";
+    const metric = rawMetric.toUpperCase();
+
+    if (!playerVal && !top10Val) {
+      coachProgressionCard.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--muted); font-size: 13px;">
+          No progression benchmark targets available for this spec/role.
+        </div>
+      `;
+    } else if (playerVal >= top10Val) {
+      coachProgressionCard.innerHTML = `
+        <div class="coach-progression-row">
+          <span class="coach-progression-label">Current Performance</span>
+          <span class="coach-progression-value">${formatNumber(playerVal)} ${metric}</span>
+        </div>
+        <div style="text-align: center; padding: 16px; background: rgba(254, 240, 138, 0.03); border: 1px solid rgba(254, 240, 138, 0.15); border-radius: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
+          <span style="font-size: 24px;">👑</span>
+          <strong style="color: var(--yellow); font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Elite Parse Rank</strong>
+          <p style="margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5;">You are currently parsing in the elite Top 10% of active players globally. Flawless effort!</p>
+        </div>
+      `;
+    } else {
+      const diffToTop10 = top10Val - playerVal;
+      let progressPct = 0;
+      if (top10Val > avgVal) {
+        progressPct = Math.max(0, Math.min(100, ((playerVal - avgVal) / (top10Val - avgVal)) * 100));
+      }
+
+      coachProgressionCard.innerHTML = `
+        <div class="coach-progression-row">
+          <span class="coach-progression-label">Current Performance</span>
+          <span class="coach-progression-value">${formatNumber(playerVal)} ${metric}</span>
+        </div>
+        
+        <div class="coach-progression-row">
+          <span class="coach-progression-label">Top 10 Benchmark (Grade A)</span>
+          <span class="coach-progression-value">${formatNumber(top10Val)} ${metric}</span>
+        </div>
+
+        <div class="coach-progression-progress-bar">
+          <div class="coach-progression-progress-fill" style="width: ${progressPct}%"></div>
+        </div>
+        
+        <p class="coach-progression-milestone">
+          You are currently <strong>${formatNumber(diffToTop10)} ${metric}</strong> away from hitting the **Top 10 Grade A** parse tier. Focus on maximizing resource uptime to bridge the gap.
+        </p>
+      `;
+    }
+  }
+
+  // 5. Visual Smooth Open
+  if (drawer) {
+    drawer.classList.remove("hidden");
+    // Reflow
+    drawer.offsetHeight;
+    drawer.classList.add("active");
+  }
+}
+
+function closePlayerCoachCard() {
+  const drawer = document.getElementById("playerCoachDrawer");
+  if (!drawer) return;
+
+  drawer.classList.remove("active");
+  setTimeout(() => {
+    if (!drawer.classList.contains("active")) {
+      drawer.classList.add("hidden");
+    }
+  }, 300);
 }
 
 function getPlayerDisplayName(playerName, playerLookup) {
