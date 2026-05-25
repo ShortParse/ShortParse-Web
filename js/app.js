@@ -1415,6 +1415,17 @@ function showPlayerCoachCard(playerName) {
   const gradeEl = document.getElementById("coachPlayerGrade");
   if (gradeEl) {
     gradeEl.textContent = grade;
+    
+    // Set color based on dynamic F to S scale (S is the highest)
+    let gradeColor = "#FFFFFF"; // Fallback
+    if (grade === "S") gradeColor = "#ffd700";      // Elite Gold
+    else if (grade === "A") gradeColor = "#4ade80"; // Bright Green
+    else if (grade === "B") gradeColor = "#bef264"; // Lime Green
+    else if (grade === "C") gradeColor = "#facc15"; // Yellow
+    else if (grade === "D") gradeColor = "#fb923c"; // Orange
+    else if (grade === "F") gradeColor = "#fb7185"; // Red
+    
+    gradeEl.style.color = gradeColor;
   }
 
   const titleEl = document.getElementById("coachGradeTitle");
