@@ -91,44 +91,52 @@
           </div>
         </div>
       </section>
-      <section id="bossTilesCard" class="card hidden">
-        <div class="section-header">
-          <div>
-            <h2>Encounters</h2>
-            <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
-          </div>
+      <div class="report-dashboard-layout">
+        <div class="report-left-col">
+          <section id="bossTilesCard" class="card hidden">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <div>
+                <h2>Encounters</h2>
+                <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
+              </div>
+            </div>
+            <div class="encounter-nav-wrapper">
+              <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>
+              <div id="bossTiles" class="encounter-nav"></div>
+              <button id="bossScrollRight" class="encounter-scroll-button" type="button"> &#10095; </button>
+            </div>
+            <p class="encounter-scroll-hint"> Scroll left / right to view extras. </p>
+          </section>
+          
+          <section id="resultCard" class="card hidden">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <div>
+                <h2 id="selectedBossTitle" style="font-size: 20px;">Report Summary</h2>
+                <p id="selectedBossSubtitle" class="section-description" style="margin-top: 2px;"></p>
+              </div>
+            </div>
+            <div id="summaryGrid" class="stat-grid"></div>
+          </section>
         </div>
-        <div class="encounter-nav-wrapper">
-          <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>
-          <div id="bossTiles" class="encounter-nav"></div>
-          <button id="bossScrollRight" class="encounter-scroll-button" type="button"> &#10095; </button>
+        
+        <div class="report-right-col">
+          <section id="detailsCard" class="card hidden">
+            <div class="tab-bar">
+              <button class="tab-button active" type="button" data-tab="scorecard">Scorecard</button>
+              <button class="tab-button" type="button" data-tab="raidCoach">Raid Coach</button>
+              <button class="tab-button" type="button" data-tab="progression">Wipe Progression</button>
+              <button class="tab-button" type="button" data-tab="benchmarks">Benchmark Comparisons</button>
+              <button class="tab-button" type="button" data-tab="playerMetrics">Player Metrics</button>
+              <button class="tab-button" type="button" data-tab="mechanics">Mechanics</button>
+              <button class="tab-button" type="button" data-tab="cooldowns">Cooldowns</button>
+              <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
+              <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
+              <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
+            </div>
+            <div id="tabContent"></div>
+          </section>
         </div>
-        <p class="encounter-scroll-hint"> Scroll left / right to view extras. </p>
-      </section>
-      <section id="resultCard" class="card hidden">
-        <div class="section-header">
-          <div>
-            <h2 id="selectedBossTitle">Report Summary</h2>
-            <p id="selectedBossSubtitle" class="section-description"></p>
-          </div>
-        </div>
-        <div id="summaryGrid" class="stat-grid"></div>
-      </section>
-      <section id="detailsCard" class="card hidden">
-        <div class="tab-bar">
-          <button class="tab-button active" type="button" data-tab="scorecard">Scorecard</button>
-          <button class="tab-button" type="button" data-tab="raidCoach">Raid Coach</button>
-          <button class="tab-button" type="button" data-tab="progression">Wipe Progression</button>
-          <button class="tab-button" type="button" data-tab="benchmarks">Benchmark Comparisons</button>
-          <button class="tab-button" type="button" data-tab="playerMetrics">Player Metrics</button>
-          <button class="tab-button" type="button" data-tab="mechanics">Mechanics</button>
-          <button class="tab-button" type="button" data-tab="cooldowns">Cooldowns</button>
-          <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
-          <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
-          <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
-        </div>
-        <div id="tabContent"></div>
-      </section>
+      </div>
     </main>
     <footer class="site-footer">
       <div class="footer-left"> © 2026 ShortParse.com — All rights reserved. </div>

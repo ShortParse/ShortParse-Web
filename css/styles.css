@@ -35,7 +35,7 @@
 	display: flex;
 	gap: 12px;
 	align-items: center;
-	margin-top: 42px;
+	margin-top: 0;
 }
 
 .header-actions button {
@@ -2156,5 +2156,92 @@ body {
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   Wide-Screen Ultrawide & Desktop Productivity Layouts
+   ========================================================================== */
+.report-dashboard-layout {
+	display: block;
+}
+
+.report-left-col {
+	display: block;
+}
+
+.report-right-col {
+	display: block;
+}
+
+@media (min-width: 1200px) {
+	/* Increase max-width to fully leverage wide viewports */
+	.container {
+		max-width: 1800px !important;
+	}
+
+	body {
+		padding: 24px 32px !important;
+	}
+
+	/* Two-column dashboard structure: encounters & overview on the left, active tab content on the right */
+	.report-dashboard-layout {
+		display: grid;
+		grid-template-columns: 370px 1fr;
+		gap: 20px;
+		align-items: start;
+		margin-top: 16px;
+	}
+
+	.report-left-col {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.report-right-col {
+		min-width: 0; /* Prevents overflow inside flex/grid items */
+	}
+
+	/* Spacing compaction for desktop cards */
+	.card {
+		padding: 20px !important;
+		margin-bottom: 16px !important;
+	}
+
+	/* Adjust encounters scroll bar layout inside sidebar */
+	.encounter-nav-wrapper {
+		gap: 8px !important;
+	}
+
+	.encounter-nav-button {
+		padding: 8px 10px !important;
+		min-width: 100px !important;
+	}
+
+	/* High-density 2-column stacked layout for summary stats inside the left sidebar */
+	.report-left-col .stat-grid {
+		grid-template-columns: repeat(2, 1fr) !important;
+		gap: 8px !important;
+	}
+
+	.report-left-col .stat {
+		padding: 8px 10px !important;
+		min-height: 48px !important;
+	}
+
+	.report-left-col .stat-label {
+		font-size: 10px !important;
+		margin-bottom: 2px !important;
+	}
+
+	.report-left-col .stat-value {
+		font-size: 13px !important;
+	}
+
+	/* Reduce general gaps in active tabs */
+	.progression-grid {
+		gap: 10px !important;
+		margin-bottom: 16px !important;
+	}
 }
 
