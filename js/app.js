@@ -1611,7 +1611,8 @@ async function loadGuildDashboard() {
   try {
     const response = await fetch("/api/auth/guilds");
     if (!response.ok) {
-      throw new Error(`Failed to load guilds: ${response.status}`);
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to load guilds: ${response.status} - ${errData.detail || "Unknown Error"}`);
     }
 
     const data = await response.json();
@@ -1714,7 +1715,8 @@ async function loadGuildReports(guildId) {
   try {
     const response = await fetch(`/api/auth/guilds/${guildId}/reports?limit=6`);
     if (!response.ok) {
-      throw new Error(`Failed to load reports: ${response.status}`);
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to load reports: ${response.status} - ${errData.detail || "Unknown Error"}`);
     }
 
     const data = await response.json();
