@@ -52,16 +52,23 @@
         </div>
       </header>
       <section id="guildDashboardCard" class="card hidden">
-        <div class="section-header">
+        <div class="section-header guild-hub-header" id="guildHubHeader" style="cursor: pointer; user-select: none; margin-bottom: 0;">
           <div>
-            <h2>Guild Logs Hub</h2>
-            <p class="section-description">
+            <h2 style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 0;">
+              Guild Logs Hub
+              <svg id="guildHubArrow" style="width: 18px; height: 18px; transition: transform 0.2s ease; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </h2>
+            <p class="section-description" id="guildHubDesc" style="margin-top: 4px; margin-bottom: 0;">
               Select your guild to view and analyze recent combat log uploads instantly.
             </p>
           </div>
         </div>
-        <div id="guildTabContainer" class="guild-tabs"></div>
-        <div id="guildReportsContainer" class="guild-reports-grid"></div>
+        <div id="guildHubContent" class="guild-hub-content" style="margin-top: 18px;">
+          <div id="guildTabContainer" class="guild-tabs"></div>
+          <div id="guildReportsContainer" class="guild-reports-grid"></div>
+        </div>
       </section>
 
       <section id="analyzeCard" class="card">

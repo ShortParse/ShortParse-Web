@@ -84,6 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
+
+  // Guild Logs Hub Collapse Trigger
+  const guildHeader = document.getElementById("guildHubHeader");
+  if (guildHeader) {
+    guildHeader.addEventListener("click", () => {
+      const container = document.getElementById("guildHubContent");
+      const isCurrentlyCollapsed = container ? container.style.display === "none" : false;
+      toggleGuildHub(!isCurrentlyCollapsed);
+    });
+  }
 });
 
 function getLogIcon(level) {
@@ -543,6 +553,8 @@ function enterReportMode(jobId) {
   analyzeCard().classList.add("hidden");
   statusCard().classList.add("hidden");
   headerActions().classList.remove("hidden");
+  
+  toggleGuildHub(true); // Collapse Guild Logs Hub when looking at a report
 }
 
 function resetToAnalyzeMode() {
@@ -554,6 +566,8 @@ function resetToAnalyzeMode() {
   analyzeCard().classList.remove("hidden");
   statusCard().classList.remove("hidden");
   headerActions().classList.add("hidden");
+  
+  toggleGuildHub(false); // Expand Guild Logs Hub when NOT looking at a report
 
   statusCard().innerHTML = `
     <div class="section-header">
@@ -1855,6 +1869,25 @@ function hideGuildDashboard() {
   if (card) card.classList.add("hidden");
 }
 
+function toggleGuildHub(collapsed) {
+  const container = document.getElementById("guildHubContent");
+  const arrow = document.getElementById("guildHubArrow");
+  const desc = document.getElementById("guildHubDesc");
+  const header = document.getElementById("guildHubHeader");
+
+  if (!container || !arrow || !desc || !header) return;
+
+  if (collapsed) {
+    container.style.display = "none";
+    desc.style.display = "none";
+    arrow.style.transform = "rotate(-90deg)";
+  } else {
+    container.style.display = "block";
+    desc.style.display = "block";
+    arrow.style.transform = "rotate(0deg)";
+  }
+}
+
 async function loadGuildDashboard() {
   const dashboardCard = document.getElementById("guildDashboardCard");
   const tabContainer = document.getElementById("guildTabContainer");
@@ -1866,6 +1899,8 @@ async function loadGuildDashboard() {
   tabContainer.innerHTML = `<div class="guild-tab-button" style="width: 120px; height: 38px; animation: skeletonShimmer 1.5s infinite; background: rgba(255,255,255,0.01); border: 1px solid var(--border);"></div>`;
   renderReportsSkeleton();
   dashboardCard.classList.remove("hidden");
+  
+  toggleGuildHub(!!currentJobId); // Collapse on load if viewing a report, otherwise expand
 
   try {
     const response = await fetch("/api/auth/guilds");
