@@ -1,236 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>ShortParse</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
-    <link rel="manifest" href="/images/site.webmanifest">
-    <link rel="shortcut icon" href="/images/favicon.ico">
-    <link rel="stylesheet" href="/css/styles.css" />
-  </head>
-  <body>
-    <main class="container">
 
-      <!-- Offline Message -->
-      <section id="offlineBanner" class="offline-banner hidden">
-        <div class="offline-title">ShortParse is temporarily offline</div>
+<head>
+  <meta charset="UTF-8" />
+  <title>ShortParse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="manifest" href="/images/site.webmanifest">
+  <link rel="shortcut icon" href="/images/favicon.ico">
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
 
-        <div class="offline-message">
-          The analysis servers are currently unavailable or restarting.
-          Please try again in a few minutes.
+<body>
+  <main class="container">
+
+    <!-- Offline Message -->
+    <section id="offlineBanner" class="offline-banner hidden">
+      <div class="offline-title">ShortParse is temporarily offline</div>
+
+      <div class="offline-message">
+        The analysis servers are currently unavailable or restarting.
+        Please try again in a few minutes.
+      </div>
+    </section>
+    <!-- -->
+
+    <header class="hero app-header">
+      <div>
+        <p class="eyebrow">Warcraft Logs Analysis</p>
+        <div class="title-row">
+          <h1>ShortParse</h1>
+          <span class="beta-badge">Alpha</span>
         </div>
-      </section>
-      <!-- -->
-
-      <header class="hero app-header">
+        <p class="subtitle"> Paste a Warcraft Logs report URL to generate a raid-performance summary. </p>
+      </div>
+      <div class="header-right-col">
+        <div id="authContainer" class="auth-container">
+          <a id="loginButton" class="login-button" href="/api/auth/warcraftlogs/login">
+            <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+            </svg>
+            Log In with Warcraft Logs
+          </a>
+        </div>
+        <div id="headerActions" class="header-actions hidden">
+          <button id="copyShareButton" type="button">Share This Report</button>
+          <button id="postDiscordButton" class="discord-post-btn" type="button">Post to Discord</button>
+          <button id="analyzeAnotherButton" type="button">Analyze Another Report</button>
+        </div>
+      </div>
+    </header>
+    <section id="guildDashboardCard" class="card hidden">
+      <div class="section-header guild-hub-header" id="guildHubHeader"
+        style="cursor: pointer; user-select: none; margin-bottom: 0;">
         <div>
-          <p class="eyebrow">Warcraft Logs Analysis</p>
-          <div class="title-row">
-            <h1>ShortParse</h1>
-            <span class="beta-badge">Alpha</span>
-          </div>
-          <p class="subtitle"> Paste a Warcraft Logs report URL to generate a raid-performance summary. </p>
+          <h2 style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 0;">
+            Guild Logs Hub
+            <svg id="guildHubArrow"
+              style="width: 18px; height: 18px; transition: transform 0.2s ease; vertical-align: middle;"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </h2>
+          <p class="section-description" id="guildHubDesc" style="margin-top: 4px; margin-bottom: 0;">
+            Select your guild to view and analyze recent combat log uploads instantly.
+          </p>
         </div>
-        <div class="header-right-col">
-          <div id="authContainer" class="auth-container">
-            <a id="loginButton" class="login-button" href="/api/auth/warcraftlogs/login">
-              <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-              </svg>
-              Log In with Warcraft Logs
-            </a>
-          </div>
-          <div id="headerActions" class="header-actions hidden">
-            <button id="copyShareButton" type="button">Share This Report</button>
-            <button id="postDiscordButton" class="discord-post-btn" type="button">Post to Discord</button>
-            <button id="analyzeAnotherButton" type="button">Analyze Another Report</button>
-          </div>
+      </div>
+      <div id="guildHubContent" class="guild-hub-content" style="margin-top: 18px;">
+        <div id="guildTabContainer" class="guild-tabs"></div>
+        <div id="guildReportsContainer" class="guild-reports-grid"></div>
+      </div>
+    </section>
+
+    <section id="analyzeCard" class="card">
+      <div class="section-header">
+        <div>
+          <h2>Analyze Report</h2>
+          <p class="section-description"> ShortParse will select boss kills and best progression wipes, then build a
+            readable raid review. </p>
         </div>
+      </div>
+      <div class="input-row">
+        <input id="reportUrl" placeholder="https://www.warcraftlogs.com/reports/..." autocomplete="off" />
+        <button id="analyzeButton" type="button">Analyze Report</button>
+      </div>
+    </section>
+    <section id="statusCard" class="card">
+      <div class="section-header">
+        <div>
+          <h2>Status</h2>
+          <p id="status" class="status">Waiting for report...</p>
+        </div>
+      </div>
+    </section>
+    <div class="report-dashboard-layout">
+      <div class="report-left-col">
+        <section id="bossTilesCard" class="card hidden">
+          <div class="section-header" style="margin-bottom: 12px;">
+            <div>
+              <h2>Encounters</h2>
+              <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
+            </div>
+          </div>
+          <div class="encounter-nav-wrapper">
+            <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>
+            <div id="bossTiles" class="encounter-nav"></div>
+            <button id="bossScrollRight" class="encounter-scroll-button" type="button"> &#10095; </button>
+          </div>
+          <p class="encounter-scroll-hint"> Scroll left / right to view extras. </p>
+        </section>
+
+        <section id="resultCard" class="card hidden">
+          <div class="section-header" style="margin-bottom: 12px;">
+            <div>
+              <h2 id="selectedBossTitle" style="font-size: 20px;">Report Summary</h2>
+              <p id="selectedBossSubtitle" class="section-description" style="margin-top: 2px;"></p>
+            </div>
+          </div>
+          <div id="summaryGrid" class="stat-grid"></div>
+        </section>
+      </div>
+
+      <div class="report-right-col">
+        <section id="detailsCard" class="card hidden">
+          <div class="tab-bar">
+            <button class="tab-button active" type="button" data-tab="scorecard">Scorecard</button>
+            <button class="tab-button" type="button" data-tab="raidCoach">Raid Coach</button>
+            <button class="tab-button" type="button" data-tab="progression">Wipe Progression</button>
+            <button class="tab-button" type="button" data-tab="benchmarks">Benchmark Comparisons</button>
+            <button class="tab-button" type="button" data-tab="playerMetrics">Player Metrics</button>
+            <button class="tab-button" type="button" data-tab="mechanics">Mechanics</button>
+            <button class="tab-button" type="button" data-tab="cooldowns">Cooldowns</button>
+            <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
+            <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
+            <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
+          </div>
+          <div id="tabContent"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-left"> © 2026 ShortParse.com — All rights reserved. </div>
+    <div class="footer-links">
+      <a class="footer-link discord" href="https://discord.gg/G4nzqZsNDh" target="_blank" rel="noopener noreferrer">
+        <span class="footer-icon">
+          <svg viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+            <path
+              d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36a77.7,77.7,0,0,0,6.89-11.2,68.42,68.42,0,0,1-10.84-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.86,5.19,77,77,0,0,0,6.89,11.19A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,59.93,31,52.84S36.06,40,42.45,40s11.58,5.81,11.47,12.87S48.84,65.69,42.45,65.69Zm42.24,0c-6.27,0-11.47-5.76-11.47-12.85S78.3,40,84.69,40s11.58,5.81,11.47,12.87S91.08,65.69,84.69,65.69Z" />
+          </svg>
+        </span>
+        <span>Join us on Discord</span>
+      </a>
+      <a class="footer-link github" href="https://github.com/orgs/ShortParse/repositories" target="_blank"
+        rel="noopener noreferrer">
+        <span class="footer-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2.17c-3.2.69-3.88-1.54-3.88-1.54a3.05 3.05 0 0 0-1.28-1.68c-1.04-.71.08-.69.08-.69a2.41 2.41 0 0 1 1.76 1.18 2.45 2.45 0 0 0 3.35.95 2.44 2.44 0 0 1 .73-1.53c-2.55-.29-5.23-1.28-5.23-5.71A4.47 4.47 0 0 1 5.87 8a4.15 4.15 0 0 1 .11-2.94s.96-.31 3.14 1.2a10.86 10.86 0 0 1 5.72 0c2.18-1.51 3.14-1.2 3.14-1.2a4.15 4.15 0 0 1 .11 2.94 4.47 4.47 0 0 1 1.18 3.11c0 4.44-2.69 5.41-5.25 5.69a2.73 2.73 0 0 1 .78 2.11v3.13c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+          </svg>
+        </span>
+        <span>View GitHub Repositories</span>
+      </a>
+    </div>
+  </footer>
+  <!-- Player Coach Drawer -->
+  <div id="playerCoachDrawer" class="coach-drawer hidden">
+    <div class="coach-drawer-overlay" id="coachDrawerOverlay"></div>
+    <div class="coach-drawer-content">
+      <header class="coach-drawer-header">
+        <div>
+          <h2 id="coachPlayerName" class="coach-player-name">Player Name</h2>
+          <div id="coachPlayerSub" class="coach-player-sub">Spec Class · Role</div>
+        </div>
+        <button id="closeCoachDrawer" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
       </header>
-      <section id="guildDashboardCard" class="card hidden">
-        <div class="section-header guild-hub-header" id="guildHubHeader" style="cursor: pointer; user-select: none; margin-bottom: 0;">
-          <div>
-            <h2 style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 0;">
-              Guild Logs Hub
-              <svg id="guildHubArrow" style="width: 18px; height: 18px; transition: transform 0.2s ease; vertical-align: middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </h2>
-            <p class="section-description" id="guildHubDesc" style="margin-top: 4px; margin-bottom: 0;">
-              Select your guild to view and analyze recent combat log uploads instantly.
-            </p>
+      <div class="coach-drawer-body">
+        <!-- Grade summary card -->
+        <div class="coach-grade-card">
+          <div class="coach-grade-circle" id="coachGradeCircle">
+            <span id="coachPlayerGrade">-</span>
+          </div>
+          <div class="coach-grade-meta">
+            <div id="coachGradeTitle" class="coach-grade-title">-</div>
+            <div id="coachGradeDesc" class="coach-grade-desc">-</div>
           </div>
         </div>
-        <div id="guildHubContent" class="guild-hub-content" style="margin-top: 18px;">
-          <div id="guildTabContainer" class="guild-tabs"></div>
-          <div id="guildReportsContainer" class="guild-reports-grid"></div>
-        </div>
-      </section>
 
-      <section id="analyzeCard" class="card">
-        <div class="section-header">
-          <div>
-            <h2>Analyze Report</h2>
-            <p class="section-description"> ShortParse will select boss kills and best progression wipes, then build a readable raid review. </p>
+        <!-- Action Items -->
+        <div class="coach-section">
+          <h3>Core Action Items</h3>
+          <div id="coachActionItems" class="coach-action-items-list">
+            <!-- Dynamically populated -->
           </div>
         </div>
-        <div class="input-row">
-          <input id="reportUrl" placeholder="https://www.warcraftlogs.com/reports/..." autocomplete="off" />
-          <button id="analyzeButton" type="button">Analyze Report</button>
-        </div>
-      </section>
-      <section id="statusCard" class="card">
-        <div class="section-header">
-          <div>
-            <h2>Status</h2>
-            <p id="status" class="status">Waiting for report...</p>
-          </div>
-        </div>
-      </section>
-      <div class="report-dashboard-layout">
-        <div class="report-left-col">
-          <section id="bossTilesCard" class="card hidden">
-            <div class="section-header" style="margin-bottom: 12px;">
-              <div>
-                <h2>Encounters</h2>
-                <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
-              </div>
-            </div>
-            <div class="encounter-nav-wrapper">
-              <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>
-              <div id="bossTiles" class="encounter-nav"></div>
-              <button id="bossScrollRight" class="encounter-scroll-button" type="button"> &#10095; </button>
-            </div>
-            <p class="encounter-scroll-hint"> Scroll left / right to view extras. </p>
-          </section>
-          
-          <section id="resultCard" class="card hidden">
-            <div class="section-header" style="margin-bottom: 12px;">
-              <div>
-                <h2 id="selectedBossTitle" style="font-size: 20px;">Report Summary</h2>
-                <p id="selectedBossSubtitle" class="section-description" style="margin-top: 2px;"></p>
-              </div>
-            </div>
-            <div id="summaryGrid" class="stat-grid"></div>
-          </section>
-        </div>
-        
-        <div class="report-right-col">
-          <section id="detailsCard" class="card hidden">
-            <div class="tab-bar">
-              <button class="tab-button active" type="button" data-tab="scorecard">Scorecard</button>
-              <button class="tab-button" type="button" data-tab="raidCoach">Raid Coach</button>
-              <button class="tab-button" type="button" data-tab="progression">Wipe Progression</button>
-              <button class="tab-button" type="button" data-tab="benchmarks">Benchmark Comparisons</button>
-              <button class="tab-button" type="button" data-tab="playerMetrics">Player Metrics</button>
-              <button class="tab-button" type="button" data-tab="mechanics">Mechanics</button>
-              <button class="tab-button" type="button" data-tab="cooldowns">Cooldowns</button>
-              <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
-              <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
-              <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
-            </div>
-            <div id="tabContent"></div>
-          </section>
-        </div>
-      </div>
-    </main>
-    <footer class="site-footer">
-      <div class="footer-left"> © 2026 ShortParse.com — All rights reserved. </div>
-      <div class="footer-links">
-        <a class="footer-link discord" href="https://discord.gg/G4nzqZsNDh" target="_blank" rel="noopener noreferrer">
-          <span class="footer-icon">
-            <svg viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
-              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36a77.7,77.7,0,0,0,6.89-11.2,68.42,68.42,0,0,1-10.84-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.86,5.19,77,77,0,0,0,6.89,11.19A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,59.93,31,52.84S36.06,40,42.45,40s11.58,5.81,11.47,12.87S48.84,65.69,42.45,65.69Zm42.24,0c-6.27,0-11.47-5.76-11.47-12.85S78.3,40,84.69,40s11.58,5.81,11.47,12.87S91.08,65.69,84.69,65.69Z" />
-            </svg>
-          </span>
-          <span>Join us on Discord</span>
-        </a>
-        <a class="footer-link github" href="https://github.com/orgs/ShortParse/repositories" target="_blank" rel="noopener noreferrer">
-          <span class="footer-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2.17c-3.2.69-3.88-1.54-3.88-1.54a3.05 3.05 0 0 0-1.28-1.68c-1.04-.71.08-.69.08-.69a2.41 2.41 0 0 1 1.76 1.18 2.45 2.45 0 0 0 3.35.95 2.44 2.44 0 0 1 .73-1.53c-2.55-.29-5.23-1.28-5.23-5.71A4.47 4.47 0 0 1 5.87 8a4.15 4.15 0 0 1 .11-2.94s.96-.31 3.14 1.2a10.86 10.86 0 0 1 5.72 0c2.18-1.51 3.14-1.2 3.14-1.2a4.15 4.15 0 0 1 .11 2.94 4.47 4.47 0 0 1 1.18 3.11c0 4.44-2.69 5.41-5.25 5.69a2.73 2.73 0 0 1 .78 2.11v3.13c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
-            </svg>
-          </span>
-          <span>View GitHub Repositories</span>
-        </a>
-      </div>
-    </footer>
-    <!-- Player Coach Drawer -->
-    <div id="playerCoachDrawer" class="coach-drawer hidden">
-      <div class="coach-drawer-overlay" id="coachDrawerOverlay"></div>
-      <div class="coach-drawer-content">
-        <header class="coach-drawer-header">
-          <div>
-            <h2 id="coachPlayerName" class="coach-player-name">Player Name</h2>
-            <div id="coachPlayerSub" class="coach-player-sub">Spec Class · Role</div>
-          </div>
-          <button id="closeCoachDrawer" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
-        </header>
-        <div class="coach-drawer-body">
-          <!-- Grade summary card -->
-          <div class="coach-grade-card">
-            <div class="coach-grade-circle" id="coachGradeCircle">
-              <span id="coachPlayerGrade">-</span>
-            </div>
-            <div class="coach-grade-meta">
-              <div id="coachGradeTitle" class="coach-grade-title">-</div>
-              <div id="coachGradeDesc" class="coach-grade-desc">-</div>
-            </div>
-          </div>
 
-          <!-- Action Items -->
-          <div class="coach-section">
-            <h3>Core Action Items</h3>
-            <div id="coachActionItems" class="coach-action-items-list">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-
-          <!-- Progression Targets -->
-          <div class="coach-section">
-            <h3>Grade Progression Targets</h3>
-            <div id="coachProgressionCard" class="coach-progression-card">
-              <!-- Dynamically populated -->
-            </div>
+        <!-- Progression Targets -->
+        <div class="coach-section">
+          <h3>Grade Progression Targets</h3>
+          <div id="coachProgressionCard" class="coach-progression-card">
+            <!-- Dynamically populated -->
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Settings Drawer -->
-    <div id="settingsDrawer" class="coach-drawer hidden">
-      <div class="coach-drawer-overlay" id="settingsDrawerOverlay"></div>
-      <div class="coach-drawer-content">
-        <header class="coach-drawer-header">
-          <div>
-            <h2 class="coach-player-name" style="color: var(--blue);">Control Panel</h2>
-            <div class="coach-player-sub">Configure integrations and options</div>
-          </div>
-          <button id="closeSettingsDrawer" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
-        </header>
-        <div class="coach-drawer-body">
-          <div class="coach-section">
-            <h3>Discord Webhook Integration</h3>
-            <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 12px 0;">
-              Share summary logs automatically to your guild's Discord server. Paste your Discord channel Webhook URL below.
-            </p>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <input id="discordWebhookInput" type="password" placeholder="https://discord.com/api/webhooks/..." style="font-size: 14px; padding: 12px;" />
-              <div style="display: flex; gap: 12px;">
-                <button id="saveWebhookButton" type="button" style="flex: 1; padding: 12px; font-size: 13px;">Save Webhook</button>
-                <button id="testWebhookButton" class="logout-button" type="button" style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test Link</button>
-              </div>
-              <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
+  <!-- Settings Drawer -->
+  <div id="settingsDrawer" class="coach-drawer hidden">
+    <div class="coach-drawer-overlay" id="settingsDrawerOverlay"></div>
+    <div class="coach-drawer-content">
+      <header class="coach-drawer-header">
+        <div>
+          <h2 class="coach-player-name" style="color: var(--blue);">Control Panel</h2>
+          <div class="coach-player-sub">Configure integrations and options</div>
+        </div>
+        <button id="closeSettingsDrawer" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div class="coach-drawer-body">
+        <div class="coach-section">
+          <h3>Discord Webhook Integration</h3>
+          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 12px 0;">
+            Share summary logs automatically to your guild's Discord server. Paste your Discord channel Webhook URL
+            below.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <input id="discordWebhookInput" type="password" placeholder="https://discord.com/api/webhooks/..."
+              style="font-size: 14px; padding: 12px;" />
+            <div style="display: flex; gap: 12px;">
+              <button id="saveWebhookButton" type="button" style="flex: 1; padding: 12px; font-size: 13px;">Save
+                Webhook</button>
+              <button id="testWebhookButton" class="logout-button" type="button"
+                style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test
+                Link</button>
             </div>
+            <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="/js/app.js"></script>
-  </body>
+  <script src="/js/app.js"></script>
+</body>
+
 </html>
