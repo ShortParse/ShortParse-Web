@@ -247,6 +247,35 @@
     </div>
   </div>
 
+  <!-- Death Recap Drawer -->
+  <div id="deathRecapDrawer" class="coach-drawer hidden">
+    <div class="coach-drawer-overlay" id="deathRecapOverlay"></div>
+    <div class="coach-drawer-content" style="max-width: 480px;">
+      <header class="coach-drawer-header" style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 16px;">
+        <div>
+          <h2 class="coach-player-name" style="color: var(--red); display: flex; align-items: center; gap: 8px;">
+            <span id="deathRecapPlayer">☠ Death Recap</span>
+          </h2>
+          <div id="deathRecapMeta" class="coach-player-sub">Player Name · Died at 02:14</div>
+        </div>
+        <button id="closeDeathRecap" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div class="coach-drawer-body" style="padding-top: 20px;">
+        <div class="coach-section">
+          <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.5;">
+            Chronological breakdown of the final 8 seconds leading to death. Damage hits are red, heals are green, and defensives are blue/purple.
+          </p>
+          <div class="death-timeline-wrapper">
+            <div class="death-timeline-rail"></div>
+            <div id="deathTimelineEvents" class="death-timeline-events">
+              <!-- Dynamically populated timeline nodes -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/app.js"></script>
 </body>
 

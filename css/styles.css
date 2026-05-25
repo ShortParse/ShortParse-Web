@@ -2244,4 +2244,159 @@ body {
 		margin-bottom: 16px !important;
 	}
 }
+
+/* ==========================================================================
+   Visual Death Recap Timeline
+   ========================================================================== */
+.death-timeline-wrapper {
+	position: relative;
+	padding-left: 28px;
+	margin-top: 10px;
+}
+
+.death-timeline-rail {
+	position: absolute;
+	left: 8px;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.death-timeline-events {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.death-event-card {
+	position: relative;
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid rgba(255, 255, 255, 0.04);
+	border-radius: 10px;
+	padding: 10px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	transition: background 0.2s ease;
+}
+
+.death-event-card:hover {
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.death-event-node {
+	position: absolute;
+	left: -27px;
+	top: 14px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--muted);
+	border: 2px solid var(--bg);
+	box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+	z-index: 2;
+}
+
+.death-event-card.damage {
+	border-left: 3px solid var(--red);
+}
+
+.death-event-card.damage .death-event-node {
+	background: var(--red);
+	box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.death-event-card.heal {
+	border-left: 3px solid var(--green);
+}
+
+.death-event-card.heal .death-event-node {
+	background: var(--green);
+	box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.death-event-card.defensive-apply {
+	border-left: 3px solid var(--blue);
+}
+
+.death-event-card.defensive-apply .death-event-node {
+	background: var(--blue);
+	box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+.death-event-card.defensive-remove {
+	border-left: 3px solid #a855f7;
+	opacity: 0.8;
+}
+
+.death-event-card.defensive-remove .death-event-node {
+	background: #a855f7;
+	box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+
+.death-event-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
+
+.death-event-time {
+	font-family: monospace;
+	font-size: 11px;
+	color: var(--muted);
+	font-weight: 700;
+}
+
+.death-event-spell {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--text);
+}
+
+.death-event-amount {
+	font-size: 13px;
+	font-weight: 800;
+	font-family: monospace;
+}
+
+.death-event-amount.damage-text {
+	color: #f87171;
+}
+
+.death-event-amount.heal-text {
+	color: #4ade80;
+}
+
+.death-event-amount.overkill-text {
+	font-size: 10px;
+	color: var(--red);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-weight: 800;
+	margin-left: 6px;
+}
+
+.death-event-source {
+	font-size: 11px;
+	color: var(--muted);
+}
+
+/* Timeline specific clickable styles */
+.death-trigger-btn {
+	background: rgba(239, 68, 68, 0.1) !important;
+	border: 1px solid rgba(239, 68, 68, 0.3) !important;
+	color: #f87171 !important;
+	padding: 4px 8px !important;
+	font-size: 11px !important;
+	border-radius: 6px !important;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s;
+}
+
+.death-trigger-btn:hover {
+	background: rgba(239, 68, 68, 0.2) !important;
+	transform: translateY(-1px);
+}
 

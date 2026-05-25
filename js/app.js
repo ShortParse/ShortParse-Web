@@ -64,10 +64,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingsOverlay = document.getElementById("settingsDrawerOverlay");
   if (settingsOverlay) settingsOverlay.addEventListener("click", closeSettingsDrawer);
 
+  // Death Recap Drawer Close Triggers
+  const deathCloseBtn = document.getElementById("closeDeathRecap");
+  if (deathCloseBtn) deathCloseBtn.addEventListener("click", closeDeathRecap);
+
+  const deathOverlay = document.getElementById("deathRecapOverlay");
+  if (deathOverlay) deathOverlay.addEventListener("click", closeDeathRecap);
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closePlayerCoachCard();
       closeSettingsDrawer();
+      closeDeathRecap();
     }
   });
 
@@ -1074,6 +1082,11 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
             const activity = data.activity || {};
             const consumables = data.consumables || {};
 
+            const deathsCount = performance.deaths || 0;
+            const deathsContent = deathsCount > 0
+              ? `<button class="death-trigger-btn" type="button" onclick="showPlayerDeathsRecap('${escapeHtml(playerName)}')">☠ ${deathsCount}</button>`
+              : "0";
+
             return `
               <tr>
                 <td>${renderPlayerName(playerName, playerLookup)}</td>
@@ -1081,7 +1094,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
                 <td>${formatNumber(performance.dps)}</td>
                 <td>${formatNumber(performance.hps)}</td>
                 <td>${formatNumber(performance.dtps)}</td>
-                <td>${escapeHtml(performance.deaths ?? "N/A")}</td>
+                <td>${deathsContent}</td>
                 <td>${formatPercent(activity.active_time_pct)}</td>
                 <td>${escapeHtml(performance.avoidable_hit_count ?? "N/A")}</td>
                 <td>${formatNumber(performance.avoidable_damage_taken)}</td>
@@ -1311,16 +1324,22 @@ function renderTimelineTab(timeline, playerLookup) {
           </tr>
         </thead>
         <tbody>
-          ${timeline.map(event => `
-            <tr>
-              <td>${escapeHtml(event.time || "—")}</td>
-              <td>${escapeHtml(event.type || "Event")}</td>
-              <td>${event.source ? renderPlayerName(event.source, playerLookup) : "—"}</td>
-              <td>${event.target ? renderPlayerName(event.target, playerLookup) : "—"}</td>
-              <td>${escapeHtml(event.spell_name || "—")}</td>
-              <td>${escapeHtml(event.summary || "Unknown event")}</td>
-            </tr>
-          `).join("")}
+          ${timeline.map(event => {
+            const summaryContent = event.type === "death"
+              ? `<button class="death-trigger-btn" type="button" onclick="showDeathRecap('${escapeHtml(event.target)}', ${event.timestamp})">☠ Died (Recap)</button>`
+              : escapeHtml(event.summary || "Unknown event");
+
+            return `
+              <tr>
+                <td>${escapeHtml(event.time || "—")}</td>
+                <td>${escapeHtml(event.type || "Event")}</td>
+                <td>${event.source ? renderPlayerName(event.source, playerLookup) : "—"}</td>
+                <td>${event.target ? renderPlayerName(event.target, playerLookup) : "—"}</td>
+                <td>${escapeHtml(event.spell_name || "—")}</td>
+                <td>${summaryContent}</td>
+              </tr>
+            `;
+          }).join("")}
         </tbody>
       </table>
     </div>
@@ -2856,4 +2875,127 @@ async function postActiveReportToDiscord() {
     postBtn.disabled = false;
     postBtn.textContent = "Post to Discord";
   }
+}
+
+
+/* =============================================================================
+   Visual "Death Recaps" Timeline Orchestration
+   ============================================================================= */
+
+function showDeathRecap(playerName, timestamp) {
+  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  if (!analysis) return;
+
+  const playerMetrics = analysis.player_metrics || {};
+  const data = playerMetrics[playerName];
+  if (!data || !data.performance) return;
+
+  const deathEvents = data.performance.death_events || [];
+  // Find the exact death event by timestamp or closest match
+  const deathEvent = deathEvents.find(d => Math.abs(d.timestamp - timestamp) < 1000) || deathEvents[0];
+  if (!deathEvent) return;
+
+  const recap = deathEvent.recap || [];
+  const drawer = document.getElementById("deathRecapDrawer");
+  const playerEl = document.getElementById("deathRecapPlayer");
+  const metaEl = document.getElementById("deathRecapMeta");
+  const eventsEl = document.getElementById("deathTimelineEvents");
+
+  if (!drawer || !playerEl || !metaEl || !eventsEl) return;
+
+  // Render header values
+  playerEl.innerText = `☠ Death Recap: ${playerName}`;
+  
+  const mins = Math.floor(deathEvent.seconds_into_fight / 60);
+  const secs = Math.floor(deathEvent.seconds_into_fight % 60);
+  const formattedTime = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  metaEl.innerText = `Died at ${formattedTime} into the fight`;
+
+  // Draw chronological events timeline nodes
+  if (recap.length === 0) {
+    eventsEl.innerHTML = `<div style="text-align: center; color: var(--muted); padding: 24px;">No events recorded in final 8 seconds.</div>`;
+  } else {
+    eventsEl.innerHTML = recap.map(e => {
+      let cardClass = "";
+      let eventTitle = "";
+      let amountText = "";
+      let sourceText = "";
+
+      if (e.type === "damage") {
+        cardClass = "damage";
+        eventTitle = e.ability_name;
+        amountText = `<span class="death-event-amount damage-text">-${formatNumber(e.amount)}</span>`;
+        if (e.overkill > 0) {
+          amountText += `<span class="death-event-amount overkill-text">Overkill</span>`;
+        }
+        sourceText = `from ${escapeHtml(e.source_name)}`;
+      } else if (e.type === "heal") {
+        cardClass = "heal";
+        eventTitle = e.ability_name;
+        amountText = `<span class="death-event-amount heal-text">+${formatNumber(e.amount)}</span>`;
+        if (e.overheal > 0) {
+          amountText += `<span style="font-size: 10px; color: var(--muted); margin-left: 4px;">(${formatNumber(e.overheal)} overheal)</span>`;
+        }
+        sourceText = `from ${escapeHtml(e.source_name)}`;
+      } else if (e.type === "applybuff") {
+        cardClass = "defensive-apply";
+        eventTitle = `Gained ${e.ability_name}`;
+        amountText = `<span style="font-size: 11px; color: var(--blue); font-weight: 700; text-transform: uppercase;">Defensive Active</span>`;
+        sourceText = `applied by ${escapeHtml(e.source_name)}`;
+      } else if (e.type === "removebuff") {
+        cardClass = "defensive-remove";
+        eventTitle = `Lost ${e.ability_name}`;
+        amountText = `<span style="font-size: 11px; color: #a855f7; font-weight: 700; text-transform: uppercase;">Expired</span>`;
+        sourceText = `removed`;
+      }
+
+      const offsetText = e.seconds_offset === 0.0 ? "0.0s (Death)" : `${e.seconds_offset.toFixed(2)}s`;
+
+      return `
+        <div class="death-event-card ${cardClass}">
+          <div class="death-event-node"></div>
+          <div class="death-event-header">
+            <span class="death-event-spell">${escapeHtml(eventTitle)}</span>
+            <span class="death-event-time">${offsetText}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+            <span class="death-event-source">${escapeHtml(sourceText)}</span>
+            ${amountText}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Open drawer
+  drawer.classList.remove("hidden");
+  drawer.offsetHeight; // trigger reflow
+  drawer.classList.add("active");
+}
+
+function showPlayerDeathsRecap(playerName) {
+  const tennis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  if (!tennis) return;
+
+  const playerMetrics = tennis.player_metrics || {};
+  const data = playerMetrics[playerName];
+  if (!data || !data.performance) return;
+
+  const deathEvents = data.performance.death_events || [];
+  if (!deathEvents.length) return;
+
+  // Open the first death event (most common)
+  showDeathRecap(playerName, deathEvents[0].timestamp);
+}
+
+function closeDeathRecap() {
+  const drawer = document.getElementById("deathRecapDrawer");
+  if (!drawer) return;
+
+  drawer.classList.remove("active");
+  setTimeout(() => {
+    if (!drawer.classList.contains("active")) {
+      drawer.classList.add("hidden");
+    }
+  }, 300);
 }
