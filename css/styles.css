@@ -2071,4 +2071,84 @@ body {
 	font-weight: 700;
 	color: var(--text);
 }
+
+
+/* =========================
+   Progression Tracker
+   ========================= */
+.progression-summary-desc {
+	margin-top: 4px;
+	font-size: 13px;
+	color: var(--muted);
+	line-height: 1.5;
+}
+
+.progression-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.progression-table th {
+	background: #111722;
+}
+
+.pull-row.kill {
+	border-left: 3px solid var(--green);
+}
+
+.pull-row.wipe {
+	border-left: 3px solid var(--red);
+}
+
+.chart-area-hp {
+	fill: url(#hpGrad);
+	fill-opacity: 0.12;
+}
+
+.chart-line-hp {
+	stroke: var(--green);
+	stroke-width: 3px;
+	fill: none;
+}
+
+.chart-line-duration {
+	stroke: #fb7185;
+	stroke-width: 2.5px;
+	stroke-dasharray: 4 4;
+	fill: none;
+}
+
+.chart-node-kill {
+	fill: #ffd700;
+	stroke: #ffffff;
+	stroke-width: 2px;
+	cursor: pointer;
+	transition: r 0.2s ease;
+}
+
+.chart-node-kill:hover {
+	r: 9px !important;
+}
+
+.chart-node-wipe {
+	fill: #fb7185;
+	stroke: #ffffff;
+	stroke-width: 1.5px;
+	cursor: pointer;
+	transition: r 0.2s ease;
+}
+
+.chart-node-wipe:hover {
+	r: 8px !important;
+}
+
+.chart-axis-label {
+	fill: var(--muted);
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
 

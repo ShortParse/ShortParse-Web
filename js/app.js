@@ -425,6 +425,7 @@ function normalizeTabName(tab) {
 
   if (t === "scorecard") return "scorecard";
   if (t === "raidcoach" || t === "coach") return "raidCoach";
+  if (t === "progression" || t === "wipes" || t === "wipeprogression") return "progression";
   if (t === "benchmarks" || t === "benchmark" || t === "benchmarkcomparisons") return "benchmarks";
   if (t === "playermetrics" || t === "metrics") return "playerMetrics";
   if (t === "mechanics" || t === "mechanic") return "mechanics";
@@ -728,6 +729,11 @@ function renderActiveTab() {
 
     if (selectedTab === "raidCoach") {
       renderRaidCoachTab(analysis.raid_coach || {});
+      return;
+    }
+
+    if (selectedTab === "progression") {
+      renderProgressionTab(analysis.progression || {});
       return;
     }
 
@@ -2371,6 +2377,279 @@ function formatDamageMillions(val) {
     return `${(val / 1000000).toFixed(1)}M`;
   }
   return `${(val / 1000).toFixed(0)}K`;
+}
+
+
+function renderProgressionTab(progression) {
+  const pulls = progression.pulls || [];
+
+  if (!pulls.length) {
+    renderEmptyTab("Wipe Progression", "No wipe progression data recorded for this encounter.");
+    return;
+  }
+
+  // Calculate Progression Metrics
+  const totalAttempts = pulls.length;
+  
+  let totalSeconds = 0;
+  let bestHp = 100.0;
+  let hasKill = false;
+
+  pulls.forEach(p => {
+    totalSeconds += p.duration_seconds || 0;
+    if (p.kill) {
+      hasKill = true;
+      bestHp = 0.0;
+    } else if (p.boss_percentage !== null && p.boss_percentage < bestHp) {
+      bestHp = p.boss_percentage;
+    }
+  });
+
+  const avgSurvivalSeconds = totalAttempts > 0 ? (totalSeconds / totalAttempts) : 0;
+
+  // Formatting utilities
+  const formatTime = (sec) => {
+    const mins = Math.floor(sec / 60);
+    const rem = Math.round(sec % 60);
+    return `${mins}:${String(rem).padStart(2, "0")}`;
+  };
+
+  const formatHrsTime = (sec) => {
+    const hrs = Math.floor(sec / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    const rem = Math.round(sec % 60);
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m ${rem}s`;
+    }
+    return `${mins}m ${rem}s`;
+  };
+
+  const avgSurvivalText = formatTime(avgSurvivalSeconds);
+  const totalProgressionTimeText = formatHrsTime(totalSeconds);
+  const bestHpText = bestHp === 0.0 ? "Kill 🏆" : `${bestHp.toFixed(1)}% HP`;
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Wipe Progression Tracker</h2>
+    <p class="progression-summary-desc">
+      Analyze pull-over-pull improvement. Visual area indicates boss health remaining (lower is better), and dashed red line shows your survived time (higher is better).
+    </p>
+
+    <div class="progression-grid">
+      <div class="stat">
+        <div class="stat-label">Total Attempts</div>
+        <div class="stat-value">${totalAttempts}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Best Progress</div>
+        <div class="stat-value" style="color: ${bestHp === 0.0 ? "var(--green)" : "var(--yellow)"}">${bestHpText}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Avg Survival Time</div>
+        <div class="stat-value">${avgSurvivalText}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total Progression Time</div>
+        <div class="stat-value">${totalProgressionTimeText}</div>
+      </div>
+    </div>
+
+    <div id="progressionChartContainer" class="chart-container"></div>
+
+    <div class="table-wrapper">
+      <table class="progression-table">
+        <thead>
+          <tr>
+            <th>Pull</th>
+            <th>Result</th>
+            <th>HP Left</th>
+            <th>Survival Time</th>
+            <th>Phase Reached</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pulls.map(p => {
+            const pullClass = p.kill ? "kill" : "wipe";
+            const resultLabel = p.kill ? "Kill" : "Wipe";
+            const hpText = p.kill ? "0.0%" : (p.boss_percentage !== null ? `${p.boss_percentage.toFixed(1)}%` : "—");
+            
+            const attemptTime = p.start_time
+              ? new Date(p.start_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+              : "—";
+
+            return `
+              <tr class="pull-row ${pullClass}">
+                <td><strong>Pull ${p.pull_number}</strong></td>
+                <td>
+                  <span class="pill ${p.kill ? "grade-A" : "grade-F"}" style="border-radius: 6px; padding: 3px 8px; font-size: 11px;">
+                    ${resultLabel}
+                  </span>
+                </td>
+                <td>${hpText}</td>
+                <td>${formatTime(p.duration_seconds)}</td>
+                <td>Phase ${p.last_phase || 1}</td>
+                <td>${attemptTime}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  drawProgressionChart(pulls);
+}
+
+function drawProgressionChart(pulls) {
+  const container = document.getElementById("progressionChartContainer");
+  if (!container) return;
+
+  const margin = { top: 30, right: 60, bottom: 40, left: 60 };
+  const width = 1000;
+  const height = 300;
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+
+  // Max calculations
+  const maxDuration = Math.max(...pulls.map(p => p.duration_seconds)) * 1.1 || 60;
+  const numPulls = pulls.length;
+
+  const xToSvg = (idx) => {
+    if (numPulls <= 1) return margin.left + chartWidth / 2;
+    return margin.left + (idx / (numPulls - 1)) * chartWidth;
+  };
+
+  const hpToSvg = (pct) => {
+    const val = pct === null ? 100.0 : Number(pct);
+    return margin.top + (val / 100.0) * chartHeight;
+  };
+
+  const durationToSvg = (sec) => {
+    return chartHeight - (sec / maxDuration) * chartHeight + margin.top;
+  };
+
+  // Horizontal Grid Lines (HP %)
+  const hpTicks = [0, 25, 50, 75, 100];
+  const yGridHtml = hpTicks.map(tick => {
+    const y = hpToSvg(tick);
+    return `
+      <line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" class="chart-grid-line" />
+      <text x="${margin.left - 10}" y="${y + 4}" class="chart-axis-text" text-anchor="end">${tick}%</text>
+    `;
+  }).join("");
+
+  // Vertical Grid Lines (Attempts)
+  const xGridHtml = pulls.map((p, idx) => {
+    const x = xToSvg(idx);
+    return `
+      <line x1="${x}" y1="${margin.top}" x2="${x}" y2="${chartHeight + margin.top}" class="chart-grid-line" />
+      <text x="${x}" y="${chartHeight + margin.top + 18}" class="chart-axis-text" text-anchor="middle">P${p.pull_number}</text>
+    `;
+  }).join("");
+
+  // Generate SVG Path for Area & Line HP
+  let hpAreaPoints = `${margin.left},${chartHeight + margin.top} `;
+  let hpLinePoints = "";
+  let durationLinePoints = "";
+
+  pulls.forEach((p, idx) => {
+    const x = xToSvg(idx);
+    const yHp = hpToSvg(p.kill ? 0.0 : (p.boss_percentage ?? 100.0));
+    const yDur = durationToSvg(p.duration_seconds);
+
+    hpAreaPoints += `${x},${yHp} `;
+    hpLinePoints += `${x},${yHp} `;
+    durationLinePoints += `${x},${yDur} `;
+  });
+
+  hpAreaPoints += `${xToSvg(numPulls - 1)},${chartHeight + margin.top}`;
+
+  // Interactive nodes html
+  const nodesHtml = pulls.map((p, idx) => {
+    const x = xToSvg(idx);
+    const yHp = hpToSvg(p.kill ? 0.0 : (p.boss_percentage ?? 100.0));
+    const nodeClass = p.kill ? "chart-node-kill" : "chart-node-wipe";
+    const radius = p.kill ? 8 : 5;
+
+    return `
+      <circle
+        cx="${x}"
+        cy="${yHp}"
+        r="${radius}"
+        class="${nodeClass}"
+        onmouseenter="showPullTooltip(event, ${idx})"
+        onmousemove="moveTooltip(event)"
+        onmouseleave="hideTooltip()"
+      />
+    `;
+  }).join("");
+
+  // Time ticks on right axis
+  const timeTicks = [0, maxDuration * 0.25, maxDuration * 0.5, maxDuration * 0.75, maxDuration];
+  const formatTimeMinutes = (sec) => {
+    const mins = Math.floor(sec / 60);
+    const rem = Math.round(sec % 60);
+    return `${mins}:${String(rem).padStart(2, "0")}`;
+  };
+  const rightAxisHtml = timeTicks.map(tick => {
+    const y = durationToSvg(tick);
+    return `
+      <text x="${width - margin.right + 10}" y="${y + 4}" class="chart-axis-text" text-anchor="start">${formatTimeMinutes(tick)}</text>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="chart-header">
+      <div>
+        <h3 class="chart-title">Boss HP & Survival Curves</h3>
+        <div class="chart-subtitle">Green area represents boss HP (lower is better). Dashed red line shows attempt duration (higher is better). Hover nodes for details.</div>
+      </div>
+    </div>
+    <div class="chart-svg-wrapper">
+      <svg viewBox="0 0 ${width} ${height}" class="chart-svg">
+        <defs>
+          <linearGradient id="hpGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#4ade80" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+
+        ${yGridHtml}
+        ${xGridHtml}
+        ${rightAxisHtml}
+
+        <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+        <line x1="${width - margin.right}" y1="${margin.top}" x2="${width - margin.right}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+        <line x1="${margin.left}" y1="${chartHeight + margin.top}" x2="${width - margin.right}" y2="${chartHeight + margin.top}" class="chart-axis-line" />
+
+        <!-- Dual-Axis Titles -->
+        <text x="${margin.left - 45}" y="${margin.top - 10}" class="chart-axis-label" text-anchor="start">Boss HP %</text>
+        <text x="${width - margin.right + 45}" y="${margin.top - 10}" class="chart-axis-label" text-anchor="end">Survival Time</text>
+
+        <!-- Area and Line Curves -->
+        <polygon points="${hpAreaPoints}" class="chart-area-hp" />
+        <path d="M ${hpLinePoints.trim()}" class="chart-line-hp" />
+        <path d="M ${durationLinePoints.trim()}" class="chart-line-duration" />
+
+        ${nodesHtml}
+      </svg>
+    </div>
+  `;
+
+  window.showPullTooltip = (e, index) => {
+    const p = pulls[index];
+    const mins = Math.floor(p.duration_seconds / 60);
+    const rem = p.duration_seconds % 60;
+    const durationText = `${mins}:${String(rem).padStart(2, "0")}`;
+    const resultLabel = p.kill ? "Kill 🏆" : "Wipe";
+    const hpText = p.kill ? "0.0%" : (p.boss_percentage !== null ? `${p.boss_percentage.toFixed(1)}%` : "—");
+
+    showTooltip(e, `Attempt #${p.pull_number} (${resultLabel})`, [
+      { label: "Boss HP Left", value: hpText },
+      { label: "Survived For", value: durationText },
+      { label: "Phase Reached", value: `Phase ${p.last_phase || 1}` }
+    ]);
+  };
 }
 
 
