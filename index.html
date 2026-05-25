@@ -46,6 +46,7 @@
           </div>
           <div id="headerActions" class="header-actions hidden">
             <button id="copyShareButton" type="button">Share This Report</button>
+            <button id="postDiscordButton" class="discord-post-btn" type="button">Post to Discord</button>
             <button id="analyzeAnotherButton" type="button">Analyze Another Report</button>
           </div>
         </div>
@@ -178,6 +179,36 @@
             <h3>Grade Progression Targets</h3>
             <div id="coachProgressionCard" class="coach-progression-card">
               <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Drawer -->
+    <div id="settingsDrawer" class="coach-drawer hidden">
+      <div class="coach-drawer-overlay" id="settingsDrawerOverlay"></div>
+      <div class="coach-drawer-content">
+        <header class="coach-drawer-header">
+          <div>
+            <h2 class="coach-player-name" style="color: var(--blue);">Control Panel</h2>
+            <div class="coach-player-sub">Configure integrations and options</div>
+          </div>
+          <button id="closeSettingsDrawer" class="close-drawer-btn" type="button" aria-label="Close">&times;</button>
+        </header>
+        <div class="coach-drawer-body">
+          <div class="coach-section">
+            <h3>Discord Webhook Integration</h3>
+            <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 12px 0;">
+              Share summary logs automatically to your guild's Discord server. Paste your Discord channel Webhook URL below.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <input id="discordWebhookInput" type="password" placeholder="https://discord.com/api/webhooks/..." style="font-size: 14px; padding: 12px;" />
+              <div style="display: flex; gap: 12px;">
+                <button id="saveWebhookButton" type="button" style="flex: 1; padding: 12px; font-size: 13px;">Save Webhook</button>
+                <button id="testWebhookButton" class="logout-button" type="button" style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test Link</button>
+              </div>
+              <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
             </div>
           </div>
         </div>

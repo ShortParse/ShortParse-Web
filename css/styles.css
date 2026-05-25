@@ -1261,6 +1261,42 @@ body {
 	transform: none;
 }
 
+.settings-button {
+	background: transparent;
+	border: 1px solid var(--border);
+	color: var(--muted);
+	padding: 8px 14px;
+	border-radius: 10px;
+	font-size: 12px;
+	font-weight: 700;
+	transition: all 0.15s ease;
+	cursor: pointer;
+}
+
+.settings-button:hover {
+	border-color: var(--blue);
+	color: var(--blue);
+	background: rgba(56, 189, 248, 0.05);
+	transform: none;
+}
+
+.discord-post-btn {
+	background: #5865F2;
+	color: white !important;
+}
+
+.discord-post-btn:hover {
+	background: #4752C4 !important;
+}
+
+.status-msg-success {
+	color: var(--green);
+}
+
+.status-msg-error {
+	color: var(--red);
+}
+
 .header-right-col {
 	display: flex;
 	flex-direction: column;

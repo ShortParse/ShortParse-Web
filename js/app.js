@@ -4,6 +4,7 @@ let currentReportData = null;
 let selectedAnalysisIndex = 0;
 let selectedTab = "scorecard";
 let currentShareUrl = "";
+let currentUserWebhook = "";
 let offlineMode = false;
 
 function setOfflineMode(enabled) {
@@ -56,11 +57,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("coachDrawerOverlay");
   if (overlay) overlay.addEventListener("click", closePlayerCoachCard);
 
+  // Settings Drawer Close Triggers
+  const settingsCloseBtn = document.getElementById("closeSettingsDrawer");
+  if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsDrawer);
+  
+  const settingsOverlay = document.getElementById("settingsDrawerOverlay");
+  if (settingsOverlay) settingsOverlay.addEventListener("click", closeSettingsDrawer);
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closePlayerCoachCard();
+      closeSettingsDrawer();
     }
   });
+
+  // Settings Save & Test Triggers
+  const saveWebhookBtn = document.getElementById("saveWebhookButton");
+  if (saveWebhookBtn) saveWebhookBtn.addEventListener("click", saveWebhookSettings);
+
+  const testWebhookBtn = document.getElementById("testWebhookButton");
+  if (testWebhookBtn) testWebhookBtn.addEventListener("click", testWebhookSettings);
+
+  // Post to Discord Trigger
+  const postDiscordBtn = document.getElementById("postDiscordButton");
+  if (postDiscordBtn) postDiscordBtn.addEventListener("click", postActiveReportToDiscord);
 
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
@@ -1761,6 +1781,8 @@ async function checkUserSession() {
       const tierLabel = user.is_premium ? (user.premium_tier || "Premium") : "Free Account";
       const tierClass = user.is_premium ? "" : "free";
 
+      currentUserWebhook = user.discord_webhook_url || "";
+
       container.innerHTML = `
         <div class="user-profile-widget">
           <div class="user-avatar">${firstLetter}</div>
@@ -1768,10 +1790,12 @@ async function checkUserSession() {
             <span class="user-name">${escapeHtml(user.username)}</span>
             <span class="user-tier ${tierClass}">${escapeHtml(tierLabel)}</span>
           </div>
+          <button id="settingsButton" class="settings-button" type="button">Settings</button>
           <button id="logoutButton" class="logout-button" type="button">Log Out</button>
         </div>
       `;
 
+      document.getElementById("settingsButton").addEventListener("click", openSettingsDrawer);
       document.getElementById("logoutButton").addEventListener("click", logoutUser);
       loadGuildDashboard();
     } else {
@@ -2347,4 +2371,175 @@ function formatDamageMillions(val) {
     return `${(val / 1000000).toFixed(1)}M`;
   }
   return `${(val / 1000).toFixed(0)}K`;
+}
+
+
+/* =============================================================================
+   Control Panel, Settings, and Discord Webhook Integrations
+   ============================================================================= */
+
+function openSettingsDrawer() {
+  const drawer = document.getElementById("settingsDrawer");
+  const webhookInput = document.getElementById("discordWebhookInput");
+  const statusMsg = document.getElementById("webhookStatusMessage");
+
+  if (!drawer) return;
+
+  if (webhookInput) {
+    webhookInput.value = currentUserWebhook;
+  }
+
+  if (statusMsg) {
+    statusMsg.classList.add("hidden");
+    statusMsg.className = "";
+  }
+
+  drawer.classList.remove("hidden");
+  drawer.offsetHeight; // force layout reflow
+  drawer.classList.add("active");
+}
+
+function closeSettingsDrawer() {
+  const drawer = document.getElementById("settingsDrawer");
+  if (!drawer) return;
+
+  drawer.classList.remove("active");
+  setTimeout(() => {
+    if (!drawer.classList.contains("active")) {
+      drawer.classList.add("hidden");
+    }
+  }, 300);
+}
+
+async function saveWebhookSettings() {
+  const webhookInput = document.getElementById("discordWebhookInput");
+  const saveBtn = document.getElementById("saveWebhookButton");
+  const statusMsg = document.getElementById("webhookStatusMessage");
+
+  if (!webhookInput || !saveBtn || !statusMsg) return;
+
+  const url = webhookInput.value.trim();
+
+  statusMsg.classList.add("hidden");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+
+  try {
+    const response = await fetch("/api/auth/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ discord_webhook_url: url || null })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || "Failed to update webhook settings.");
+    }
+
+    const data = await response.json();
+    currentUserWebhook = data.discord_webhook_url || "";
+    webhookInput.value = currentUserWebhook;
+
+    statusMsg.textContent = "Webhook saved successfully!";
+    statusMsg.className = "status-msg-success";
+    statusMsg.classList.remove("hidden");
+  } catch (error) {
+    statusMsg.textContent = error.message;
+    statusMsg.className = "status-msg-error";
+    statusMsg.classList.remove("hidden");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Webhook";
+  }
+}
+
+async function testWebhookSettings() {
+  const webhookInput = document.getElementById("discordWebhookInput");
+  const testBtn = document.getElementById("testWebhookButton");
+  const statusMsg = document.getElementById("webhookStatusMessage");
+
+  if (!webhookInput || !testBtn || !statusMsg) return;
+
+  const url = webhookInput.value.trim();
+
+  statusMsg.classList.add("hidden");
+  testBtn.disabled = true;
+  testBtn.textContent = "Testing...";
+
+  try {
+    const response = await fetch("/api/auth/settings/test-discord", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ discord_webhook_url: url || null })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || "Failed to send test webhook.");
+    }
+
+    statusMsg.textContent = "Test message posted successfully in Discord! 🚀";
+    statusMsg.className = "status-msg-success";
+    statusMsg.classList.remove("hidden");
+  } catch (error) {
+    statusMsg.textContent = error.message;
+    statusMsg.className = "status-msg-error";
+    statusMsg.classList.remove("hidden");
+  } finally {
+    testBtn.disabled = false;
+    testBtn.textContent = "Test Link";
+  }
+}
+
+async function postActiveReportToDiscord() {
+  const postBtn = document.getElementById("postDiscordButton");
+  if (!postBtn || !currentJobId) return;
+
+  if (!currentUserWebhook) {
+    openSettingsDrawer();
+    const statusMsg = document.getElementById("webhookStatusMessage");
+    if (statusMsg) {
+      statusMsg.textContent = "Please configure and save your Discord Webhook URL first.";
+      statusMsg.className = "status-msg-error";
+      statusMsg.classList.remove("hidden");
+    }
+    return;
+  }
+
+  postBtn.disabled = true;
+  postBtn.textContent = "Posting...";
+
+  try {
+    const response = await fetch(`/api/jobs/${currentJobId}/discord`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ analysis_index: selectedAnalysisIndex })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || "Failed to post report to Discord.");
+    }
+
+    postBtn.textContent = "Posted! 🚀";
+    postBtn.style.background = "var(--green)";
+    postBtn.style.color = "#0f1218";
+
+    setTimeout(() => {
+      postBtn.disabled = false;
+      postBtn.textContent = "Post to Discord";
+      postBtn.style.background = "";
+      postBtn.style.color = "";
+    }, 2500);
+  } catch (error) {
+    alert(`Failed to share to Discord: ${error.message}`);
+    postBtn.disabled = false;
+    postBtn.textContent = "Post to Discord";
+  }
 }
