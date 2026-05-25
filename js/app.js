@@ -2959,7 +2959,7 @@ function showDeathRecap(playerName, timestamp) {
             <span class="death-event-time">${offsetText}</span>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-            <span class="death-event-source">${escapeHtml(sourceText)}</span>
+            <span class="death-event-source">${sourceText}</span>
             ${amountText}
           </div>
         </div>
