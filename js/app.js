@@ -700,48 +700,53 @@ function renderActiveTab() {
     button.classList.toggle("active", button.dataset.tab === selectedTab);
   });
 
-  if (selectedTab === "scorecard") {
-    renderScorecardTab(analysis.scorecard || [], playerLookup);
-    return;
-  }
+  try {
+    if (selectedTab === "scorecard") {
+      renderScorecardTab(analysis.scorecard || [], playerLookup);
+      return;
+    }
 
-  if (selectedTab === "raidCoach") {
-    renderRaidCoachTab(analysis.raid_coach || {});
-    return;
-  }
+    if (selectedTab === "raidCoach") {
+      renderRaidCoachTab(analysis.raid_coach || {});
+      return;
+    }
 
-  if (selectedTab === "benchmarks") {
-    renderBenchmarksTab(analysis.benchmarks || {}, playerLookup);
-    return;
-  }
+    if (selectedTab === "benchmarks") {
+      renderBenchmarksTab(analysis.benchmarks || {}, playerLookup);
+      return;
+    }
 
-  if (selectedTab === "playerMetrics") {
-    renderPlayerMetricsTab(analysis.player_metrics || {}, playerLookup);
-    return;
-  }
+    if (selectedTab === "playerMetrics") {
+      renderPlayerMetricsTab(analysis.player_metrics || {}, playerLookup);
+      return;
+    }
 
-  if (selectedTab === "mechanics") {
-    renderMechanicsTab(analysis.mechanics || {});
-    return;
-  }
+    if (selectedTab === "mechanics") {
+      renderMechanicsTab(analysis.mechanics || {});
+      return;
+    }
 
-  if (selectedTab === "cooldowns") {
-    renderCooldownsTab(analysis.player_metrics || {}, playerLookup);
-    return;
-  }
+    if (selectedTab === "cooldowns") {
+      renderCooldownsTab(analysis.player_metrics || {}, playerLookup);
+      return;
+    }
 
-  if (selectedTab === "timeline") {
-    renderTimelineTab(analysis.timeline || [], playerLookup);
-    return;
-  }
+    if (selectedTab === "timeline") {
+      renderTimelineTab(analysis.timeline || [], playerLookup);
+      return;
+    }
 
-  if (selectedTab === "issues") {
-    renderIssuesTab(analysis.issues || [], playerLookup);
-    return;
-  }
+    if (selectedTab === "issues") {
+      renderIssuesTab(analysis.issues || [], playerLookup);
+      return;
+    }
 
-  if (selectedTab === "raw") {
-    renderRawTab();
+    if (selectedTab === "raw") {
+      renderRawTab();
+    }
+  } catch (error) {
+    console.error("Error rendering active tab:", error);
+    renderEmptyTab("Error Loading Tab", `An unexpected error occurred while loading this tab: ${error.message}`);
   }
 }
 
@@ -2110,6 +2115,9 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
+  const ref = sortedPlayers[0];
+  const metricLabel = ref.metric;
+
   // Find scale ceilings based strictly on plotted bars and drawn reference thresholds
   const maxPlottedValue = Math.max(...sortedPlayers.map(p => p.value));
   const maxThresholdValue = Math.max(ref.top1, ref.top10, ref.avg);
@@ -2123,11 +2131,9 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
   const barWidth = totalBarSpace * (1 - barGapPct);
   const barGap = totalBarSpace * barGapPct;
 
-  const ref = sortedPlayers[0];
   const top1Y = yToSvg(ref.top1);
   const top10Y = yToSvg(ref.top10);
   const avgY = yToSvg(ref.avg);
-  const metricLabel = ref.metric;
 
   // Horizontal Grid Lines
   const gridTicks = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal];
