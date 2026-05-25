@@ -2104,9 +2104,9 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
     return;
   }
 
-  const margin = { top: 30, right: 30, bottom: 65, left: 60 };
+  const margin = { top: 30, right: 30, bottom: 80, left: 60 };
   const width = 1000;
-  const height = 285;
+  const height = 300;
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
@@ -2159,10 +2159,10 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
         />
         <text
           x="${x + barWidth / 2}"
-          y="${chartHeight + margin.top + 16}"
-          transform="rotate(30, ${x + barWidth / 2}, ${chartHeight + margin.top + 16})"
+          y="${chartHeight + margin.top + 10}"
+          transform="rotate(45, ${x + barWidth / 2}, ${chartHeight + margin.top + 10})"
           class="chart-axis-text"
-          text-anchor="start"
+          text-anchor="end"
         >${escapeHtml(player.name.substring(0, 10))}</text>
       </g>
     `;
@@ -2186,10 +2186,10 @@ function drawRosterDistributionChart(benchmarks, playerLookup) {
         <text x="${width - margin.right}" y="${top1Y - 6}" class="chart-axis-text" fill="#ffd700" text-anchor="end">Top 1% Global (${formatNumber(ref.top1)})</text>
 
         <line x1="${margin.left}" y1="${top10Y}" x2="${width - margin.right}" y2="${top10Y}" class="chart-threshold-line" stroke="#38bdf8" stroke-opacity="0.65" />
-        <text x="${width - margin.right}" y="${top10Y - 6}" class="chart-axis-text" fill="#38bdf8" text-anchor="end">Top 10% (Grade A: ${formatNumber(ref.top10)})</text>
+        <text x="${(width - margin.left - margin.right) / 2 + margin.left}" y="${top10Y - 6}" class="chart-axis-text" fill="#38bdf8" text-anchor="middle">Top 10% (Grade A: ${formatNumber(ref.top10)})</text>
 
         <line x1="${margin.left}" y1="${avgY}" x2="${width - margin.right}" y2="${avgY}" class="chart-threshold-line" stroke="#9ca3af" stroke-opacity="0.65" />
-        <text x="${width - margin.right}" y="${avgY - 6}" class="chart-axis-text" fill="#9ca3af" text-anchor="end">Average Baseline (${formatNumber(ref.avg)})</text>
+        <text x="${margin.left + 10}" y="${avgY - 6}" class="chart-axis-text" fill="#9ca3af" text-anchor="start">Average Baseline (${formatNumber(ref.avg)})</text>
 
         ${barsHtml}
       </svg>
