@@ -2909,7 +2909,15 @@ function showDeathRecap(playerName, timestamp) {
   const mins = Math.floor(deathEvent.seconds_into_fight / 60);
   const secs = Math.floor(deathEvent.seconds_into_fight % 60);
   const formattedTime = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  metaEl.innerText = `Died at ${formattedTime} into the fight`;
+  metaEl.innerHTML = `<div>Died at ${formattedTime} into the fight</div>`;
+  if (deathEvent.recap_analysis && deathEvent.recap_analysis.summary) {
+    metaEl.innerHTML += `
+      <div class="death-recap-summary-card">
+        <span class="warning-icon">⚠️</span>
+        <span class="summary-text">${escapeHtml(deathEvent.recap_analysis.summary)}</span>
+      </div>
+    `;
+  }
 
   // Draw chronological events timeline nodes
   if (recap.length === 0) {
@@ -2925,6 +2933,9 @@ function showDeathRecap(playerName, timestamp) {
         cardClass = "damage";
         eventTitle = e.ability_name;
         amountText = `<span class="death-event-amount damage-text">-${formatNumber(e.amount)}</span>`;
+        if (e.avoidable) {
+          amountText += `<span class="death-event-amount overkill-text" style="color: var(--yellow); margin-left: 6px;">Avoidable ⚠️</span>`;
+        }
         if (e.overkill > 0) {
           amountText += `<span class="death-event-amount overkill-text">Overkill</span>`;
         }
