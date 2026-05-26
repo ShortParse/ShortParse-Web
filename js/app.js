@@ -1053,6 +1053,9 @@ function renderBenchmarksTab(analysis, playerLookup) {
     else if (role === "DPS") dpsCount++;
   }
 
+  const rsi = calculateRsi(analysis);
+  const isProgression = rsi >= 50;
+
   // Handle selected player fallback
   const playersList = Object.keys(benchmarks);
   if (!benchmarkSelectedPlayer || !benchmarks[benchmarkSelectedPlayer]) {
@@ -1151,6 +1154,13 @@ function renderBenchmarksTab(analysis, playerLookup) {
   else if (estimatedPercentile >= 50) percentileColor = "#0070ff";
   else if (estimatedPercentile >= 25) percentileColor = "#1eff00";
 
+  // Healer zero-sum calibrations
+  const raidSize = tanksCount + healersCount + dpsCount || 20;
+  const healerRatio = raidSize > 0 ? (healersCount / raidSize) : 0.20;
+  const totalAvoidableDamage = Object.values(playerMetrics).reduce((sum, p) => sum + (p.performance?.avoidable_damage_taken || 0), 0);
+  const avgAvoidableDamage = totalAvoidableDamage / (raidSize || 20);
+  const isOverhealed = role === "Healer" && (healerRatio >= 0.24 || avgAvoidableDamage < 1000000);
+
   // Optimization / Execution score mapping
   const executionScore = Math.min(100, Math.round(activePercent));
   let alignmentRating = "Uptime Optimization Needed";
@@ -1220,10 +1230,11 @@ function renderBenchmarksTab(analysis, playerLookup) {
       name: `Throughput Output (${metricUpper})`,
       subtitle: role === "Healer" ? "Healing per second" : "Damage per second",
       player: formatNumber(playerValue),
-      baseline: formatNumber(activeBaselineVal),
-      delta: playerValue - activeBaselineVal,
+      baseline: isOverhealed ? "Capped" : formatNumber(activeBaselineVal),
+      delta: isOverhealed ? 0 : (playerValue - activeBaselineVal),
       isLargerBetter: true,
-      unit: ` ${metricUpper}`
+      unit: isOverhealed ? "" : ` ${metricUpper}`,
+      isOverhealedCalibrated: isOverhealed
     },
     {
       name: "Rotational Casting Uptime",
@@ -1270,7 +1281,12 @@ function renderBenchmarksTab(analysis, playerLookup) {
 
   // Dynamic coaching recommendations block generator
   const recs = [];
-  if (playerValue < activeBaselineVal * 0.85) {
+  if (isOverhealed) {
+    recs.push({
+      type: "rec-positive",
+      text: `🛡️ **Calibrated Coaching Active:** Since the raid took extremely low avoidable damage or ran a very safe healer ratio, HPS benchmark targets are paused. Great job maintaining high utility/dispels and conserving mana!`
+    });
+  } else if (playerValue < activeBaselineVal * 0.85) {
     recs.push({
       type: "rec-warning",
       text: `Your raw ${metricUpper} throughput is currently **${formatNumber(activeBaselineVal - playerValue)} ${metricUpper} below** the ${baselineModeLabel} baseline. Prioritize minimizing rotational down-time.`
@@ -1290,10 +1306,17 @@ function renderBenchmarksTab(analysis, playerLookup) {
   }
 
   if (damageDelta > 1000000) {
-    recs.push({
-      type: "rec-warning",
-      text: `You took **${formatDamageMillions(damageDelta)} more avoidable damage** than optimized peers. Dodge ground swirlies and positional breath cones to reduce healer stress.`
-    });
+    if (isProgression) {
+      recs.push({
+        type: "rec-critical",
+        text: `You took **${formatDamageMillions(damageDelta)} more avoidable damage** than optimized peers. Dodge ground swirlies and positional breath cones to reduce healer stress under progression conditions.`
+      });
+    } else {
+      recs.push({
+        type: "rec-warning",
+        text: `Avoidable damage is **${formatDamageMillions(damageDelta)} higher** than benchmark. (Note: Mechanical checking is relaxed in Farm Mode, but dodging elements still helps optimization score!)`
+      });
+    }
   }
 
   // Extract cooldown cast advice
@@ -1321,11 +1344,22 @@ function renderBenchmarksTab(analysis, playerLookup) {
     </div>
   ` : "";
 
+  const rsiBadgeHtml = isProgression 
+    ? `<span class="rsi-badge progression">🔥 Progression Run (RSI: ${rsi})</span>` 
+    : `<span class="rsi-badge farm">🌾 Farm Run (RSI: ${rsi})</span>`;
+
   document.getElementById("tabContent").innerHTML = `
-    <h2 class="tab-panel-title">Benchmark Comparisons & Contextual Coaching</h2>
-    <p class="tab-panel-description">
-      ShortParse reviews tactical optimization, rotational casting deltas, and avoidable mechanical errors scoped against realistic peer conditions.
-    </p>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div style="flex: 1; min-width: 280px;">
+        <h2 class="tab-panel-title" style="margin-bottom: 4px;">Benchmark Comparisons & Contextual Coaching</h2>
+        <p class="tab-panel-description" style="margin-bottom: 0;">
+          ShortParse reviews tactical optimization, rotational casting deltas, and avoidable mechanical errors scoped against realistic peer conditions.
+        </p>
+      </div>
+      <div>
+        ${rsiBadgeHtml}
+      </div>
+    </div>
 
     <!-- Roster Pills Selection Row -->
     <div class="roster-search-bar">
@@ -1360,7 +1394,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
       <div class="coach-score-card optimization">
         <div class="card-title-row">
           <h3>ShortParse Optimization Analysis</h3>
-          <span class="card-tag" style="background: rgba(74, 222, 128, 0.1); color: var(--green);">COACHING MATRIX</span>
+          ${isOverhealed ? `<span class="card-tag" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); font-weight: 750;">Capacity Capped 🛡️</span>` : `<span class="card-tag" style="background: rgba(74, 222, 128, 0.1); color: var(--green);">COACHING MATRIX</span>`}
         </div>
         <div class="executive-metric-wrapper">
           <div class="executive-main-metric">${executionScore}%</div>
@@ -1374,6 +1408,11 @@ function renderBenchmarksTab(analysis, playerLookup) {
             <span class="filter-pill-item">Status: ${fight.kill ? 'Kill' : 'Wipe'}</span>
             <span class="filter-pill-item">Size: ${playersList.length} Roster</span>
           </div>
+          ${isOverhealed ? `
+            <div style="font-size: 11.5px; margin-top: 10px; color: var(--blue); background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); padding: 8px 12px; border-radius: 8px; line-height: 1.4;">
+              ⚠️ <strong>Healing Capacity Capped:</strong> Low raid damage taken or safe healer ratios naturally limited your throughput. Optimization focus is automatically shifted to defensive survival and active casting efficiency.
+            </div>
+          ` : ""}
           ${healerDisclaimer}
         </div>
       </div>
@@ -1438,7 +1477,13 @@ function renderBenchmarksTab(analysis, playerLookup) {
               }
 
               const formattedDelta = Math.abs(d.delta).toLocaleString(undefined, { maximumFractionDigits: 1 });
-              const displayDelta = d.delta === 0 ? "—" : `${badgePrefix}${formattedDelta}${d.unit}`;
+              let displayDelta = d.delta === 0 ? "—" : `${badgePrefix}${formattedDelta}${d.unit}`;
+
+              if (d.isOverhealedCalibrated) {
+                displayDelta = `<span class="delta-badge positive" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); border-color: rgba(56, 189, 248, 0.3); font-weight: 750;">Calibrated 🛡️</span>`;
+              } else {
+                displayDelta = `<span class="delta-badge ${badgeClass}">${displayDelta}</span>`;
+              }
 
               return `
                 <tr>
@@ -1449,7 +1494,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
                   <td class="numeric-val">${d.player}</td>
                   <td class="numeric-val" style="color: var(--muted);">${d.baseline}</td>
                   <td style="text-align: center;">
-                    <span class="delta-badge ${badgeClass}">${displayDelta}</span>
+                    ${displayDelta}
                   </td>
                 </tr>
               `;
@@ -2567,6 +2612,61 @@ function renderBenchmarkEntry(entry) {
       View Compare
     </a>
   `;
+const ENCOUNTER_TRANSITIONS = {
+  "Midnight Falls": [
+    { start: 200, end: 228, name: "Obelisk Stun Transition" }
+  ]
+};
+
+function calculateRsi(analysis) {
+  if (!analysis) return 50;
+  
+  const pulls = analysis.progression?.pulls || [];
+  const wipesCount = pulls.filter(p => !p.kill).length;
+  
+  const timeline = analysis.timeline || [];
+  const deathsCount = timeline.filter(e => e.type === "death").length;
+  
+  const playerMetrics = analysis.player_metrics || {};
+  let tanksCount = 0;
+  let healersCount = 0;
+  let dpsCount = 0;
+  
+  for (const playerVal of Object.values(playerMetrics)) {
+    const role = playerVal.identity?.role;
+    if (role === "Tank") tanksCount++;
+    else if (role === "Healer") healersCount++;
+    else if (role === "DPS") dpsCount++;
+  }
+  
+  const raidSize = tanksCount + healersCount + dpsCount || 20;
+  const healerRatio = raidSize > 0 ? (healersCount / raidSize) : 0.20;
+  
+  const duration = analysis.fight?.duration_seconds || 300;
+  
+  let baseRsi = 30;
+  
+  // Wipes impact (max 30)
+  baseRsi += Math.min(30, wipesCount * 5);
+  
+  // Deaths impact (max 30)
+  baseRsi += Math.min(30, deathsCount * 4);
+  
+  // Healer ratio impact
+  if (healerRatio < 0.18) {
+    baseRsi -= 15;
+  } else if (healerRatio >= 0.25) {
+    baseRsi += 15;
+  }
+  
+  // Speed / Duration impact
+  if (duration < 210) {
+    baseRsi -= 15;
+  } else if (duration > 420) {
+    baseRsi += 15;
+  }
+  
+  return Math.max(10, Math.min(100, Math.round(baseRsi)));
 }
 
 function buildPlayerLookup(analysis) {
@@ -2604,6 +2704,9 @@ function showPlayerCoachCard(playerName) {
   const player = playerLookup[playerName] || {};
   const data = (analysis.player_metrics || {})[playerName] || {};
 
+  const rsi = calculateRsi(analysis);
+  const isProgression = rsi >= 50;
+
   // 1. Title and Spec Details
   const nameEl = document.getElementById("coachPlayerName");
   if (nameEl) {
@@ -2637,15 +2740,13 @@ function showPlayerCoachCard(playerName) {
   const gradeEl = document.getElementById("coachPlayerGrade");
   if (gradeEl) {
     gradeEl.textContent = displayGrade;
-    // Adapt font-size dynamically for longer descriptive words to maintain premium look!
     if (displayGrade.length > 5) {
       gradeEl.style.fontSize = "16px";
     } else {
       gradeEl.style.fontSize = "";
     }
     
-    // Set color based on dynamic F to S scale (S is the highest)
-    let gradeColor = "#FFFFFF"; // Fallback
+    let gradeColor = "#FFFFFF";
     if (grade === "S") gradeColor = "#ffd700";      // Elite Gold
     else if (grade === "A") gradeColor = "#4ade80"; // Bright Green
     else if (grade === "B") gradeColor = "#bef264"; // Lime Green
@@ -2666,15 +2767,21 @@ function showPlayerCoachCard(playerName) {
   if (grade === "S" || grade === "A") {
     tierClass = "tier-sa";
     gradeTitle = "Outstanding Execution";
-    gradeDesc = "Performing at an elite level. Demonstrates optimal rotational uptime and superb mechanic handling.";
+    gradeDesc = isProgression 
+      ? "Performing at an elite level. Demonstrates optimal rotational uptime and superb mechanic handling under progression pressure."
+      : "Outstanding Farm Run! Demolishing output targets with highly optimized rotational execution.";
   } else if (grade === "B" || grade === "C") {
     tierClass = "tier-bc";
     gradeTitle = "Solid Efficiency";
-    gradeDesc = "Executing core rotational priorities correctly with reliable survival habits and stable outputs.";
+    gradeDesc = isProgression
+      ? "Executing core rotational priorities correctly. Reliable survival habits and stable outputs during progression."
+      : "Stable farm performance. Good rotation throughput, with minor optimization opportunities.";
   } else if (grade === "D" || grade === "F") {
     tierClass = "tier-df";
     gradeTitle = "Rotational Gaps Detected";
-    gradeDesc = "Uptime or mechanical delays are impacting your performance. Review actionable deltas below.";
+    gradeDesc = isProgression
+      ? "Mechanical stress or rotational gaps are lowering your uptime. Review defensive usage and priority actions to stabilize progression pulls."
+      : "Rotational uptime or execution gaps detected. Focus on limit-testing your rotation uptime to optimize farm speed.";
   }
 
   if (titleEl) titleEl.textContent = gradeTitle;
@@ -2683,14 +2790,28 @@ function showPlayerCoachCard(playerName) {
   const drawer = document.getElementById("playerCoachDrawer");
   if (drawer) {
     drawer.className = "coach-drawer"; // reset classes
-    if (tierClass) drawer.classList.add(tierClass);
+    if (tierClass) drawer.className = `coach-drawer ${tierClass}`;
   }
 
-  // 3. Action Items Extraction
+  // 3. Action Items Extraction & Zero-Sum Healer Calibration
+  const timeline = analysis.timeline || [];
+  const deathsCount = timeline.filter(e => e.type === "death").length;
+  const role = player.role || "Role";
+  
+  let playerIssues = (analysis.issues || []).filter(issue => issue.player === playerName);
+
+  // Healer Zero-Sum Emergency Cooldown Calibrations
+  if (role === "Healer" && deathsCount === 0) {
+    const cooldownKeywords = ["unused", "cooldown", "life cocoon", "guardian spirit", "pain suppression", "lay on hands", "ironbark", "blessing of protection", "tranquility", "divine hymn", "revival", "healing tide"];
+    playerIssues = playerIssues.filter(issue => {
+      const msgLower = (issue.message || "").toLowerCase();
+      const isCdIssue = cooldownKeywords.some(keyword => msgLower.includes(keyword));
+      return !isCdIssue; // Suspend penalty if CD was unused but 0 deaths occurred!
+    });
+  }
+
   const coachActionItems = document.getElementById("coachActionItems");
   if (coachActionItems) {
-    const playerIssues = (analysis.issues || []).filter(issue => issue.player === playerName);
-
     if (playerIssues.length === 0) {
       coachActionItems.innerHTML = `
         <div class="coach-perfect-play">
@@ -2700,7 +2821,7 @@ function showPlayerCoachCard(playerName) {
         </div>
       `;
     } else {
-      const severityWeights = {
+      const displayWeights = {
         "Critical": 4,
         "Major": 3,
         "Warning": 2,
@@ -2708,7 +2829,7 @@ function showPlayerCoachCard(playerName) {
       };
 
       const sortedIssues = [...playerIssues].sort((a, b) => {
-        return (severityWeights[b.severity] || 0) - (severityWeights[a.severity] || 0);
+        return (displayWeights[b.severity] || 0) - (displayWeights[a.severity] || 0);
       });
 
       const topIssues = sortedIssues.slice(0, 3);
@@ -2731,6 +2852,62 @@ function showPlayerCoachCard(playerName) {
         `;
       }).join("");
     }
+  }
+
+  // 3.5. Transparent Scorecard Ledger (Opening the "Black Box")
+  const ledgerContainer = document.getElementById("coachScoreLedger");
+  if (ledgerContainer) {
+    const severityWeights = isProgression ? {
+      "Critical": 80,
+      "Major": 45,
+      "Warning": 25,
+      "Info": 5
+    } : {
+      "Critical": 80,
+      "Major": 45,
+      "Warning": 10, // Relaxed on farm!
+      "Info": 0      // Ignored on farm!
+    };
+
+    const ledgerHtml = `
+      <div class="coach-ledger-card">
+        <div class="coach-ledger-title">Transparent Score Ledger ${!isProgression ? `<span style="color: var(--blue); font-size: 10px; margin-left: 6px; text-transform: none; font-weight: 500;">(Farm Mode: Warning & Info Relaxed)</span>` : ""}</div>
+        <div class="coach-ledger-list">
+          ${playerIssues.length === 0 ? `
+            <div class="coach-ledger-item" style="color: var(--muted); font-size: 12.5px; font-style: italic; padding: 4px 0;">
+              🟢 No active mechanical or rotational penalties.
+            </div>
+          ` : playerIssues.map(issue => {
+            const score = severityWeights[issue.severity] || 0;
+            let sevClass = (issue.severity || "info").toLowerCase();
+            let icon = "✦";
+            if (issue.severity === "Critical") icon = "☠";
+            else if (issue.severity === "Major") icon = "⚠";
+            else if (issue.severity === "Info") icon = "ℹ";
+
+            let mathText = `${issue.severity} × ${score}`;
+            if (!isProgression && issue.severity === "Warning") mathText = `Warning × 10 (Relaxed)`;
+            else if (!isProgression && issue.severity === "Info") mathText = `Info × 0 (Ignored)`;
+
+            return `
+              <div class="coach-ledger-item">
+                <div class="coach-ledger-item-label">
+                  <span class="item-icon ${sevClass}" style="margin-right: 4px; font-weight: bold;">${icon}</span>
+                  <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 180px;" title="${escapeHtml(issue.message)}">${escapeHtml(issue.message)}</span>
+                  <span class="coach-ledger-item-math">(${mathText})</span>
+                </div>
+                <span class="coach-ledger-item-value ${sevClass === "critical" ? "critical" : "penalty"}">${score > 0 ? `+${score}` : "0"}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>
+        <div class="coach-ledger-total-row">
+          <span class="coach-ledger-total-label">Total Issue Penalty</span>
+          <span class="coach-ledger-total-value">${playerIssues.reduce((sum, issue) => sum + (severityWeights[issue.severity] || 0), 0)} pts</span>
+        </div>
+      </div>
+    `;
+    ledgerContainer.innerHTML = ledgerHtml;
   }
 
   // 4. Comparative Optimization Progression Targets
@@ -2792,29 +2969,67 @@ function showPlayerCoachCard(playerName) {
     }
   }
 
-  // 4.5. Casting Uptime & Inactivity Gaps
+  // 4.5. Casting Uptime & Inactivity Gaps (Encounter-Aware Transition pauses)
   const coachInactivityCard = document.getElementById("coachInactivityCard");
   if (coachInactivityCard) {
     const activity = data.activity || {};
     const uptimePct = activity.active_time_pct || 0.0;
     const gaps = activity.gaps || [];
 
+    const fightName = analysis.fight?.name || "";
+    const transitions = ENCOUNTER_TRANSITIONS[fightName] || [];
+
+    // Filter out gaps overlapping with stuns or intermissions
+    const filteredGaps = gaps.filter(gap => {
+      const gapStart = gap.start_seconds;
+      const gapEnd = gapStart + gap.duration_seconds;
+      const overlaps = transitions.some(t => {
+        return (gapStart <= t.end && gapEnd >= t.start);
+      });
+      return !overlaps;
+    });
+
+    // Calculate adjusted casting activity percentage
+    let adjustedUptimePct = uptimePct;
+    if (transitions.length > 0 && analysis.fight?.duration_seconds > 0) {
+      let overlapSeconds = 0;
+      gaps.forEach(gap => {
+        const gapStart = gap.start_seconds;
+        const gapEnd = gapStart + gap.duration_seconds;
+        transitions.some(t => {
+          if (gapStart <= t.end && gapEnd >= t.start) {
+            const oStart = Math.max(gapStart, t.start);
+            const oEnd = Math.min(gapEnd, t.end);
+            overlapSeconds += Math.max(0, oEnd - oStart);
+            return true;
+          }
+          return false;
+        });
+      });
+      
+      if (overlapSeconds > 0) {
+        const currentActiveSeconds = (uptimePct / 100) * analysis.fight.duration_seconds;
+        const adjustedActiveSeconds = Math.min(analysis.fight.duration_seconds, currentActiveSeconds + overlapSeconds);
+        adjustedUptimePct = (adjustedActiveSeconds / analysis.fight.duration_seconds) * 100;
+      }
+    }
+
     let uptimeClass = "uptime-low";
-    if (uptimePct >= 90) {
+    if (adjustedUptimePct >= 90) {
       uptimeClass = "uptime-high";
-    } else if (uptimePct >= 80) {
+    } else if (adjustedUptimePct >= 80) {
       uptimeClass = "uptime-medium";
     }
 
     let gapsHtml = "";
-    if (gaps.length === 0) {
+    if (filteredGaps.length === 0) {
       gapsHtml = `
         <li class="inactivity-gap-item" style="color: var(--green); font-weight: 600;">
           🟢 Flawless casting rotation! No inactivity gaps recorded.
         </li>
       `;
     } else {
-      gapsHtml = gaps.slice(0, 5).map(gap => {
+      gapsHtml = filteredGaps.slice(0, 5).map(gap => {
         const mins = Math.floor(gap.start_seconds / 60);
         const secs = Math.floor(gap.start_seconds % 60);
         const timeStr = `${mins}:${String(secs).padStart(2, "0")}`;
@@ -2826,26 +3041,36 @@ function showPlayerCoachCard(playerName) {
         `;
       }).join("");
 
-      if (gaps.length > 5) {
+      if (filteredGaps.length > 5) {
         gapsHtml += `
           <li class="inactivity-gap-item" style="color: var(--muted); font-size: 11px; margin-top: 4px;">
-            ... and ${gaps.length - 5} more rotational gaps detected.
+            ... and ${filteredGaps.length - 5} more rotational gaps detected.
           </li>
         `;
       }
+    }
+
+    // Add badge if any gaps were paused/filtered
+    const gapsFilteredCount = gaps.length - filteredGaps.length;
+    if (gapsFilteredCount > 0) {
+      gapsHtml += `
+        <li class="inactivity-gap-item" style="color: var(--blue); font-weight: 650; display: flex; align-items: center; gap: 6px;">
+          🛡️ Paused ${gapsFilteredCount} gap(s) overlapping with global boss intermissions.
+        </li>
+      `;
     }
 
     coachInactivityCard.innerHTML = `
       <div class="coach-inactivity-wrapper">
         <div class="coach-inactivity-header">
           <span class="coach-inactivity-title" style="color: var(--muted)">Casting Activity</span>
-          <strong style="font-size: 14px; font-family: monospace;">${uptimePct.toFixed(1)}%</strong>
+          <strong style="font-size: 14px; font-family: monospace;">${adjustedUptimePct.toFixed(1)}% ${gapsFilteredCount > 0 ? `<span style="font-size: 10px; color: var(--blue);">(Calibrated)</span>` : ""}</strong>
         </div>
         <div class="coach-inactivity-bar-container">
-          <div class="coach-inactivity-bar ${uptimeClass}" style="width: ${uptimePct}%"></div>
+          <div class="coach-inactivity-bar ${uptimeClass}" style="width: ${adjustedUptimePct}%"></div>
         </div>
         <p style="font-size: 11px; color: var(--muted); margin: 0 0 12px 0; line-height: 1.4;">
-          Target a casting uptime of <strong>90%+</strong>. Gaps occur when you go 5+ seconds without casting any offensive, defensive, or utility spells.
+          Target a casting uptime of <strong>90%+</strong>. Gaps occur when you go 5+ seconds without casting any offensive, defensive, or utility spells. Global intermissions are automatically calibrated out.
         </p>
         <ul class="inactivity-gap-list">
           ${gapsHtml}
@@ -2857,7 +3082,6 @@ function showPlayerCoachCard(playerName) {
   // 5. Visual Smooth Open
   if (drawer) {
     drawer.classList.remove("hidden");
-    // Reflow
     drawer.offsetHeight;
     drawer.classList.add("active");
   }
