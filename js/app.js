@@ -772,7 +772,7 @@ function renderActiveTab() {
     }
 
     if (selectedTab === "benchmarks") {
-      renderBenchmarksTab(analysis.benchmarks || {}, playerLookup);
+      renderBenchmarksTab(analysis, playerLookup);
       return;
     }
 
@@ -816,8 +816,12 @@ function renderSummary(data, analysis, playerLookup) {
   const raid = analysis.raid || {};
   const scorecard = analysis.scorecard || [];
   const issues = analysis.issues || [];
-  const timelineSummary = analysis.timeline_summary || {};
   const worstPlayer = scorecard[0];
+
+  const timeline = analysis.timeline || [];
+  const deathsCount = timeline.filter(e => e.type === "death").length;
+  const mechanicsCount = timeline.filter(e => e.type === "mechanic").length;
+  const cooldownsCount = timeline.filter(e => e.type === "cooldown").length;
 
   document.getElementById("selectedBossTitle").textContent =
     fight.name || "Report Summary";
@@ -835,9 +839,9 @@ function renderSummary(data, analysis, playerLookup) {
     ["Players", String(scorecard.length)],
     ["Top Concern", worstPlayer ? getPlayerDisplayName(worstPlayer.player, playerLookup) : "None"],
     ["Issues", String(issues.length)],
-    ["Deaths", String(timelineSummary.deaths ?? "N/A")],
-    ["Mechanics", String(timelineSummary.mechanics ?? "N/A")],
-    ["Cooldowns", String(timelineSummary.cooldowns ?? "N/A")]
+    ["Deaths", String(deathsCount)],
+    ["Mechanics", String(mechanicsCount)],
+    ["Cooldowns", String(cooldownsCount)]
   ];
 
   const grid = document.getElementById("summaryGrid");
@@ -1012,13 +1016,56 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
   `;
 }
 
-function renderBenchmarksTab(benchmarks, playerLookup) {
-  const benchmarkEntries = Object.entries(benchmarks || {});
+function renderBenchmarksTab(analysis, playerLookup) {
+  const benchmarks = analysis.benchmarks || {};
+  const benchmarkEntries = Object.entries(benchmarks);
+  const fight = analysis.fight || {};
+  const playerMetrics = analysis.player_metrics || {};
 
   if (!benchmarkEntries.length) {
     renderEmptyTab("Benchmark Comparisons", "No benchmark data available.");
     return;
   }
+
+  // Count Tanks, Healers, and DPS
+  let tanksCount = 0;
+  let healersCount = 0;
+  let dpsCount = 0;
+  
+  for (const playerVal of Object.values(playerMetrics)) {
+    const role = playerVal.identity?.role;
+    if (role === "Tank") tanksCount++;
+    else if (role === "Healer") healersCount++;
+    else if (role === "DPS") dpsCount++;
+  }
+
+  // Identify Top DPS and Top Healer
+  let topDpsName = "—";
+  let maxDps = 0;
+  let topHealerName = "—";
+  let maxHps = 0;
+
+  for (const [playerName, playerVal] of Object.entries(playerMetrics)) {
+    const role = playerVal.identity?.role;
+    const perf = playerVal.performance || {};
+
+    if (role === "DPS") {
+      const dps = perf.dps || 0;
+      if (dps > maxDps) {
+        maxDps = dps;
+        topDpsName = playerName;
+      }
+    } else if (role === "Healer") {
+      const hps = perf.hps || 0;
+      if (hps > maxHps) {
+        maxHps = hps;
+        topHealerName = playerName;
+      }
+    }
+  }
+
+  const displayTopDps = topDpsName !== "—" ? getPlayerDisplayName(topDpsName, playerLookup) : "—";
+  const displayTopHealer = topHealerName !== "—" ? getPlayerDisplayName(topHealerName, playerLookup) : "—";
 
   document.getElementById("tabContent").innerHTML = `
     <h2 class="tab-panel-title">Benchmark Comparisons</h2>
@@ -1027,6 +1074,24 @@ function renderBenchmarksTab(benchmarks, playerLookup) {
     </p>
 
     <div id="rosterChartContainer" class="chart-container"></div>
+
+    <div class="raid-overview-banner" style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; font-size: 13px; padding: 12px 18px; background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 8px; margin: 18px 0; color: #e2e8f0; font-weight: 500; font-family: inherit;">
+      <span style="color: var(--blue); font-weight: 750; letter-spacing: 0.03em;">[Raid Overview]</span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Status: <strong style="color: ${fight.kill ? 'var(--green)' : 'var(--red)'}; font-weight: 700;">${fight.kill ? 'Kill' : 'Wipe'}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Fight Length: <strong style="color: var(--text);">${formatDurationSeconds(fight.duration_seconds)}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span># of Tanks: <strong style="color: var(--text);">${tanksCount}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span># of Healers: <strong style="color: var(--text);">${healersCount}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span># of DPS: <strong style="color: var(--text);">${dpsCount}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Top DPS: <strong style="color: var(--orange); font-weight: 700;">${displayTopDps}</strong></span>
+      <span style="opacity: 0.3;">|</span>
+      <span>Top Healer: <strong style="color: var(--green); font-weight: 700;">${displayTopHealer}</strong></span>
+    </div>
 
     <div class="table-wrapper">
       <table>
