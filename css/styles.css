@@ -2446,4 +2446,157 @@ body {
 	border-color: rgba(244, 63, 94, 0.4) !important;
 	transform: translateY(-1px);
 }
+
+/* Player Coach Inactivity ABC styles */
+.coach-inactivity-wrapper {
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 16px;
+	margin-bottom: 20px;
+}
+
+.coach-inactivity-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.coach-inactivity-title {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--text);
+}
+
+.coach-inactivity-bar-container {
+	height: 8px;
+	background: rgba(255, 255, 255, 0.08);
+	border-radius: 999px;
+	overflow: hidden;
+	margin-bottom: 14px;
+}
+
+.coach-inactivity-bar {
+	height: 100%;
+	border-radius: 999px;
+	transition: width 0.3s ease;
+}
+
+.coach-inactivity-bar.uptime-high {
+	background: var(--green);
+}
+
+.coach-inactivity-bar.uptime-medium {
+	background: var(--yellow);
+}
+
+.coach-inactivity-bar.uptime-low {
+	background: var(--red);
+}
+
+.inactivity-gap-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.inactivity-gap-item {
+	font-size: 13px;
+	color: var(--muted);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.inactivity-gap-dot {
+	width: 6px;
+	height: 6px;
+	background: var(--orange);
+	border-radius: 999px;
+}
+
+/* SVG Timeline Visualizer styles */
+.timeline-visual-ruler-card {
+	background: var(--panel-2);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 20px;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow);
+}
+
+.timeline-visual-ruler-title {
+	font-size: 15px;
+	font-weight: 800;
+	color: var(--blue);
+	margin-bottom: 6px;
+}
+
+.timeline-visual-ruler-subtitle {
+	font-size: 12.5px;
+	color: var(--muted);
+	margin-bottom: 18px;
+}
+
+.timeline-svg-container {
+	position: relative;
+	width: 100%;
+	height: 80px;
+}
+
+.timeline-svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.timeline-svg-line {
+	stroke: var(--border);
+	stroke-width: 3;
+	stroke-linecap: round;
+}
+
+.timeline-svg-tick {
+	stroke: rgba(255, 255, 255, 0.15);
+	stroke-width: 1.5;
+}
+
+.timeline-svg-tick-text {
+	fill: var(--muted);
+	font-size: 10px;
+	font-family: monospace;
+	text-anchor: middle;
+}
+
+.timeline-svg-node {
+	cursor: pointer;
+	transition: r 0.15s ease, fill-opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.timeline-svg-node:hover {
+	r: 8 !important;
+	stroke-width: 2.5;
+}
+
+.timeline-svg-node.node-death {
+	fill: var(--red);
+	stroke: #ffffff;
+	stroke-width: 1.5;
+}
+
+.timeline-svg-node.node-cooldown {
+	fill: var(--blue);
+	stroke: #ffffff;
+	stroke-width: 1.5;
+}
+
+.timeline-svg-node.node-mechanic {
+	fill: var(--yellow);
+	stroke: #ffffff;
+	stroke-width: 1.5;
+}
 

@@ -1322,11 +1322,124 @@ function renderTimelineTab(timeline, playerLookup) {
     return;
   }
 
+  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const fight = analysis?.fight || {};
+  const duration = fight.duration_seconds || 1;
+  const startTime = fight.start_time || 0;
+
+  // Let's create visual ruler ticks and nodes
+  const width = 1000;
+  const height = 80;
+  const margin = { left: 40, right: 40 };
+  const graphWidth = width - margin.left - margin.right;
+  const lineY = height / 2 - 10;
+
+  // 1. Draw Minute Ticks
+  const numMinutes = Math.ceil(duration / 60);
+  const ticksHtml = [];
+  for (let i = 0; i <= numMinutes; i++) {
+    const minutesSeconds = i * 60;
+    const pct = Math.min(1, minutesSeconds / duration);
+    const x = margin.left + pct * graphWidth;
+    ticksHtml.push(`
+      <line x1="${x}" y1="${lineY - 6}" x2="${x}" y2="${lineY + 6}" class="timeline-svg-tick" />
+      <text x="${x}" y="${lineY + 22}" class="timeline-svg-tick-text">${i}:00</text>
+    `);
+  }
+
+  // 2. Draw Event Nodes (Cooldowns, Deaths, Avoidable Mechanics)
+  const nodesHtml = timeline.map((event, idx) => {
+    const offsetMs = event.timestamp - startTime;
+    const pct = Math.max(0, Math.min(1, offsetMs / (duration * 1000)));
+    const x = margin.left + pct * graphWidth;
+
+    let nodeClass = "node-mechanic";
+    let r = 5.5;
+
+    if (event.type === "death") {
+      nodeClass = "node-death";
+      r = 7.5;
+    } else if (event.type === "cooldown") {
+      nodeClass = "node-cooldown";
+      r = 5.5;
+    }
+
+    let hoverAction = `onmouseenter="showTimelineNodeTooltip(event, ${idx})" onmousemove="moveTooltip(event)" onmouseleave="hideTooltip()"`;
+    let clickAction = "";
+    if (event.type === "death") {
+      clickAction = `onclick="showPlayerDeathsRecap('${escapeHtml(event.target)}')"`;
+    }
+
+    return `
+      <circle
+        cx="${x}"
+        cy="${lineY}"
+        r="${r}"
+        class="timeline-svg-node ${nodeClass}"
+        ${hoverAction}
+        ${clickAction}
+      />
+    `;
+  }).join("");
+
+  // Setup window-level tooltip helper for SVG timeline
+  window.showTimelineNodeTooltip = (e, index) => {
+    const ev = timeline[index];
+    const typeLabel = ev.type.toUpperCase();
+    const spellLabel = ev.spell_name || "—";
+    
+    let tooltipTitle = `${ev.time} · ${typeLabel}`;
+    let tooltipFields = [
+      { label: "Details", value: ev.summary }
+    ];
+
+    if (ev.type === "death") {
+      tooltipTitle = `☠ Death: ${ev.target}`;
+      tooltipFields = [
+        { label: "Time", value: ev.time },
+        { label: "Action", value: "Click to open Death Recap! ☠" }
+      ];
+    } else if (ev.type === "cooldown") {
+      tooltipTitle = `🛡️ Cooldown: ${spellLabel}`;
+      tooltipFields = [
+        { label: "Cast By", value: ev.source },
+        { label: "Time", value: ev.time }
+      ];
+    } else if (ev.type === "mechanic") {
+      tooltipTitle = `⚠️ Mechanic: ${spellLabel}`;
+      tooltipFields = [
+        { label: "Target", value: ev.target },
+        { label: "Amount", value: `${formatNumber(ev.amount)} dmg` },
+        { label: "Hits Aggregated", value: String(ev.hits || 1) },
+        { label: "Time", value: ev.time }
+      ];
+    }
+
+    showTooltip(e, tooltipTitle, tooltipFields);
+  };
+
+  const svgHtml = `
+    <div class="timeline-visual-ruler-card">
+      <div class="timeline-visual-ruler-title">Combat Timeline Visualizer</div>
+      <div class="timeline-visual-ruler-subtitle">Visual overview of key fight events. Hover dots for details; click skulls (☠) to view Death Recaps.</div>
+      
+      <div class="timeline-svg-container">
+        <svg viewBox="0 0 ${width} ${height}" class="timeline-svg">
+          <line x1="${margin.left}" y1="${lineY}" x2="${width - margin.right}" y2="${lineY}" class="timeline-svg-line" />
+          ${ticksHtml.join("")}
+          ${nodesHtml}
+        </svg>
+      </div>
+    </div>
+  `;
+
   document.getElementById("tabContent").innerHTML = `
     <h2 class="tab-panel-title">Timeline</h2>
     <p class="tab-panel-description">
       Important fight events detected during the selected boss encounter.
     </p>
+
+    ${svgHtml}
 
     <div class="table-wrapper">
       <table>
@@ -1653,6 +1766,68 @@ function showPlayerCoachCard(playerName) {
         </p>
       `;
     }
+  }
+
+  // 4.5. Casting Uptime & Inactivity Gaps
+  const coachInactivityCard = document.getElementById("coachInactivityCard");
+  if (coachInactivityCard) {
+    const activity = data.activity || {};
+    const uptimePct = activity.active_time_pct || 0.0;
+    const gaps = activity.gaps || [];
+
+    let uptimeClass = "uptime-low";
+    if (uptimePct >= 90) {
+      uptimeClass = "uptime-high";
+    } else if (uptimePct >= 80) {
+      uptimeClass = "uptime-medium";
+    }
+
+    let gapsHtml = "";
+    if (gaps.length === 0) {
+      gapsHtml = `
+        <li class="inactivity-gap-item" style="color: var(--green); font-weight: 600;">
+          🟢 Flawless casting rotation! No inactivity gaps recorded.
+        </li>
+      `;
+    } else {
+      gapsHtml = gaps.slice(0, 5).map(gap => {
+        const mins = Math.floor(gap.start_seconds / 60);
+        const secs = Math.floor(gap.start_seconds % 60);
+        const timeStr = `${mins}:${String(secs).padStart(2, "0")}`;
+        return `
+          <li class="inactivity-gap-item">
+            <span class="inactivity-gap-dot"></span>
+            <strong>${gap.duration_seconds}s</strong> inactivity gap detected at <strong>${timeStr}</strong> into fight
+          </li>
+        `;
+      }).join("");
+
+      if (gaps.length > 5) {
+        gapsHtml += `
+          <li class="inactivity-gap-item" style="color: var(--muted); font-size: 11px; margin-top: 4px;">
+            ... and ${gaps.length - 5} more rotational gaps detected.
+          </li>
+        `;
+      }
+    }
+
+    coachInactivityCard.innerHTML = `
+      <div class="coach-inactivity-wrapper">
+        <div class="coach-inactivity-header">
+          <span class="coach-inactivity-title" style="color: var(--muted)">Casting Activity</span>
+          <strong style="font-size: 14px; font-family: monospace;">${uptimePct.toFixed(1)}%</strong>
+        </div>
+        <div class="coach-inactivity-bar-container">
+          <div class="coach-inactivity-bar ${uptimeClass}" style="width: ${uptimePct}%"></div>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin: 0 0 12px 0; line-height: 1.4;">
+          Target a casting uptime of <strong>90%+</strong>. Gaps occur when you go 5+ seconds without casting any offensive, defensive, or utility spells.
+        </p>
+        <ul class="inactivity-gap-list">
+          ${gapsHtml}
+        </ul>
+      </div>
+    `;
   }
 
   // 5. Visual Smooth Open
