@@ -2424,4 +2424,26 @@ body {
 	color: #fda4af;
 	font-weight: 500;
 }
+
+/* Scorecard Deaths Column Trigger Cell */
+.death-recap-trigger-cell {
+	background: rgba(244, 63, 94, 0.1) !important;
+	border: 1px solid rgba(244, 63, 94, 0.22) !important;
+	color: #fda4af !important;
+	padding: 3px 8px !important;
+	font-size: 11.5px !important;
+	font-weight: 800 !important;
+	border-radius: 6px !important;
+	cursor: pointer;
+	transition: background 0.15s, transform 0.1s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.death-recap-trigger-cell:hover {
+	background: rgba(244, 63, 94, 0.18) !important;
+	border-color: rgba(244, 63, 94, 0.4) !important;
+	transform: translateY(-1px);
+}
 

@@ -952,6 +952,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
             <th>Class</th>
             <th>Spec</th>
             <th>Role</th>
+            <th>Deaths</th>
             <th>Grade</th>
             <th>Issue Score</th>
             <th>Major</th>
@@ -967,26 +968,24 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
             const performance = playerMetric.performance || {};
             const deathCount = performance.deaths || 0;
 
-            let deathRecapBtn = "";
+            let deathsCell = "";
             if (deathCount > 0) {
-              deathRecapBtn = `
-                <button type="button" class="death-trigger-btn" onclick="showPlayerDeathsRecap('${escapeHtml(row.player)}')">
-                  ☠ Death Recap
+              deathsCell = `
+                <button type="button" class="death-recap-trigger-cell" onclick="showPlayerDeathsRecap('${escapeHtml(row.player)}')">
+                  ${deathCount} <span style="font-size: 10px;">☠</span>
                 </button>
               `;
+            } else {
+              deathsCell = `<span style="color: var(--muted); opacity: 0.35;">0</span>`;
             }
 
             return `
               <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    ${renderPlayerName(row.player, playerLookup)}
-                    ${deathRecapBtn}
-                  </div>
-                </td>
+                <td>${renderPlayerName(row.player, playerLookup)}</td>
                 <td>${escapeHtml(player.className || "Unknown")}</td>
                 <td>${escapeHtml(player.spec || "Unknown")}</td>
                 <td>${escapeHtml(player.role || "Unknown")}</td>
+                <td>${deathsCell}</td>
                 <td><span class="pill grade-${escapeHtml(row.grade)}">${escapeHtml(row.grade)}</span></td>
                 <td>${escapeHtml(row.issue_score)}</td>
                 <td>${escapeHtml(row.major_count)}</td>
