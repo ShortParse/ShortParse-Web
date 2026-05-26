@@ -2612,6 +2612,8 @@ function renderBenchmarkEntry(entry) {
       View Compare
     </a>
   `;
+}
+
 const ENCOUNTER_TRANSITIONS = {
   "Midnight Falls": [
     { start: 200, end: 228, name: "Obelisk Stun Transition" }
