@@ -1264,6 +1264,9 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
   // Initialize filter defaults
   window.cooldownRoleFilter = window.cooldownRoleFilter || "all";
   window.cooldownCategoryFilter = window.cooldownCategoryFilter || "all";
+  window.cooldownViewMode = window.cooldownViewMode || "player";
+  window.cooldownWeightFilter = window.cooldownWeightFilter || "high_med";
+  window.cooldownSearchQuery = window.cooldownSearchQuery || "";
 
   const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
   const fight = analysis?.fight || {};
@@ -1272,10 +1275,279 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
   const tabContentEl = document.getElementById("tabContent");
   if (!tabContentEl) return;
 
+  function calculateRaidCDStats(playerMetrics, playerLookup) {
+    let totalCasts = 0;
+    let sumEfficiency = 0;
+    let countEfficiency = 0;
+    const missedAlerts = [];
+    let earliestHasteTime = null;
+
+    // Haste spell names
+    const hasteSpells = ["Bloodlust", "Heroism", "Time Warp", "Primal Rage", "Fury of the Aspects"];
+
+    for (const [playerName, data] of Object.entries(playerMetrics || {})) {
+      const playerInfo = playerLookup?.[playerName] || {};
+      const pClass = playerInfo.className || "Unknown Class";
+      const pRole = (playerInfo.role || "UNKNOWN").toUpperCase();
+
+      const cooldowns = data.cooldowns || {};
+      for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
+        const casts = cooldownData.casts ?? 0;
+        const expected = cooldownData.possible_casts ?? 0;
+        const weight = cooldownData.weight || "medium";
+        const efficiency = cooldownData.efficiency_pct ?? 0;
+        const timestamps = cooldownData.timestamps || [];
+
+        totalCasts += casts;
+
+        if (expected > 0 && (weight === "high" || weight === "medium")) {
+          sumEfficiency += efficiency;
+          countEfficiency++;
+        }
+
+        // Missed high-priority CD alert
+        if (weight === "high" && expected > 0 && casts === 0) {
+          missedAlerts.push({
+            playerName,
+            spellName: cooldownName,
+            pClass,
+            pRole,
+            expected
+          });
+        }
+
+        // Check for haste spells
+        if (hasteSpells.includes(cooldownName) && timestamps.length > 0) {
+          const firstCast = timestamps[0];
+          if (earliestHasteTime === null || firstCast < earliestHasteTime) {
+            earliestHasteTime = firstCast;
+          }
+        }
+      }
+    }
+
+    // Format Haste coverage text
+    let hasteText = "Missed";
+    let hasteClass = "fail-state";
+    if (earliestHasteTime !== null) {
+      const elapsedSec = (earliestHasteTime - startTime) / 1000;
+      hasteText = `Cast at ${formatTimelineTime(elapsedSec)}`;
+      hasteClass = "success-state";
+    }
+
+    const missedCount = missedAlerts.length;
+    const missedClass = missedCount > 0 ? "fail-state" : "success-state";
+    const avgEfficiency = countEfficiency > 0 ? Math.round(sumEfficiency / countEfficiency) : 0;
+
+    return {
+      totalCasts,
+      avgEfficiency,
+      missedCount,
+      missedClass,
+      missedAlerts,
+      hasteText,
+      hasteClass
+    };
+  }
+
   function getFilteredHTML() {
     const roleF = window.cooldownRoleFilter;
     const catF = window.cooldownCategoryFilter;
+    const viewF = window.cooldownViewMode;
+    const weightF = window.cooldownWeightFilter;
+    const searchF = window.cooldownSearchQuery.toLowerCase().trim();
 
+    // Group by Spell Rendering Mode
+    if (viewF === "spell") {
+      const spellGroups = {};
+
+      for (const [playerName, data] of Object.entries(playerMetrics || {})) {
+        const playerInfo = playerLookup?.[playerName] || {};
+        const pRole = (playerInfo.role || "UNKNOWN").toUpperCase();
+        const pSpec = playerInfo.spec || "Unknown Spec";
+        const pClass = playerInfo.className || "Unknown Class";
+
+        // Apply role filter
+        if (roleF !== "all") {
+          if (roleF === "tanks" && pRole !== "TANK") continue;
+          if (roleF === "healers" && pRole !== "HEALER") continue;
+          if (roleF === "dps" && pRole !== "DPS") continue;
+        }
+
+        const cooldowns = data.cooldowns || {};
+        for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
+          const cat = cooldownData.category;
+          const weight = cooldownData.weight || "medium";
+
+          // Apply category filter
+          if (catF !== "all") {
+            if (catF === "raid_defensive" && (cat !== "raid_defensive" && cat !== "raid_healing")) continue;
+            if (catF === "personal_defensive" && (cat !== "personal_defensive" && cat !== "personal_immunity")) continue;
+            if (catF === "external_defensive" && cat !== "external_defensive") continue;
+            if (catF === "raid_movement" && cat !== "raid_movement") continue;
+            if (catF === "raid_utility" && cat !== "raid_utility") continue;
+          }
+
+          // Apply weight filter
+          if (weightF === "high" && weight !== "high") continue;
+          if (weightF === "high_med" && weight === "low") continue;
+
+          // Apply search filter
+          if (searchF) {
+            const matchesPlayer = playerName.toLowerCase().includes(searchF);
+            const matchesSpell = cooldownName.toLowerCase().includes(searchF);
+            const matchesSpec = pSpec.toLowerCase().includes(searchF);
+            if (!matchesPlayer && !matchesSpell && !matchesSpec) continue;
+          }
+
+          if (!spellGroups[cooldownName]) {
+            spellGroups[cooldownName] = {
+              name: cooldownName,
+              category: cat,
+              weight: weight,
+              players: []
+            };
+          }
+
+          spellGroups[cooldownName].players.push({
+            playerName,
+            pClass,
+            pSpec,
+            pRole,
+            ...cooldownData
+          });
+        }
+      }
+
+      const spellList = Object.values(spellGroups);
+      if (spellList.length === 0) {
+        return `
+          <div class="cooldown-empty-state">
+            No spells matched the active filters or search criteria.
+          </div>
+        `;
+      }
+
+      // Sort spells: high weight first, then alphabetically
+      spellList.sort((a, b) => {
+        if (a.weight === "high" && b.weight !== "high") return -1;
+        if (a.weight !== "high" && b.weight === "high") return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      return `
+        <div class="cooldowns-spell-view-grid">
+          ${spellList.map(spell => {
+            const cat = spell.category || "unknown";
+            let catIcon = "🛡️";
+            let catLabel = "Personal";
+            let catClass = "badge-personal";
+
+            if (cat === "raid_defensive" || cat === "raid_healing") {
+              catIcon = "⭐";
+              catLabel = "Raid CD";
+              catClass = "badge-raid";
+            } else if (cat === "external_defensive") {
+              catIcon = "💖";
+              catLabel = "External";
+              catClass = "badge-external";
+            } else if (cat === "raid_movement") {
+              catIcon = "🏃";
+              catLabel = "Movement";
+              catClass = "badge-movement";
+            } else if (cat === "raid_utility") {
+              catIcon = "⚡";
+              catLabel = "Utility";
+              catClass = "badge-utility";
+            } else if (cat === "personal_immunity") {
+              catIcon = "💎";
+              catLabel = "Immune";
+              catClass = "badge-immune";
+            } else if (cat === "tank_defensive") {
+              catIcon = "🧱";
+              catLabel = "Tank CD";
+              catClass = "badge-tank";
+            }
+
+            const weightClass = spell.weight === "high" ? "badge-weight-high" : spell.weight === "medium" ? "badge-weight-med" : "badge-weight-low";
+            const weightLabel = spell.weight.toUpperCase();
+
+            // Sort players inside each spell by name
+            spell.players.sort((a, b) => a.playerName.localeCompare(b.playerName));
+
+            return `
+              <div class="cooldown-spell-group-card">
+                <div class="spell-group-header">
+                  <div class="spell-group-title-row">
+                    <span class="spell-group-icon">${catIcon}</span>
+                    <span class="spell-group-name">${escapeHtml(spell.name)}</span>
+                  </div>
+                  <div class="spell-group-badges">
+                    <span class="cooldown-spell-badge ${catClass}">${catLabel}</span>
+                    <span class="cooldown-weight-badge ${weightClass}">${weightLabel}</span>
+                  </div>
+                </div>
+
+                <div class="spell-group-players-list">
+                  ${spell.players.map(p => {
+                    const casts = p.casts ?? 0;
+                    const expected = p.possible_casts ?? 0;
+                    const efficiency = p.efficiency_pct ?? 0;
+                    const classColor = getClassColor(p.pClass);
+                    const timestamps = p.timestamps || [];
+
+                    let castClass = "neutral";
+                    if (expected > 0) {
+                      if (casts >= expected) castClass = "success";
+                      else if (casts > 0) castClass = "partial";
+                      else castClass = "fail";
+                    } else if (casts > 0) {
+                      castClass = "success";
+                    }
+
+                    let progressColor = "var(--blue)";
+                    if (efficiency >= 80) progressColor = "var(--green)";
+                    else if (efficiency >= 45) progressColor = "var(--yellow)";
+                    else if (casts === 0 && expected > 0) progressColor = "var(--red)";
+
+                    const timeBadgesHtml = timestamps.length > 0 
+                      ? timestamps.map(t => {
+                          const elapsedSec = (t - startTime) / 1000;
+                          return `<span class="cooldown-spell-time-badge">${formatTimelineTime(elapsedSec)}</span>`;
+                        }).join("")
+                      : `<span class="cooldown-spell-time-badge none red-alert">Never Cast</span>`;
+
+                    return `
+                      <div class="spell-player-row ${casts === 0 && expected > 0 ? "player-missed-cd" : ""}">
+                        <div class="spell-player-info">
+                          <span class="spell-player-name" style="color: ${classColor}" onclick="showPlayerCoachCard('${escapeHtml(p.playerName)}')">${escapeHtml(p.playerName)}</span>
+                          <span class="spell-player-spec">${escapeHtml(p.pSpec)}</span>
+                        </div>
+                        
+                        <div class="spell-player-stats">
+                          <span class="cooldown-spell-casts ${castClass}">${casts} / ${expected || "—"}</span>
+                          ${expected > 0 ? `
+                            <div class="spell-player-efficiency-mini" title="${efficiency}% efficiency">
+                              <div class="efficiency-mini-bar" style="width: ${efficiency}%; background-color: ${progressColor};"></div>
+                            </div>
+                          ` : ""}
+                        </div>
+
+                        <div class="spell-player-timeline">
+                          ${timeBadgesHtml}
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    // Default: Group by Player Rendering Mode
     let playersHtml = "";
     let matchedPlayersCount = 0;
 
@@ -1297,7 +1569,8 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
 
       for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
         const cat = cooldownData.category;
-        
+        const weight = cooldownData.weight || "medium";
+
         // Apply category filter
         if (catF !== "all") {
           if (catF === "raid_defensive" && (cat !== "raid_defensive" && cat !== "raid_healing")) continue;
@@ -1307,13 +1580,24 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
           if (catF === "raid_utility" && cat !== "raid_utility") continue;
         }
 
+        // Apply weight filter
+        if (weightF === "high" && weight !== "high") continue;
+        if (weightF === "high_med" && weight === "low") continue;
+
+        // Apply search filter
+        if (searchF) {
+          const matchesPlayer = playerName.toLowerCase().includes(searchF);
+          const matchesSpell = cooldownName.toLowerCase().includes(searchF);
+          const matchesSpec = pSpec.toLowerCase().includes(searchF);
+          if (!matchesPlayer && !matchesSpell && !matchesSpec) continue;
+        }
+
         filteredCooldownsList.push({
           cooldownName,
           ...cooldownData
         });
       }
 
-      // Skip player card if no cooldowns match the category filter
       if (filteredCooldownsList.length === 0) {
         continue;
       }
@@ -1321,13 +1605,22 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
       matchedPlayersCount++;
       const classColor = getClassColor(pClass);
 
+      // Sort player's cooldown spells: high weight first, then alphabetically
+      filteredCooldownsList.sort((a, b) => {
+        const aW = a.weight || "medium";
+        const bW = b.weight || "medium";
+        if (aW === "high" && bW !== "high") return -1;
+        if (aW !== "high" && bW === "high") return 1;
+        return a.cooldownName.localeCompare(b.cooldownName);
+      });
+
       const spellsHtml = filteredCooldownsList.map(spell => {
         const casts = spell.casts ?? 0;
         const expected = spell.possible_casts ?? 0;
         const efficiency = spell.efficiency_pct ?? 0;
         const cat = spell.category || "unknown";
+        const weight = spell.weight || "medium";
 
-        // Category badges
         let catIcon = "🛡️";
         let catLabel = "Personal";
         let catClass = "badge-personal";
@@ -1358,7 +1651,9 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
           catClass = "badge-tank";
         }
 
-        // Cast highlight status
+        const weightClass = weight === "high" ? "badge-weight-high" : weight === "medium" ? "badge-weight-med" : "badge-weight-low";
+        const weightLabel = weight.toUpperCase();
+
         let castClass = "neutral";
         if (expected > 0) {
           if (casts >= expected) castClass = "success";
@@ -1368,28 +1663,27 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
           castClass = "success";
         }
 
-        // Efficiency visual color
         let progressColor = "var(--blue)";
         if (efficiency >= 80) progressColor = "var(--green)";
         else if (efficiency >= 45) progressColor = "var(--yellow)";
         else if (casts === 0 && expected > 0) progressColor = "var(--red)";
 
-        // Cast Timestamps
         const timestamps = spell.timestamps || [];
         const timeBadgesHtml = timestamps.length > 0 
           ? timestamps.map(t => {
               const elapsedSec = (t - startTime) / 1000;
               return `<span class="cooldown-spell-time-badge">${formatTimelineTime(elapsedSec)}</span>`;
             }).join("")
-          : `<span class="cooldown-spell-time-badge none">Never Cast</span>`;
+          : `<span class="cooldown-spell-time-badge none ${expected > 0 ? "red-alert" : ""}">Never Cast</span>`;
 
         return `
-          <div class="cooldown-spell-card">
+          <div class="cooldown-spell-card ${casts === 0 && expected > 0 ? "missed-spell-card" : ""}">
             <div class="cooldown-spell-row">
               <div class="cooldown-spell-left">
                 <span class="cooldown-spell-icon">${catIcon}</span>
                 <span class="cooldown-spell-name">${escapeHtml(spell.cooldownName)}</span>
                 <span class="cooldown-spell-badge ${catClass}">${catLabel}</span>
+                <span class="cooldown-weight-badge ${weightClass}">${weightLabel}</span>
               </div>
               <span class="cooldown-spell-casts ${castClass}">${casts} / ${expected || "—"}</span>
             </div>
@@ -1414,7 +1708,7 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
         <div class="cooldown-player-card">
           <div class="cooldown-player-header">
             <div>
-              <span class="cooldown-player-name" style="color: ${classColor}">${escapeHtml(playerName)}</span>
+              <span class="cooldown-player-name" style="color: ${classColor}" onclick="showPlayerCoachCard('${escapeHtml(playerName)}')">${escapeHtml(playerName)}</span>
               <span class="cooldown-player-badge">${escapeHtml(pSpec)}</span>
             </div>
             <span class="cooldown-player-role-tag">${pRole === "TANK" ? "🛡️ Tank" : pRole === "HEALER" ? "💚 Healer" : "⚔️ DPS"}</span>
@@ -1451,16 +1745,113 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
     renderAll();
   };
 
+  window.setCooldownViewMode = function(mode) {
+    window.cooldownViewMode = mode;
+    renderAll();
+  };
+
+  window.setCooldownWeightFilter = function(weight) {
+    window.cooldownWeightFilter = weight;
+    renderAll();
+  };
+
+  window.setCooldownSearchQuery = function(query) {
+    window.cooldownSearchQuery = query;
+    renderGridOnly();
+  };
+
+  function renderGridOnly() {
+    const gridContainer = document.getElementById("cooldownsGridContainer");
+    if (gridContainer) {
+      gridContainer.innerHTML = getFilteredHTML();
+    }
+  }
+
   function renderAll() {
     const roleF = window.cooldownRoleFilter;
     const catF = window.cooldownCategoryFilter;
+    const viewF = window.cooldownViewMode;
+    const weightF = window.cooldownWeightFilter;
+    const searchF = window.cooldownSearchQuery;
+
+    const stats = calculateRaidCDStats(playerMetrics, playerLookup);
 
     tabContentEl.innerHTML = `
       <h2 class="tab-panel-title">Cooldowns Dashboard</h2>
       <p class="tab-panel-description">
-        Defensive, immunity, and utility cooldown usage detected during the selected fight. Use filters below to drill down.
+        Defensive, offensive, and utility cooldown usage detected during the selected fight. Use filters below to drill down.
       </p>
 
+      <!-- Executive Header -->
+      <div class="cooldown-dashboard-header">
+        <!-- Scorecard -->
+        <div class="cooldown-scorecard">
+          <div class="scorecard-stat">
+            <span class="stat-label">Haste Coverage</span>
+            <span class="stat-value ${stats.hasteClass}">${stats.hasteText}</span>
+          </div>
+          <div class="scorecard-stat">
+            <span class="stat-label">Key CDs Missed</span>
+            <span class="stat-value ${stats.missedClass}">${stats.missedCount}</span>
+          </div>
+          <div class="scorecard-stat">
+            <span class="stat-label">Avg CD Efficiency</span>
+            <span class="stat-value">${stats.avgEfficiency}%</span>
+          </div>
+          <div class="scorecard-stat">
+            <span class="stat-label">Total CD Casts</span>
+            <span class="stat-value">${stats.totalCasts}</span>
+          </div>
+        </div>
+
+        <!-- Critical Failures Alerts -->
+        ${stats.missedCount > 0 ? `
+          <div class="cooldown-alerts-panel">
+            <div class="alerts-panel-title">
+              <span class="alert-icon">⚠️</span> Critical Cooldown Failures
+            </div>
+            <div class="alerts-list">
+              ${stats.missedAlerts.map(alert => {
+                const classColor = getClassColor(alert.pClass);
+                return `
+                  <div class="cooldown-alert-item">
+                    <span class="alert-player" style="color: ${classColor}">${escapeHtml(alert.playerName)}</span>
+                    <span class="alert-action">failed to cast</span>
+                    <span class="alert-spell font-bold">${escapeHtml(alert.spellName)}</span>
+                    <span class="alert-meta">(${alert.expected} expected)</span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        ` : `
+          <div class="cooldown-alerts-panel success">
+            <div class="alerts-panel-title">
+              <span class="alert-icon">✨</span> Perfect Key Cooldown Execution!
+            </div>
+            <div class="alerts-panel-body">
+              All high-priority defensive and utility raid cooldowns were cast at least once. Outstanding!
+            </div>
+          </div>
+        `}
+      </div>
+
+      <!-- Controls and Filters Bar -->
+      <div class="cooldown-controls-bar">
+        <!-- Search -->
+        <div class="cooldown-search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="cooldownSearchInput" placeholder="Search players, specs, or spells..." value="${escapeHtml(searchF)}" oninput="setCooldownSearchQuery(this.value)">
+        </div>
+
+        <!-- View Mode Toggle -->
+        <div class="cooldown-view-toggle">
+          <button class="cooldown-toggle-btn ${viewF === "player" ? "active" : ""}" onclick="setCooldownViewMode('player')">👤 Player View</button>
+          <button class="cooldown-toggle-btn ${viewF === "spell" ? "active" : ""}" onclick="setCooldownViewMode('spell')">🔮 Spell View</button>
+        </div>
+      </div>
+
+      <!-- Filter Controls Bar -->
       <div class="cooldown-filters-container">
         <!-- Role Filters -->
         <div class="cooldown-filter-group">
@@ -1485,9 +1876,19 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
             <button class="cooldown-filter-pill ${catF === "raid_utility" ? "active" : ""}" onclick="setCooldownCategoryFilter('raid_utility')">Utility</button>
           </div>
         </div>
+
+        <!-- Importance/Weight Filters -->
+        <div class="cooldown-filter-group">
+          <span class="filter-group-label">Importance</span>
+          <div class="filter-pills">
+            <button class="cooldown-filter-pill ${weightF === "high_med" ? "active" : ""}" onclick="setCooldownWeightFilter('high_med')">High & Med Only</button>
+            <button class="cooldown-filter-pill ${weightF === "high" ? "active" : ""}" onclick="setCooldownWeightFilter('high')">High Only</button>
+            <button class="cooldown-filter-pill ${weightF === "all" ? "active" : ""}" onclick="setCooldownWeightFilter('all')">All Weights</button>
+          </div>
+        </div>
       </div>
 
-      <div id="cooldownsContainer">
+      <div id="cooldownsGridContainer">
         ${getFilteredHTML()}
       </div>
     `;
@@ -1775,6 +2176,7 @@ function showPlayerCoachCard(playerName) {
 
   const playerLookup = buildPlayerLookup(analysis);
   const player = playerLookup[playerName] || {};
+  const data = (analysis.player_metrics || {})[playerName] || {};
 
   // 1. Title and Spec Details
   const nameEl = document.getElementById("coachPlayerName");
