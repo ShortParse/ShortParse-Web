@@ -3270,4 +3270,258 @@ body {
 	flex: 1;
 }
 
+/* ==========================================
+   Visual Encounter Config Builder Styles
+   ========================================== */
+.builder-link:hover {
+	color: var(--blue) !important;
+	text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.builder-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 18px;
+}
+
+.builder-selectors-bar {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+	background: rgba(16, 20, 29, 0.5);
+	border: 1px solid var(--border);
+	padding: 18px 24px;
+	border-radius: 12px;
+	margin-bottom: 24px;
+}
+
+.builder-selectors-bar .selector-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.builder-selectors-bar label {
+	font-size: 12px;
+	font-weight: 650;
+	text-transform: uppercase;
+	color: var(--muted);
+	letter-spacing: 0.05em;
+}
+
+.builder-selectors-bar select {
+	background: #111520;
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 12px;
+	font-size: 14px;
+	font-weight: 500;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+	cursor: pointer;
+}
+
+.builder-selectors-bar select:focus:not(:disabled) {
+	border-color: var(--blue);
+	box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.builder-selectors-bar select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.builder-grid {
+	display: grid;
+	grid-template-columns: 1.1fr 0.9fr;
+	gap: 28px;
+	align-items: start;
+}
+
+@media (max-width: 1024px) {
+	.builder-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.builder-form-pane, .builder-preview-pane {
+	background: rgba(16, 20, 29, 0.3);
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	padding: 24px;
+}
+
+.pane-title {
+	font-size: 16px;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 20px;
+	color: var(--text);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+	padding-bottom: 10px;
+}
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 18px;
+}
+
+.form-group label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+	background: #111520;
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 12px;
+	font-size: 14px;
+	font-family: inherit;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+	border-color: var(--blue);
+	box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.form-row.split {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 18px;
+}
+
+@media (max-width: 600px) {
+	.form-row.split {
+		grid-template-columns: 1fr;
+		gap: 0;
+	}
+}
+
+.input-hint {
+	font-size: 11px;
+	color: var(--muted);
+	margin-top: -4px;
+}
+
+/* Switch styling */
+.checkbox-group {
+	justify-content: center;
+	margin-bottom: 22px;
+}
+
+.toggle-switch {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.toggle-switch input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.toggle-switch .slider {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 22px;
+	background-color: #1e293b;
+	border: 1px solid var(--border);
+	border-radius: 34px;
+	transition: 0.3s;
+}
+
+.toggle-switch .slider:before {
+	position: absolute;
+	content: "";
+	height: 14px;
+	width: 14px;
+	left: 3px;
+	bottom: 3px;
+	background-color: var(--muted);
+	border-radius: 50%;
+	transition: 0.3s;
+}
+
+.toggle-switch input:checked + .slider {
+	background-color: rgba(56, 189, 248, 0.2);
+	border-color: var(--blue);
+}
+
+.toggle-switch input:checked + .slider:before {
+	transform: translateX(22px);
+	background-color: var(--blue);
+}
+
+.toggle-switch .label-text {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text);
+}
+
+/* Code Preview */
+.code-container {
+	position: relative;
+	background: #090c11;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	overflow: hidden;
+	margin-bottom: 12px;
+	box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.code-badge {
+	display: block;
+	background: rgba(255, 255, 255, 0.03);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	padding: 8px 16px;
+	font-family: monospace;
+	font-size: 10px;
+	font-weight: bold;
+	color: var(--muted);
+	letter-spacing: 0.05em;
+}
+
+.code-container pre {
+	margin: 0;
+	padding: 16px;
+	overflow-x: auto;
+}
+
+.code-container code {
+	font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #e2e8f0;
+	white-space: pre;
+}
+
+#copyDiscordButton.copied {
+	background-color: var(--green) !important;
+	color: #05180c !important;
+}
+
+
 

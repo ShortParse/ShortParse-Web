@@ -78,6 +78,215 @@
       </div>
     </section>
 
+    <!-- Visual Encounter Config Builder -->
+    <section id="builderCard" class="card hidden">
+      <div class="section-header builder-header">
+        <div>
+          <h2>Visual Encounter Config Builder</h2>
+          <p class="section-description">
+            Add or edit raid boss avoidable damage mechanics and map them to their corresponding Warcraft Logs spell IDs.
+          </p>
+        </div>
+        <button id="builderCloseButton" class="logout-button" type="button" style="padding: 10px 18px; border-color: var(--border); font-size: 13px;">
+          Back to Reports
+        </button>
+      </div>
+
+      <!-- Selectors top panel -->
+      <div class="builder-selectors-bar">
+        <div class="selector-group">
+          <label for="builderRaidSelect">Raid Zone</label>
+          <select id="builderRaidSelect">
+            <option value="" disabled selected>Select a Raid...</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <label for="builderBossSelect">Boss Encounter</label>
+          <select id="builderBossSelect" disabled>
+            <option value="" disabled selected>Select a Boss...</option>
+          </select>
+        </div>
+        <div class="selector-group">
+          <label for="builderMechanicSelect">Raid Mechanic</label>
+          <select id="builderMechanicSelect" disabled>
+            <option value="" disabled selected>Select a Mechanic...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="builder-grid">
+        
+        <!-- Column 1: Fillable Form -->
+        <div class="builder-form-pane">
+          <h3 class="pane-title">Config Details</h3>
+          
+          <form id="mechanicForm" onsubmit="event.preventDefault();">
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="mechVariable">Python Variable Name</label>
+                <input id="mechVariable" type="text" placeholder="e.g. DIVINE_TOLL" required />
+                <span class="input-hint">Must be uppercase alphanumeric and underscores</span>
+              </div>
+              <div class="form-group">
+                <label for="mechName">Display Name</label>
+                <input id="mechName" type="text" placeholder="e.g. Divine Toll" required />
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="mechSeverity">Severity</label>
+                <select id="mechSeverity">
+                  <option value="Critical">Critical (One-Shot / Deadly)</option>
+                  <option value="Major" selected>Major (Heavy / Avoidable Damage)</option>
+                  <option value="Warning">Warning (Medium Penalty)</option>
+                  <option value="Info">Info (Minor / Reference Only)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="mechAppliesTo">Applies To</label>
+                <select id="mechAppliesTo">
+                  <option value="ALL_ROLES" selected>All Roles (ALL_ROLES)</option>
+                  <option value="NON_TANK_ROLES">Non-Tank Roles (NON_TANK_ROLES)</option>
+                  <option value="DPS_ONLY">DPS Only (DPS_ONLY)</option>
+                  <option value="HEALER_ONLY">Healers Only (HEALER_ONLY)</option>
+                  <option value="TANK_ONLY">Tanks Only (TANK_ONLY)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group checkbox-group">
+                <label class="toggle-switch">
+                  <input id="mechAvoidable" type="checkbox" checked />
+                  <span class="slider"></span>
+                  <span class="label-text">Avoidable mechanic?</span>
+                </label>
+              </div>
+              <div class="form-group checkbox-group">
+                <label class="toggle-switch">
+                  <input id="mechCountsAsFailure" type="checkbox" checked />
+                  <span class="slider"></span>
+                  <span class="label-text">Counts as failure?</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="mechCategory">Category</label>
+                <select id="mechCategory">
+                  <option value="avoidable_damage">Avoidable Damage (avoidable_damage)</option>
+                  <option value="ground_effect">Ground Effect (ground_effect)</option>
+                  <option value="swirl">Swirl (swirl)</option>
+                  <option value="traveling_projectile">Traveling Projectile (traveling_projectile)</option>
+                  <option value="beam">Beam (beam)</option>
+                  <option value="frontal">Frontal Cone (frontal)</option>
+                  <option value="rear_cone">Rear Cone (rear_cone)</option>
+                  <option value="forced_movement">Forced Movement (forced_movement)</option>
+                  <option value="interrupt">Interrupt (interrupt)</option>
+                  <option value="minimum_soak">Minimum Soak (minimum_soak)</option>
+                  <option value="soak_participation">Soak Participation (soak_participation)</option>
+                  <option value="bad_soak">Bad Soak / Do Not Soak (bad_soak)</option>
+                  <option value="dispel">Dispel Mechanic (dispel)</option>
+                  <option value="spread">Spread Mechanic (spread)</option>
+                  <option value="stack">Stack / Group Up (stack)</option>
+                  <option value="boss_threat">Boss Threat (boss_threat)</option>
+                  <option value="boss_range">Boss Distance (boss_range)</option>
+                  <option value="tank_buster">Tank Buster (tank_buster)</option>
+                  <option value="tank_positioning">Tank Positioning (tank_positioning)</option>
+                  <option value="add_management">Add Management (add_management)</option>
+                  <option value="add_priority">Add Priority Focus (add_priority)</option>
+                  <option value="corpse_explosion">Corpse Explosion (corpse_explosion)</option>
+                  <option value="bait">Bait Mechanic (bait)</option>
+                  <option value="lane_movement">Lane Movement (lane_movement)</option>
+                  <option value="debuff_damage">Debuff Damage (debuff_damage)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="mechFailureType">Failure Type</label>
+                <select id="mechFailureType">
+                  <option value="avoidable_damage" selected>Avoidable Damage (avoidable_damage)</option>
+                  <option value="missed_interrupt">Missed Interrupt (missed_interrupt)</option>
+                  <option value="minimum_soak">Minimum Soak Failure (minimum_soak)</option>
+                  <option value="zero_participation">Zero Soak Participation (zero_participation)</option>
+                  <option value="bad_soak">Bad Soak Failure (bad_soak)</option>
+                  <option value="missed_dispel">Missed Dispel (missed_dispel)</option>
+                  <option value="bad_dispel">Bad Dispel Failure (bad_dispel)</option>
+                  <option value="spread_failure">Spread Failure (spread_failure)</option>
+                  <option value="stack_failure">Stack Failure (stack_failure)</option>
+                  <option value="boss_range">Boss Range Failure (boss_range)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="mechMaxHits">Max Reasonable Hits</label>
+                <input id="mechMaxHits" type="number" min="0" value="1" />
+              </div>
+              <div class="form-group">
+                <label for="mechScoreHit">Score Penalty Per Hit</label>
+                <input id="mechScoreHit" type="number" min="0" max="100" value="45" />
+              </div>
+            </div>
+
+            <div class="form-row split">
+              <div class="form-group">
+                <label for="mechSpellIds">Spell IDs (comma separated)</label>
+                <input id="mechSpellIds" type="text" placeholder="e.g. 1248652, 1248653" required />
+                <span class="input-hint">List of numeric spell IDs mapped to this mechanic</span>
+              </div>
+              <div class="form-group">
+                <label for="mechWclType">Warcraft Logs Event Type</label>
+                <input id="mechWclType" type="text" value="damage_taken" placeholder="e.g. damage_taken" />
+              </div>
+            </div>
+
+            <div id="minSoakersGroup" class="form-group hidden">
+              <label for="mechMinSoakers">Minimum Soakers Required</label>
+              <input id="mechMinSoakers" type="number" min="0" value="2" />
+            </div>
+
+            <div class="form-group">
+              <label for="mechNote">Developer Note</label>
+              <textarea id="mechNote" placeholder="e.g. Traveling holy shields move across the platform and silence players hit." rows="3" required></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="mechRec">Raid Recommendation</label>
+              <textarea id="mechRec" placeholder="e.g. Dodge incoming Divine Toll shields." rows="3" required></textarea>
+            </div>
+          </form>
+        </div>
+
+        <!-- Column 2: Code Snippet Generation -->
+        <div class="builder-preview-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="pane-title" style="margin-bottom: 0;">Python Boilerplate Preview</h3>
+            <button id="copyDiscordButton" class="discord-post-btn" type="button" style="padding: 8px 16px; font-size: 13px; font-weight: bold; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 9H8v-2h8v2zm0 4H8v-2h8v2zm0-8H8V6h8v2z"/>
+              </svg>
+              Copy to Discord
+            </button>
+          </div>
+
+          <div class="code-container">
+            <span class="code-badge">MECHANIC OBJECT DEFINITION</span>
+            <pre><code id="mechanicBlockPreview">DIVINE_TOLL: Mechanic = { ... }</code></pre>
+          </div>
+
+          <div class="code-container" style="margin-top: 20px;">
+            <span class="code-badge">SPELL ALIAS MAPPER</span>
+            <pre><code id="aliasBlockPreview">**mechanic_aliases([1248652], DIVINE_TOLL),</code></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <section id="analyzeCard" class="card">
       <div class="section-header">
         <div>
@@ -149,6 +358,8 @@
   <footer class="site-footer">
     <div class="footer-left"> © 2026 ShortParse.com — All rights reserved. </div>
     <div class="footer-links">
+      <a class="footer-link builder-link" href="/builder" style="margin-right: 12px; font-weight: 500; color: var(--muted); transition: color 0.2s ease;">Want to contribute?</a>
+      <span style="opacity: 0.3; margin-right: 12px; color: var(--muted);">|</span>
       <a class="footer-link discord" href="https://discord.gg/G4nzqZsNDh" target="_blank" rel="noopener noreferrer">
         <span class="footer-icon">
           <svg viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">

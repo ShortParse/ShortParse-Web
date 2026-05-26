@@ -93,6 +93,18 @@ document.addEventListener("DOMContentLoaded", () => {
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
 
+  const builderLink = document.querySelector(".builder-link");
+  if (builderLink) {
+    builderLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      initVisualBuilder();
+    });
+  }
+
+  if (window.location.pathname === "/builder") {
+    initVisualBuilder();
+  }
+
   // Guild Logs Hub Collapse Trigger
   const guildHeader = document.getElementById("guildHubHeader");
   if (guildHeader) {
@@ -3785,3 +3797,376 @@ function closeDeathRecap() {
     }
   }, 300);
 }
+
+/* ==============================================================================
+   Visual Encounter Config Builder Orchestrator & Helpers
+   ============================================================================== */
+let builderData = []; // Local cache of raids, bosses, and mechanics
+
+function initVisualBuilder() {
+  // Hide all standard cards
+  document.getElementById("analyzeCard").classList.add("hidden");
+  document.getElementById("statusCard").classList.add("hidden");
+  
+  const dashboard = document.getElementById("guildDashboardCard");
+  if (dashboard) dashboard.classList.add("hidden");
+  
+  const resultCard = document.getElementById("resultCard");
+  if (resultCard) resultCard.classList.add("hidden");
+  
+  const bossTilesCard = document.getElementById("bossTilesCard");
+  if (bossTilesCard) bossTilesCard.classList.add("hidden");
+  
+  const detailsCard = document.getElementById("detailsCard");
+  if (detailsCard) detailsCard.classList.add("hidden");
+
+  // Show builder card
+  const builderCard = document.getElementById("builderCard");
+  if (builderCard) {
+    builderCard.classList.remove("hidden");
+    builderCard.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Update address bar
+  if (window.location.pathname !== "/builder") {
+    window.history.pushState({}, "", "/builder");
+  }
+
+  // Bind close buttons
+  const closeBtn = document.getElementById("builderCloseButton");
+  if (closeBtn) {
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    document.getElementById("builderCloseButton").addEventListener("click", () => {
+      window.history.pushState({}, "", "/");
+      document.getElementById("builderCard").classList.add("hidden");
+      document.getElementById("analyzeCard").classList.remove("hidden");
+      document.getElementById("statusCard").classList.remove("hidden");
+      if (dashboard) dashboard.classList.remove("hidden");
+    });
+  }
+
+  // Bind event listeners to dropdowns
+  const raidSelect = document.getElementById("builderRaidSelect");
+  const bossSelect = document.getElementById("builderBossSelect");
+  const mechSelect = document.getElementById("builderMechanicSelect");
+
+  // Prevent duplicate handlers on re-init
+  raidSelect.replaceWith(raidSelect.cloneNode(true));
+  bossSelect.replaceWith(bossSelect.cloneNode(true));
+  mechSelect.replaceWith(mechSelect.cloneNode(true));
+
+  document.getElementById("builderRaidSelect").addEventListener("change", handleRaidChange);
+  document.getElementById("builderBossSelect").addEventListener("change", handleBossChange);
+  document.getElementById("builderMechanicSelect").addEventListener("change", handleMechanicChange);
+
+  // Bind event listeners to form inputs for live regeneration
+  const formFields = [
+    "mechVariable", "mechName", "mechSeverity", "mechAppliesTo",
+    "mechAvoidable", "mechCountsAsFailure", "mechCategory", "mechFailureType",
+    "mechMaxHits", "mechScoreHit", "mechSpellIds", "mechWclType",
+    "mechMinSoakers", "mechNote", "mechRec"
+  ];
+
+  formFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.replaceWith(el.cloneNode(true));
+      const newEl = document.getElementById(id);
+      newEl.addEventListener("input", updateBoilerplatePreviews);
+      newEl.addEventListener("change", updateBoilerplatePreviews);
+    }
+  });
+
+  // Intel auto-suggest score per hit based on severity changes
+  const severitySelect = document.getElementById("mechSeverity");
+  severitySelect.addEventListener("change", () => {
+    const scoreInput = document.getElementById("mechScoreHit");
+    switch (severitySelect.value) {
+      case "Critical":
+        scoreInput.value = 80;
+        break;
+      case "Major":
+        scoreInput.value = 45;
+        break;
+      case "Warning":
+        scoreInput.value = 25;
+        break;
+      case "Info":
+        scoreInput.value = 5;
+        break;
+    }
+    updateBoilerplatePreviews();
+  });
+
+  // Toggle min soakers row based on category/failure_type
+  const categorySelect = document.getElementById("mechCategory");
+  const failureTypeSelect = document.getElementById("mechFailureType");
+  const toggleMinSoakers = () => {
+    const isSoak = categorySelect.value.includes("soak") || 
+                   categorySelect.value.includes("stack") ||
+                   failureTypeSelect.value.includes("soak") ||
+                   failureTypeSelect.value.includes("stack");
+    const minSoakersGroup = document.getElementById("minSoakersGroup");
+    if (minSoakersGroup) {
+      minSoakersGroup.classList.toggle("hidden", !isSoak);
+    }
+  };
+  categorySelect.addEventListener("change", toggleMinSoakers);
+  failureTypeSelect.addEventListener("change", toggleMinSoakers);
+
+  // Bind copy button
+  const copyBtn = document.getElementById("copyDiscordButton");
+  if (copyBtn) {
+    copyBtn.replaceWith(copyBtn.cloneNode(true));
+    document.getElementById("copyDiscordButton").addEventListener("click", copyBoilerplateToDiscord);
+  }
+
+  // Fetch API encounters
+  fetchEncountersData();
+}
+
+function fetchEncountersData() {
+  fetch("/api/encounters")
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to load encounter database");
+      return res.json();
+    })
+    .then(data => {
+      builderData = data;
+      populateRaidSelect();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error fetching encounter data from backend. Make sure your ShortParse server is running.");
+    });
+}
+
+function populateRaidSelect() {
+  const select = document.getElementById("builderRaidSelect");
+  select.innerHTML = '<option value="" disabled selected>Select a Raid Zone...</option>';
+  
+  builderData.forEach(raid => {
+    const opt = document.createElement("option");
+    opt.value = raid.id;
+    opt.textContent = raid.name;
+    select.appendChild(opt);
+  });
+
+  // Reset boss and mechanic selectors
+  const bossSelect = document.getElementById("builderBossSelect");
+  bossSelect.innerHTML = '<option value="" disabled selected>Select a Boss...</option>';
+  bossSelect.disabled = true;
+
+  const mechSelect = document.getElementById("builderMechanicSelect");
+  mechSelect.innerHTML = '<option value="" disabled selected>Select a Mechanic...</option>';
+  mechSelect.disabled = true;
+}
+
+function handleRaidChange() {
+  const raidId = document.getElementById("builderRaidSelect").value;
+  const raid = builderData.find(r => r.id === raidId);
+  if (!raid) return;
+
+  const bossSelect = document.getElementById("builderBossSelect");
+  bossSelect.innerHTML = '<option value="" disabled selected>Select a Boss Encounter...</option>';
+  bossSelect.disabled = false;
+
+  raid.bosses.forEach(boss => {
+    const opt = document.createElement("option");
+    opt.value = boss.id;
+    opt.textContent = boss.name;
+    bossSelect.appendChild(opt);
+  });
+
+  // Reset mechanic selector
+  const mechSelect = document.getElementById("builderMechanicSelect");
+  mechSelect.innerHTML = '<option value="" disabled selected>Select a Mechanic...</option>';
+  mechSelect.disabled = true;
+
+  updateBoilerplatePreviews();
+}
+
+function handleBossChange() {
+  const raidId = document.getElementById("builderRaidSelect").value;
+  const bossId = parseInt(document.getElementById("builderBossSelect").value);
+  
+  const raid = builderData.find(r => r.id === raidId);
+  if (!raid) return;
+  
+  const boss = raid.bosses.find(b => b.id === bossId);
+  if (!boss) return;
+
+  const mechSelect = document.getElementById("builderMechanicSelect");
+  mechSelect.innerHTML = `
+    <option value="" disabled selected>Select a Mechanic...</option>
+    <option value="__NEW__">[ Create New Mechanic ]</option>
+  `;
+  mechSelect.disabled = false;
+
+  boss.mechanics.forEach(mech => {
+    const opt = document.createElement("option");
+    opt.value = mech.variable_name;
+    opt.textContent = `${mech.name} (${mech.variable_name})`;
+    mechSelect.appendChild(opt);
+  });
+
+  // Select NEW by default when changing bosses
+  mechSelect.value = "__NEW__";
+  handleMechanicChange();
+}
+
+function handleMechanicChange() {
+  const raidId = document.getElementById("builderRaidSelect").value;
+  const bossId = parseInt(document.getElementById("builderBossSelect").value);
+  const mechVarName = document.getElementById("builderMechanicSelect").value;
+
+  if (mechVarName === "__NEW__") {
+    // Reset form for new mechanic
+    document.getElementById("mechanicForm").reset();
+    document.getElementById("mechVariable").value = "NEW_MECHANIC";
+    document.getElementById("mechName").value = "New Mechanic";
+    document.getElementById("mechSeverity").value = "Major";
+    document.getElementById("mechAppliesTo").value = "ALL_ROLES";
+    document.getElementById("mechAvoidable").checked = true;
+    document.getElementById("mechCountsAsFailure").checked = true;
+    document.getElementById("mechCategory").value = "avoidable_damage";
+    document.getElementById("mechFailureType").value = "avoidable_damage";
+    document.getElementById("mechMaxHits").value = "1";
+    document.getElementById("mechScoreHit").value = "45";
+    document.getElementById("mechSpellIds").value = "";
+    document.getElementById("mechWclType").value = "damage_taken";
+    document.getElementById("mechMinSoakers").value = "2";
+    document.getElementById("mechNote").value = "";
+    document.getElementById("mechRec").value = "";
+  } else {
+    // Load existing mechanic
+    const raid = builderData.find(r => r.id === raidId);
+    if (!raid) return;
+    const boss = raid.bosses.find(b => b.id === bossId);
+    if (!boss) return;
+    const mech = boss.mechanics.find(m => m.variable_name === mechVarName);
+    if (!mech) return;
+
+    // Map to form
+    document.getElementById("mechVariable").value = mech.variable_name;
+    document.getElementById("mechName").value = mech.name;
+    document.getElementById("mechSeverity").value = mech.severity;
+    
+    // Map applies_to list to select value
+    const roles = mech.applies_to || [];
+    let rolesConst = "ALL_ROLES";
+    if (roles.length === 3) rolesConst = "ALL_ROLES";
+    else if (roles.length === 2 && roles.includes("DPS") && roles.includes("Healer")) rolesConst = "NON_TANK_ROLES";
+    else if (roles.length === 1 && roles[0] === "DPS") rolesConst = "DPS_ONLY";
+    else if (roles.length === 1 && roles[0] === "Healer") rolesConst = "HEALER_ONLY";
+    else if (roles.length === 1 && roles[0] === "Tank") rolesConst = "TANK_ONLY";
+    document.getElementById("mechAppliesTo").value = rolesConst;
+
+    document.getElementById("mechAvoidable").checked = mech.avoidable;
+    document.getElementById("mechCountsAsFailure").checked = mech.counts_as_failure;
+    document.getElementById("mechCategory").value = mech.category;
+    document.getElementById("mechFailureType").value = mech.failure_type;
+    document.getElementById("mechMaxHits").value = mech.max_reasonable_hits;
+    document.getElementById("mechScoreHit").value = mech.score_per_hit;
+    document.getElementById("mechSpellIds").value = (mech.spell_ids || []).join(", ");
+    document.getElementById("mechWclType").value = mech.wcl_type || "damage_taken";
+    document.getElementById("mechMinSoakers").value = mech.minimum_soakers || "2";
+    document.getElementById("mechNote").value = mech.note || "";
+    document.getElementById("mechRec").value = mech.recommendation || "";
+  }
+
+  // Trigger elements updates
+  const categorySelect = document.getElementById("mechCategory");
+  const event = new Event("change");
+  categorySelect.dispatchEvent(event);
+
+  updateBoilerplatePreviews();
+}
+
+function formatPythonString(str) {
+  if (!str) return '(\n        ""\n    )';
+  const lines = str.replace(/\r\n/g, "\n").split("\n").filter(l => l.trim().length > 0);
+  if (lines.length === 0) {
+    return '(\n        ""\n    )';
+  }
+  const formatted = lines.map(line => `        "${line.replace(/"/g, '\\"')}"`).join("\n");
+  return `(\n${formatted}\n    )`;
+}
+
+function updateBoilerplatePreviews() {
+  const varInput = document.getElementById("mechVariable");
+  let varName = varInput.value.replace(/[^A-Za-z0-9_]/g, "").toUpperCase();
+  if (!varName) varName = "NEW_MECHANIC";
+  
+  if (varInput.value !== varName) {
+    varInput.value = varName;
+  }
+
+  const name = document.getElementById("mechName").value || "Unnamed Mechanic";
+  const severity = document.getElementById("mechSeverity").value;
+  const avoidable = document.getElementById("mechAvoidable").checked ? "True" : "False";
+  const countsAsFailure = document.getElementById("mechCountsAsFailure").checked ? "True" : "False";
+  const category = document.getElementById("mechCategory").value;
+  const failureType = document.getElementById("mechFailureType").value;
+  const maxHits = parseInt(document.getElementById("mechMaxHits").value) || 0;
+  const score = parseInt(document.getElementById("mechScoreHit").value) || 0;
+  const appliesTo = document.getElementById("mechAppliesTo").value;
+  const wclType = document.getElementById("mechWclType").value || "damage_taken";
+  
+  const note = document.getElementById("mechNote").value;
+  const rec = document.getElementById("mechRec").value;
+
+  const spellIdsStr = document.getElementById("mechSpellIds").value || "";
+  const spellIds = spellIdsStr.split(",")
+    .map(s => parseInt(s.trim()))
+    .filter(n => !isNaN(n));
+
+  const isSoak = category.includes("soak") || category.includes("stack") || failureType.includes("soak") || failureType.includes("stack");
+  const minSoakers = parseInt(document.getElementById("mechMinSoakers").value) || 2;
+  const minSoakersLine = isSoak ? `\n    "minimum_soakers": ${minSoakers},` : "";
+
+  let code = `${varName}: Mechanic = {
+    "name": "${name.replace(/"/g, '\\"')}",
+    "severity": "${severity}",
+    "avoidable": ${avoidable},
+    "category": "${category}",
+    "failure_type": "${failureType}",
+    "counts_as_failure": ${countsAsFailure},
+    "max_reasonable_hits": ${maxHits},
+    "score_per_hit": ${score},
+    "applies_to": ${appliesTo},
+    "spell_ids": [${spellIds.join(", ")}],${minSoakersLine}
+    "note": ${formatPythonString(note)},
+    "recommendation": ${formatPythonString(rec)},
+    "wcl_type": "${wclType.replace(/"/g, '\\"')}",
+}`;
+
+  document.getElementById("mechanicBlockPreview").textContent = code;
+
+  const aliasCode = `    **mechanic_aliases([${spellIds.join(", ")}], ${varName}),`;
+  document.getElementById("aliasBlockPreview").textContent = aliasCode;
+}
+
+function copyBoilerplateToDiscord() {
+  const mechCode = document.getElementById("mechanicBlockPreview").textContent;
+  const aliasCode = document.getElementById("aliasBlockPreview").textContent;
+
+  const combined = `\`\`\`python\n${mechCode}\n\n\n${aliasCode}\n\`\`\``;
+
+  navigator.clipboard.writeText(combined)
+    .then(() => {
+      const btn = document.getElementById("copyDiscordButton");
+      const originalText = btn.innerHTML;
+      btn.innerHTML = "Copied! ✓";
+      btn.classList.add("copied");
+
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove("copied");
+      }, 2000);
+    })
+    .catch(err => {
+      console.error("Failed to copy text: ", err);
+      alert("Failed to copy snippet automatically. Please copy the code manually.");
+    });
+}
