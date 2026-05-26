@@ -745,7 +745,7 @@ function renderActiveTab() {
 
   try {
     if (selectedTab === "scorecard") {
-      renderScorecardTab(analysis.scorecard || [], playerLookup);
+      renderScorecardTab(analysis.scorecard || [], playerLookup, analysis);
       return;
     }
 
@@ -934,7 +934,7 @@ function renderRaidCoachSection(
   `;
 }
 
-function renderScorecardTab(scorecard, playerLookup) {
+function renderScorecardTab(scorecard, playerLookup, analysis) {
   if (!scorecard.length) {
     renderEmptyTab("Scorecard", "No scorecard data available.");
     return;
@@ -962,10 +962,28 @@ function renderScorecardTab(scorecard, playerLookup) {
         <tbody>
           ${scorecard.map(row => {
             const player = playerLookup[row.player] || {};
+            const playerMetrics = analysis?.player_metrics || {};
+            const playerMetric = playerMetrics[row.player] || {};
+            const performance = playerMetric.performance || {};
+            const deathCount = performance.deaths || 0;
+
+            let deathRecapBtn = "";
+            if (deathCount > 0) {
+              deathRecapBtn = `
+                <button type="button" class="death-trigger-btn" onclick="showPlayerDeathsRecap('${escapeHtml(row.player)}')">
+                  ☠ Death Recap
+                </button>
+              `;
+            }
 
             return `
               <tr>
-                <td>${renderPlayerName(row.player, playerLookup)}</td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    ${renderPlayerName(row.player, playerLookup)}
+                    ${deathRecapBtn}
+                  </div>
+                </td>
                 <td>${escapeHtml(player.className || "Unknown")}</td>
                 <td>${escapeHtml(player.spec || "Unknown")}</td>
                 <td>${escapeHtml(player.role || "Unknown")}</td>
