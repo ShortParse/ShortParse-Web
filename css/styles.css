@@ -4034,6 +4034,86 @@ body {
 	text-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
 }
 
+/* Collapsible Toggle, Tooltips & Synergy Callout Box Styles */
+.ledger-toggle-btn {
+	display: block;
+	width: 100%;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--border);
+	color: var(--muted);
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: 12px;
+	font-weight: 750;
+	cursor: pointer;
+	text-align: center;
+	margin-top: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	transition: all 0.2s ease;
+}
+
+.ledger-toggle-btn:hover {
+	background: rgba(255, 255, 255, 0.08);
+	color: #ffffff;
+	border-color: rgba(255, 255, 255, 0.15);
+}
+
+.coaching-tooltip-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	background: rgba(56, 189, 248, 0.1);
+	border: 1px solid rgba(56, 189, 248, 0.2);
+	border-radius: 50%;
+	font-size: 9px;
+	color: var(--blue);
+	cursor: pointer;
+	font-weight: bold;
+	margin-left: 5px;
+	vertical-align: middle;
+	transition: all 0.2s ease;
+}
+
+.coaching-tooltip-icon:hover {
+	background: rgba(56, 189, 248, 0.25);
+	border-color: var(--blue);
+}
+
+.coaching-tooltip-box {
+	background: rgba(13, 16, 24, 0.96);
+	border: 1px solid var(--blue);
+	color: var(--text);
+	padding: 10px 14px;
+	border-radius: 8px;
+	font-size: 11.5px;
+	line-height: 1.5;
+	margin-top: 8px;
+	margin-bottom: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(8px);
+}
+
+.coaching-tooltip-box strong {
+	color: #ffffff;
+}
+
+/* Custom styling for co-healer carry panel */
+.cohealer-synergy-panel {
+	font-size: 11.5px;
+	margin-top: 12px;
+	color: #38bdf8;
+	background: rgba(56, 189, 248, 0.05);
+	border: 1px solid rgba(56, 189, 248, 0.15);
+	padding: 10px 14px;
+	border-radius: 8px;
+	line-height: 1.4;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+
 
 
 

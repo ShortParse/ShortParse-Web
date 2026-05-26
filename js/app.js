@@ -8,6 +8,7 @@ let currentUserWebhook = "";
 let offlineMode = false;
 let benchmarkSelectedPlayer = null;
 let benchmarkComparisonMode = "high_performer";
+let currentCoachPlayerName = null;
 
 
 function setOfflineMode(enabled) {
@@ -92,6 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Post to Discord Trigger
   const postDiscordBtn = document.getElementById("postDiscordButton");
   if (postDiscordBtn) postDiscordBtn.addEventListener("click", postActiveReportToDiscord);
+
+  // Hide Warnings Toggle Trigger
+  const warningsToggle = document.getElementById("coachHideWarningsToggle");
+  if (warningsToggle) {
+    warningsToggle.addEventListener("change", () => {
+      if (currentCoachPlayerName) {
+        showPlayerCoachCard(currentCoachPlayerName);
+      }
+    });
+  }
 
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
@@ -1161,6 +1172,22 @@ function renderBenchmarksTab(analysis, playerLookup) {
   const avgAvoidableDamage = totalAvoidableDamage / (raidSize || 20);
   const isOverhealed = role === "Healer" && (healerRatio >= 0.24 || avgAvoidableDamage < 1000000);
 
+  // Co-Healer Synergy carry checks
+  let maxOtherHealerName = "";
+  let maxOtherHealerHps = 0;
+  if (role === "Healer") {
+    for (const [pName, pVal] of Object.entries(playerMetrics)) {
+      if (pName !== selectedPlayerName && pVal.identity?.role === "Healer") {
+        const hps = pVal.performance?.hps || 0;
+        if (hps > maxOtherHealerHps) {
+          maxOtherHealerHps = hps;
+          maxOtherHealerName = pName;
+        }
+      }
+    }
+  }
+  const isCoHealerCarry = role === "Healer" && maxOtherHealerHps > playerValue * 1.35;
+
   // Optimization / Execution score mapping
   const executionScore = Math.min(100, Math.round(activePercent));
   let alignmentRating = "Uptime Optimization Needed";
@@ -1411,6 +1438,11 @@ function renderBenchmarksTab(analysis, playerLookup) {
           ${isOverhealed ? `
             <div style="font-size: 11.5px; margin-top: 10px; color: var(--blue); background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); padding: 8px 12px; border-radius: 8px; line-height: 1.4;">
               ⚠️ <strong>Healing Capacity Capped:</strong> Low raid damage taken or safe healer ratios naturally limited your throughput. Optimization focus is automatically shifted to defensive survival and active casting efficiency.
+            </div>
+          ` : ""}
+          ${isCoHealerCarry ? `
+            <div class="cohealer-synergy-panel">
+              🤝 <strong>Co-Healer Synergy Active:</strong> Co-healer ${escapeHtml(maxOtherHealerName)} absorbed exceptionally high throughput (${formatNumber(maxOtherHealerHps)} HPS) in this fight, naturally limiting your healing opportunities. Your HPS reflects solid coordination, survival focus, and mana efficiency!
             </div>
           ` : ""}
           ${healerDisclaimer}
@@ -2697,10 +2729,38 @@ function renderPlayerName(playerName, playerLookup) {
   `;
 }
 
+function renderIssueActionItemMarkup(issue) {
+  const sevClass = (issue.severity || "warning").toLowerCase();
+  let icon = "✦";
+  if (issue.severity === "Critical") icon = "☠";
+  else if (issue.severity === "Major") icon = "⚠";
+  else if (issue.severity === "Info") icon = "ℹ";
+
+  return `
+    <div class="coach-action-item ${sevClass}">
+      <div class="coach-action-icon">${icon}</div>
+      <div class="coach-action-content">
+        <div class="coach-action-label">${escapeHtml(issue.severity)}</div>
+        <div class="coach-action-msg">${escapeHtml(issue.message)}</div>
+      </div>
+    </div>
+  `;
+}
+
+window.toggleRotationalGapTooltip = function(event) {
+  event.stopPropagation();
+  const box = document.getElementById("rotationalGapTooltip");
+  if (box) {
+    box.classList.toggle("hidden");
+  }
+};
+
 function showPlayerCoachCard(playerName) {
   if (!currentReportData) return;
   const analysis = currentReportData.analyses[selectedAnalysisIndex];
   if (!analysis) return;
+
+  currentCoachPlayerName = playerName;
 
   const playerLookup = buildPlayerLookup(analysis);
   const player = playerLookup[playerName] || {};
@@ -2812,6 +2872,12 @@ function showPlayerCoachCard(playerName) {
     });
   }
 
+  // "Hide Warnings" Toggle Calibration
+  const hideWarnings = document.getElementById("coachHideWarningsToggle")?.checked || false;
+  if (hideWarnings) {
+    playerIssues = playerIssues.filter(issue => issue.severity === "Critical" || issue.severity === "Major");
+  }
+
   const coachActionItems = document.getElementById("coachActionItems");
   if (coachActionItems) {
     if (playerIssues.length === 0) {
@@ -2822,6 +2888,14 @@ function showPlayerCoachCard(playerName) {
           <div class="coach-perfect-desc">Flawless performance! Zero rotational or mechanical issues detected in this fight.</div>
         </div>
       `;
+      // Hide collapsible controls
+      const toggleBtn = document.getElementById("toggleAllIssuesBtn");
+      const expandedDiv = document.getElementById("coachExpandedIssues");
+      if (toggleBtn) toggleBtn.classList.add("hidden");
+      if (expandedDiv) {
+        expandedDiv.classList.add("hidden");
+        expandedDiv.innerHTML = "";
+      }
     } else {
       const displayWeights = {
         "Critical": 4,
@@ -2835,24 +2909,35 @@ function showPlayerCoachCard(playerName) {
       });
 
       const topIssues = sortedIssues.slice(0, 3);
+      coachActionItems.innerHTML = topIssues.map(issue => renderIssueActionItemMarkup(issue)).join("");
 
-      coachActionItems.innerHTML = topIssues.map(issue => {
-        const sevClass = (issue.severity || "warning").toLowerCase();
-        let icon = "✦";
-        if (issue.severity === "Critical") icon = "☠";
-        else if (issue.severity === "Major") icon = "⚠";
-        else if (issue.severity === "Info") icon = "ℹ";
-
-        return `
-          <div class="coach-action-item ${sevClass}">
-            <div class="coach-action-icon">${icon}</div>
-            <div class="coach-action-content">
-              <div class="coach-action-label">${escapeHtml(issue.severity)}</div>
-              <div class="coach-action-msg">${escapeHtml(issue.message)}</div>
-            </div>
-          </div>
-        `;
-      }).join("");
+      // Collapsible Expander implementation
+      const toggleBtn = document.getElementById("toggleAllIssuesBtn");
+      const expandedDiv = document.getElementById("coachExpandedIssues");
+      if (toggleBtn && expandedDiv) {
+        if (sortedIssues.length > 3) {
+          toggleBtn.classList.remove("hidden");
+          toggleBtn.textContent = `Show All Detected Issues (+${sortedIssues.length - 3})`;
+          
+          toggleBtn.onclick = function() {
+            const isHidden = expandedDiv.classList.contains("hidden");
+            if (isHidden) {
+              expandedDiv.classList.remove("hidden");
+              toggleBtn.textContent = "Hide Extra Issues";
+            } else {
+              expandedDiv.classList.add("hidden");
+              toggleBtn.textContent = `Show All Detected Issues (+${sortedIssues.length - 3})`;
+            }
+          };
+          
+          expandedDiv.classList.add("hidden");
+          expandedDiv.innerHTML = sortedIssues.slice(3).map(issue => renderIssueActionItemMarkup(issue)).join("");
+        } else {
+          toggleBtn.classList.add("hidden");
+          expandedDiv.classList.add("hidden");
+          expandedDiv.innerHTML = "";
+        }
+      }
     }
   }
 
@@ -3063,10 +3148,17 @@ function showPlayerCoachCard(playerName) {
     }
 
     coachInactivityCard.innerHTML = `
-      <div class="coach-inactivity-wrapper">
+      <div class="coach-inactivity-wrapper" style="position: relative;">
         <div class="coach-inactivity-header">
-          <span class="coach-inactivity-title" style="color: var(--muted)">Casting Activity</span>
+          <span class="coach-inactivity-title" style="color: var(--muted); display: inline-flex; align-items: center;">
+            Casting Activity
+            <span class="coaching-tooltip-icon" onclick="toggleRotationalGapTooltip(event)">ℹ</span>
+          </span>
           <strong style="font-size: 14px; font-family: monospace;">${adjustedUptimePct.toFixed(1)}% ${gapsFilteredCount > 0 ? `<span style="font-size: 10px; color: var(--blue);">(Calibrated)</span>` : ""}</strong>
+        </div>
+        <div id="rotationalGapTooltip" class="coaching-tooltip-box hidden" style="position: absolute; z-index: 100; left: 0; right: 0; top: 30px;">
+          <strong>What are Rotational Gaps?</strong><br>
+          ShortParse tracks a gap whenever you go <strong>5+ seconds</strong> without casting any spells (offensive, defensive, or utility). Global intermissions are automatically calibrated out.
         </div>
         <div class="coach-inactivity-bar-container">
           <div class="coach-inactivity-bar ${uptimeClass}" style="width: ${adjustedUptimePct}%"></div>

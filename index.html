@@ -406,9 +406,19 @@
 
         <!-- Action Items -->
         <div class="coach-section">
-          <h3>Core Action Items</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin-bottom: 0;">Core Action Items</h3>
+            <label style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); cursor: pointer; user-select: none;">
+              <input type="checkbox" id="coachHideWarningsToggle" style="cursor: pointer; margin: 0;">
+              Hide Warnings
+            </label>
+          </div>
           <div id="coachActionItems" class="coach-action-items-list">
             <!-- Dynamically populated -->
+          </div>
+          <button id="toggleAllIssuesBtn" class="ledger-toggle-btn hidden" type="button">Show All Detected Issues (+0)</button>
+          <div id="coachExpandedIssues" class="coach-action-items-list hidden" style="margin-top: 8px;">
+            <!-- Collapsed extra issues -->
           </div>
           <div id="coachScoreLedger">
             <!-- Dynamically populated Score Ledger -->
