@@ -1261,58 +1261,239 @@ function toggleMechanicRow(index) {
 }
 
 function renderCooldownsTab(playerMetrics, playerLookup) {
-  const rows = [];
+  // Initialize filter defaults
+  window.cooldownRoleFilter = window.cooldownRoleFilter || "all";
+  window.cooldownCategoryFilter = window.cooldownCategoryFilter || "all";
 
-  for (const [playerName, data] of Object.entries(playerMetrics || {})) {
-    const cooldowns = data.cooldowns || {};
+  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const fight = analysis?.fight || {};
+  const startTime = fight.start_time || 0;
 
-    for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
-      rows.push({
-        playerName,
-        cooldownName,
-        ...cooldownData
-      });
+  const tabContentEl = document.getElementById("tabContent");
+  if (!tabContentEl) return;
+
+  function getFilteredHTML() {
+    const roleF = window.cooldownRoleFilter;
+    const catF = window.cooldownCategoryFilter;
+
+    let playersHtml = "";
+    let matchedPlayersCount = 0;
+
+    for (const [playerName, data] of Object.entries(playerMetrics || {})) {
+      const playerInfo = playerLookup?.[playerName] || {};
+      const pRole = (playerInfo.role || "UNKNOWN").toUpperCase();
+      const pSpec = playerInfo.spec || "Unknown Spec";
+      const pClass = playerInfo.className || "Unknown Class";
+
+      // Apply role filter
+      if (roleF !== "all") {
+        if (roleF === "tanks" && pRole !== "TANK") continue;
+        if (roleF === "healers" && pRole !== "HEALER") continue;
+        if (roleF === "dps" && pRole !== "DPS") continue;
+      }
+
+      const cooldowns = data.cooldowns || {};
+      const filteredCooldownsList = [];
+
+      for (const [cooldownName, cooldownData] of Object.entries(cooldowns)) {
+        const cat = cooldownData.category;
+        
+        // Apply category filter
+        if (catF !== "all") {
+          if (catF === "raid_defensive" && (cat !== "raid_defensive" && cat !== "raid_healing")) continue;
+          if (catF === "personal_defensive" && (cat !== "personal_defensive" && cat !== "personal_immunity")) continue;
+          if (catF === "external_defensive" && cat !== "external_defensive") continue;
+          if (catF === "raid_movement" && cat !== "raid_movement") continue;
+          if (catF === "raid_utility" && cat !== "raid_utility") continue;
+        }
+
+        filteredCooldownsList.push({
+          cooldownName,
+          ...cooldownData
+        });
+      }
+
+      // Skip player card if no cooldowns match the category filter
+      if (filteredCooldownsList.length === 0) {
+        continue;
+      }
+
+      matchedPlayersCount++;
+      const classColor = getClassColor(pClass);
+
+      const spellsHtml = filteredCooldownsList.map(spell => {
+        const casts = spell.casts ?? 0;
+        const expected = spell.possible_casts ?? 0;
+        const efficiency = spell.efficiency_pct ?? 0;
+        const cat = spell.category || "unknown";
+
+        // Category badges
+        let catIcon = "🛡️";
+        let catLabel = "Personal";
+        let catClass = "badge-personal";
+
+        if (cat === "raid_defensive" || cat === "raid_healing") {
+          catIcon = "⭐";
+          catLabel = "Raid CD";
+          catClass = "badge-raid";
+        } else if (cat === "external_defensive") {
+          catIcon = "💖";
+          catLabel = "External";
+          catClass = "badge-external";
+        } else if (cat === "raid_movement") {
+          catIcon = "🏃";
+          catLabel = "Movement";
+          catClass = "badge-movement";
+        } else if (cat === "raid_utility") {
+          catIcon = "⚡";
+          catLabel = "Utility";
+          catClass = "badge-utility";
+        } else if (cat === "personal_immunity") {
+          catIcon = "💎";
+          catLabel = "Immune";
+          catClass = "badge-immune";
+        } else if (cat === "tank_defensive") {
+          catIcon = "🧱";
+          catLabel = "Tank CD";
+          catClass = "badge-tank";
+        }
+
+        // Cast highlight status
+        let castClass = "neutral";
+        if (expected > 0) {
+          if (casts >= expected) castClass = "success";
+          else if (casts > 0) castClass = "partial";
+          else castClass = "fail";
+        } else if (casts > 0) {
+          castClass = "success";
+        }
+
+        // Efficiency visual color
+        let progressColor = "var(--blue)";
+        if (efficiency >= 80) progressColor = "var(--green)";
+        else if (efficiency >= 45) progressColor = "var(--yellow)";
+        else if (casts === 0 && expected > 0) progressColor = "var(--red)";
+
+        // Cast Timestamps
+        const timestamps = spell.timestamps || [];
+        const timeBadgesHtml = timestamps.length > 0 
+          ? timestamps.map(t => {
+              const elapsedSec = (t - startTime) / 1000;
+              return `<span class="cooldown-spell-time-badge">${formatTimelineTime(elapsedSec)}</span>`;
+            }).join("")
+          : `<span class="cooldown-spell-time-badge none">Never Cast</span>`;
+
+        return `
+          <div class="cooldown-spell-card">
+            <div class="cooldown-spell-row">
+              <div class="cooldown-spell-left">
+                <span class="cooldown-spell-icon">${catIcon}</span>
+                <span class="cooldown-spell-name">${escapeHtml(spell.cooldownName)}</span>
+                <span class="cooldown-spell-badge ${catClass}">${catLabel}</span>
+              </div>
+              <span class="cooldown-spell-casts ${castClass}">${casts} / ${expected || "—"}</span>
+            </div>
+            
+            <div class="cooldown-spell-timeline">
+              ${timeBadgesHtml}
+            </div>
+
+            ${expected > 0 ? `
+              <div class="cooldown-efficiency-bar-container">
+                <div class="cooldown-efficiency-bar">
+                  <div class="cooldown-efficiency-progress" style="width: ${efficiency}%; background-color: ${progressColor};"></div>
+                </div>
+                <span class="cooldown-efficiency-text">${efficiency}% efficiency</span>
+              </div>
+            ` : ""}
+          </div>
+        `;
+      }).join("");
+
+      playersHtml += `
+        <div class="cooldown-player-card">
+          <div class="cooldown-player-header">
+            <div>
+              <span class="cooldown-player-name" style="color: ${classColor}">${escapeHtml(playerName)}</span>
+              <span class="cooldown-player-badge">${escapeHtml(pSpec)}</span>
+            </div>
+            <span class="cooldown-player-role-tag">${pRole === "TANK" ? "🛡️ Tank" : pRole === "HEALER" ? "💚 Healer" : "⚔️ DPS"}</span>
+          </div>
+          <div class="cooldown-player-spells">
+            ${spellsHtml}
+          </div>
+        </div>
+      `;
     }
+
+    if (matchedPlayersCount === 0) {
+      return `
+        <div class="cooldown-empty-state">
+          No cooldown data matched the active filters. Try broadening your criteria.
+        </div>
+      `;
+    }
+
+    return `
+      <div class="cooldowns-grid">
+        ${playersHtml}
+      </div>
+    `;
   }
 
-  if (!rows.length) {
-    renderEmptyTab("Cooldowns", "No cooldown data available.");
-    return;
+  window.setCooldownRoleFilter = function(role) {
+    window.cooldownRoleFilter = role;
+    renderAll();
+  };
+
+  window.setCooldownCategoryFilter = function(cat) {
+    window.cooldownCategoryFilter = cat;
+    renderAll();
+  };
+
+  function renderAll() {
+    const roleF = window.cooldownRoleFilter;
+    const catF = window.cooldownCategoryFilter;
+
+    tabContentEl.innerHTML = `
+      <h2 class="tab-panel-title">Cooldowns Dashboard</h2>
+      <p class="tab-panel-description">
+        Defensive, immunity, and utility cooldown usage detected during the selected fight. Use filters below to drill down.
+      </p>
+
+      <div class="cooldown-filters-container">
+        <!-- Role Filters -->
+        <div class="cooldown-filter-group">
+          <span class="filter-group-label">Roster Role</span>
+          <div class="filter-pills">
+            <button class="cooldown-filter-pill ${roleF === "all" ? "active" : ""}" onclick="setCooldownRoleFilter('all')">All</button>
+            <button class="cooldown-filter-pill ${roleF === "tanks" ? "active" : ""}" onclick="setCooldownRoleFilter('tanks')">Tanks</button>
+            <button class="cooldown-filter-pill ${roleF === "healers" ? "active" : ""}" onclick="setCooldownRoleFilter('healers')">Healers</button>
+            <button class="cooldown-filter-pill ${roleF === "dps" ? "active" : ""}" onclick="setCooldownRoleFilter('dps')">DPS</button>
+          </div>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="cooldown-filter-group">
+          <span class="filter-group-label">Spell Category</span>
+          <div class="filter-pills">
+            <button class="cooldown-filter-pill ${catF === "all" ? "active" : ""}" onclick="setCooldownCategoryFilter('all')">All</button>
+            <button class="cooldown-filter-pill ${catF === "raid_defensive" ? "active" : ""}" onclick="setCooldownCategoryFilter('raid_defensive')">Raid CDs</button>
+            <button class="cooldown-filter-pill ${catF === "personal_defensive" ? "active" : ""}" onclick="setCooldownCategoryFilter('personal_defensive')">Personals</button>
+            <button class="cooldown-filter-pill ${catF === "external_defensive" ? "active" : ""}" onclick="setCooldownCategoryFilter('external_defensive')">Externals</button>
+            <button class="cooldown-filter-pill ${catF === "raid_movement" ? "active" : ""}" onclick="setCooldownCategoryFilter('raid_movement')">Movement</button>
+            <button class="cooldown-filter-pill ${catF === "raid_utility" ? "active" : ""}" onclick="setCooldownCategoryFilter('raid_utility')">Utility</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="cooldownsContainer">
+        ${getFilteredHTML()}
+      </div>
+    `;
   }
 
-  document.getElementById("tabContent").innerHTML = `
-    <h2 class="tab-panel-title">Cooldowns</h2>
-    <p class="tab-panel-description">
-      Defensive, offensive, and utility cooldown usage detected during the selected fight.
-    </p>
-
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Cooldown</th>
-            <th>Category</th>
-            <th>Casts</th>
-            <th>Expected</th>
-            <th>Efficiency</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(row => `
-            <tr>
-              <td>${renderPlayerName(row.playerName, playerLookup)}</td>
-              <td>${escapeHtml(row.cooldownName)}</td>
-              <td>${escapeHtml(row.category || "Unknown")}</td>
-              <td>${escapeHtml(row.casts ?? row.count ?? "N/A")}</td>
-              <td>${escapeHtml(row.possible_casts ?? "N/A")}</td>
-              <td>${formatPercent(row.efficiency_pct)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
+  renderAll();
 }
 
 

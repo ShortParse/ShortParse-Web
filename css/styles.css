@@ -2599,4 +2599,251 @@ body {
 	stroke: #ffffff;
 	stroke-width: 1.5;
 }
+
+/* Cooldowns Dashboard Premium Styles */
+.cooldown-filters-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin-bottom: 24px;
+	background: var(--panel-2);
+	border: 1px solid var(--border);
+	padding: 16px;
+	border-radius: 12px;
+}
+
+.cooldown-filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.filter-group-label {
+	font-size: 11.5px;
+	font-weight: 700;
+	text-transform: uppercase;
+	color: var(--muted);
+	letter-spacing: 0.5px;
+}
+
+.filter-pills {
+	display: flex;
+	gap: 6px;
+	background: rgba(0, 0, 0, 0.2);
+	padding: 4px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cooldown-filter-pill {
+	background: none;
+	border: none;
+	padding: 6px 12px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--muted);
+	cursor: pointer;
+	border-radius: 6px;
+	transition: all 0.2s ease;
+}
+
+.cooldown-filter-pill:hover {
+	color: #ffffff;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.cooldown-filter-pill.active {
+	color: #ffffff;
+	background: var(--blue);
+	box-shadow: 0 2px 8px rgba(0, 122, 255, 0.4);
+}
+
+.cooldowns-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+	gap: 20px;
+	margin-top: 16px;
+}
+
+.cooldown-player-card {
+	background: var(--panel-2);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 18px;
+	box-shadow: var(--shadow);
+	transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.cooldown-player-card:hover {
+	transform: translateY(-2px);
+	border-color: rgba(255, 255, 255, 0.15);
+}
+
+.cooldown-player-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	padding-bottom: 10px;
+	margin-bottom: 14px;
+}
+
+.cooldown-player-name {
+	font-size: 15px;
+	font-weight: 800;
+	cursor: pointer;
+	transition: text-decoration 0.2s ease;
+}
+
+.cooldown-player-name:hover {
+	text-decoration: underline;
+}
+
+.cooldown-player-badge {
+	font-size: 11px;
+	background: rgba(255, 255, 255, 0.06);
+	color: var(--muted);
+	padding: 2px 6px;
+	border-radius: 4px;
+	margin-left: 6px;
+	font-weight: 500;
+}
+
+.cooldown-player-role-tag {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--muted);
+	background: rgba(0, 0, 0, 0.15);
+	padding: 2px 8px;
+	border-radius: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cooldown-spell-card {
+	background: rgba(0, 0, 0, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.03);
+	border-radius: 8px;
+	padding: 10px 12px;
+	margin-bottom: 10px;
+}
+
+.cooldown-spell-card:last-child {
+	margin-bottom: 0;
+}
+
+.cooldown-spell-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.cooldown-spell-left {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.cooldown-spell-icon {
+	font-size: 13px;
+}
+
+.cooldown-spell-name {
+	font-size: 12px;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.cooldown-spell-badge {
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 1px 4px;
+	border-radius: 4px;
+	letter-spacing: 0.3px;
+}
+
+.badge-raid { background: rgba(255, 179, 0, 0.15); color: #ffb300; }
+.badge-personal { background: rgba(0, 122, 255, 0.15); color: #007aff; }
+.badge-external { background: rgba(255, 45, 85, 0.15); color: #ff2d55; }
+.badge-movement { background: rgba(52, 199, 89, 0.15); color: #34c759; }
+.badge-utility { background: rgba(175, 82, 222, 0.15); color: #af52de; }
+.badge-immune { background: rgba(90, 200, 250, 0.15); color: #5ac8fa; }
+.badge-tank { background: rgba(255, 149, 0, 0.15); color: #ff9500; }
+
+.cooldown-spell-casts {
+	font-size: 11px;
+	font-weight: 800;
+	font-family: monospace;
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+.cooldown-spell-casts.success { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
+.cooldown-spell-casts.partial { background: rgba(241, 196, 15, 0.15); color: #f1c40f; }
+.cooldown-spell-casts.fail { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
+.cooldown-spell-casts.neutral { background: rgba(255, 255, 255, 0.05); color: var(--muted); }
+
+.cooldown-spell-timeline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 8px 0 6px 0;
+}
+
+.cooldown-spell-time-badge {
+	font-size: 9.5px;
+	font-family: monospace;
+	font-weight: 600;
+	background: rgba(255, 255, 255, 0.05);
+	color: rgba(255, 255, 255, 0.7);
+	padding: 1px 4px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.cooldown-spell-time-badge.none {
+	background: none;
+	border: none;
+	color: var(--muted);
+	font-style: italic;
+	font-family: inherit;
+	font-size: 10px;
+}
+
+.cooldown-efficiency-bar-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.cooldown-efficiency-bar {
+	flex: 1;
+	height: 4px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.cooldown-efficiency-progress {
+	height: 100%;
+	border-radius: 2px;
+}
+
+.cooldown-efficiency-text {
+	font-size: 10.5px;
+	font-weight: 600;
+	color: var(--muted);
+	white-space: nowrap;
+}
+
+.cooldown-empty-state {
+	text-align: center;
+	padding: 40px;
+	background: var(--panel-2);
+	border: 1px dashed var(--border);
+	border-radius: 12px;
+	color: var(--muted);
+	font-size: 13.5px;
+}
 
