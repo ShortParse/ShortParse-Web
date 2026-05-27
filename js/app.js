@@ -111,6 +111,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const syncPatreonBtn = document.getElementById("syncPatreonButton");
   if (syncPatreonBtn) syncPatreonBtn.addEventListener("click", syncPatreonSubscription);
 
+  // Unlock Webhook Patreon Click Listener
+  const unlockWebhookBtn = document.getElementById("unlockWebhookPatreonButton");
+  if (unlockWebhookBtn) {
+    unlockWebhookBtn.addEventListener("click", () => {
+      const patreonUnlinked = document.getElementById("patreonUnlinkedBlock");
+      const patreonLinked = document.getElementById("patreonLinkedBlock");
+      const target = (patreonUnlinked && !patreonUnlinked.classList.contains("hidden")) ? patreonUnlinked : patreonLinked;
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    });
+  }
+
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
 
@@ -3561,6 +3574,7 @@ async function checkUserSession() {
       const tierClass = isPremium ? "premium" : "free";
 
       currentUserWebhook = user.discord_webhook_url || "";
+      updateDiscordWebhookUI();
 
       container.innerHTML = `
         <div class="user-profile-widget">
@@ -4451,6 +4465,28 @@ function drawProgressionChart(pulls) {
    Control Panel, Settings, and Discord Webhook Integrations
    ============================================================================= */
 
+function updateDiscordWebhookUI() {
+  const controls = document.getElementById("discordWebhookControls");
+  const premiumLock = document.getElementById("discordWebhookPremiumLock");
+  const postDiscordBtn = document.getElementById("postDiscordButton");
+
+  if (isPremium) {
+    if (controls) controls.classList.remove("hidden");
+    if (premiumLock) premiumLock.classList.add("hidden");
+    if (postDiscordBtn) {
+      postDiscordBtn.textContent = "Post to Discord";
+      postDiscordBtn.classList.remove("premium-locked");
+    }
+  } else {
+    if (controls) controls.classList.add("hidden");
+    if (premiumLock) premiumLock.classList.remove("hidden");
+    if (postDiscordBtn) {
+      postDiscordBtn.textContent = "Post to Discord 🔒";
+      postDiscordBtn.classList.add("premium-locked");
+    }
+  }
+}
+
 function openSettingsDrawer() {
   const drawer = document.getElementById("settingsDrawer");
   const webhookInput = document.getElementById("discordWebhookInput");
@@ -4466,6 +4502,8 @@ function openSettingsDrawer() {
     statusMsg.classList.add("hidden");
     statusMsg.className = "";
   }
+
+  updateDiscordWebhookUI();
 
   // Update Patreon integration UI elements
   const unlinkedBlock = document.getElementById("patreonUnlinkedBlock");
@@ -4627,6 +4665,7 @@ async function syncPatreonSubscription() {
     const data = await response.json();
     isPremium = data.is_premium;
     premiumTier = data.premium_tier;
+    updateDiscordWebhookUI();
 
     if (tierBadge) {
       tierBadge.textContent = isPremium ? `${premiumTier || "Premium Patron"}` : "Patreon Connected";
@@ -4663,6 +4702,16 @@ async function postActiveReportToDiscord() {
   const postBtn = document.getElementById("postDiscordButton");
   if (!postBtn || !currentJobId) return;
 
+  if (!isPremium) {
+    alert("⭐ Discord Webhook integration is a Premium feature. Support us on Patreon to automatically dispatch high-fidelity raid summaries directly to your guild channels!");
+    openSettingsDrawer();
+    const patreonSection = document.getElementById("patreonUnlinkedBlock") || document.getElementById("patreonLinkedBlock");
+    if (patreonSection) {
+      setTimeout(() => patreonSection.scrollIntoView({ behavior: "smooth" }), 350);
+    }
+    return;
+  }
+
   if (!currentUserWebhook) {
     openSettingsDrawer();
     const statusMsg = document.getElementById("webhookStatusMessage");
@@ -4697,14 +4746,14 @@ async function postActiveReportToDiscord() {
 
     setTimeout(() => {
       postBtn.disabled = false;
-      postBtn.textContent = "Post to Discord";
+      postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord 🔒";
       postBtn.style.background = "";
       postBtn.style.color = "";
     }, 2500);
   } catch (error) {
     alert(`Failed to share to Discord: ${error.message}`);
     postBtn.disabled = false;
-    postBtn.textContent = "Post to Discord";
+    postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord 🔒";
   }
 }
 

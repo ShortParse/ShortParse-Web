@@ -467,17 +467,31 @@
             Share summary logs automatically to your guild's Discord server. Paste your Discord channel Webhook URL
             below.
           </p>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <input id="discordWebhookInput" type="password" placeholder="https://discord.com/api/webhooks/..."
-              style="font-size: 14px; padding: 12px;" />
-            <div style="display: flex; gap: 12px;">
-              <button id="saveWebhookButton" type="button" style="flex: 1; padding: 12px; font-size: 13px;">Save
-                Webhook</button>
-              <button id="testWebhookButton" class="logout-button" type="button"
-                style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test
-                Link</button>
+          <div id="discordWebhookPremiumContainer" style="position: relative;">
+            <div id="discordWebhookControls" style="display: flex; flex-direction: column; gap: 12px;">
+              <input id="discordWebhookInput" type="password" placeholder="https://discord.com/api/webhooks/..."
+                style="font-size: 14px; padding: 12px;" />
+              <div style="display: flex; gap: 12px;">
+                <button id="saveWebhookButton" type="button" style="flex: 1; padding: 12px; font-size: 13px;">Save
+                  Webhook</button>
+                <button id="testWebhookButton" class="logout-button" type="button"
+                  style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test
+                  Link</button>
+              </div>
+              <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
             </div>
-            <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
+
+            <!-- Premium Padlock Lock Screen Overlay -->
+            <div id="discordWebhookPremiumLock" class="premium-lock-overlay hidden">
+              <span class="premium-lock-icon">🔒</span>
+              <span class="premium-lock-title">⭐ ShortParse Premium</span>
+              <p class="premium-lock-desc">
+                Automatically dispatch high-fidelity raid grades, roster performance tables, and area of concern embeds directly to your guild channels.
+              </p>
+              <button id="unlockWebhookPatreonButton" class="premium-unlock-btn" type="button">
+                Unlock with Patreon
+              </button>
+            </div>
           </div>
         </div>
 

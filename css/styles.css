@@ -4423,6 +4423,78 @@ body {
 	max-width: 340px;
 }
 
+/* Premium locking and styling */
+.premium-lock-overlay {
+	background: rgba(15, 23, 42, 0.65);
+	backdrop-filter: blur(4px);
+	border: 1px dashed rgba(234, 179, 8, 0.4);
+	border-radius: 12px;
+	padding: 18px;
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 0 12px rgba(234, 179, 8, 0.05);
+	transition: all 0.3s ease;
+}
+
+.premium-lock-overlay.hidden {
+	display: none !important;
+}
+
+.premium-lock-icon {
+	font-size: 28px;
+	filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.4));
+	margin-bottom: 2px;
+}
+
+.premium-lock-title {
+	font-size: 13.5px;
+	font-weight: 800;
+	color: #fbbf24;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.premium-lock-desc {
+	font-size: 12px;
+	color: var(--muted);
+	line-height: 1.5;
+	margin: 0;
+}
+
+.premium-unlock-btn {
+	padding: 8px 16px;
+	font-size: 12px;
+	font-weight: 700;
+	border-radius: 8px;
+	background: linear-gradient(135deg, #f59e0b, #d97706);
+	color: #0f172a;
+	border: none;
+	cursor: pointer;
+	box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+	transition: all 0.2s ease;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.premium-unlock-btn:hover {
+	opacity: 0.95;
+	box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+	transform: translateY(-1px);
+}
+
+.discord-post-btn.premium-locked {
+	background: linear-gradient(135deg, var(--border), rgba(15, 23, 42, 0.4)) !important;
+	border: 1px solid var(--border) !important;
+	cursor: not-allowed !important;
+	opacity: 0.75;
+}
+
 
 
 
