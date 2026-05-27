@@ -206,12 +206,25 @@
           </div>
         </div>
 
-        <!-- Wipe Progression Killer widget -->
+        <!-- Wipe Progression & Catalyst Dashboard -->
         <div class="guild-suite-wipes-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
-          <h3 style="font-size: 16px; margin-bottom: 4px;">Progression Killer Wipe Diagnoser</h3>
-          <p class="card-desc" style="margin-bottom: 16px;">Identifies mechanics causing multiple wipes and heavy damage on failed attempts.</p>
-          <div id="progressionKillersGrid" class="progression-killers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: 16px; margin-bottom: 4px;">🎯 Wipe Catalyst & Bottleneck Analyzer</h3>
+            <p class="card-desc">Aggregates and audits failure points across all wipe pulls to identify team bottlenecks.</p>
+          </div>
+          
+          <div class="wipe-diagnoser-layout">
+            <!-- Left Panel: Boss selection list -->
+            <div class="wipe-boss-sidebar" id="wipeBossSidebar">
+              <!-- Dynamically filled tabs -->
             </div>
+            
+            <!-- Right Panel: Aggregated Wipes Dashboard -->
+            <div class="wipe-dashboard-panel" id="wipeDashboardPanel">
+              <!-- Active boss analytics (HP progress, first-death lists, timestamps heatmap) -->
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

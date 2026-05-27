@@ -5622,9 +5622,56 @@ async function loadGuildSuiteOverview() {
           { class: "Demon Hunter", benefit: "Chaos Brand which increases roster magic damage taken by 5%." }
         ]
       };
-      const mockKillers = {
-        "Void Eruption": { hits: 18, damage: 12000000, fights_count: 5 },
-        "Shadow Spike": { hits: 45, damage: 9500000, fights_count: 5 }
+      const mockWipeAnalytics = {
+        "Midnight Falls": {
+          "total_wipes": 12,
+          "avg_boss_hp": 48.5,
+          "phase_distribution": {
+            "Phase 1": 2,
+            "Phase 2": 8,
+            "Phase 3": 2
+          },
+          "hp_distribution": {
+            "100_80": 2,
+            "80_50": 3,
+            "50_20": 5,
+            "20_0": 2
+          },
+          "catalyst_players": [
+            { "player": "SwirlyCatcher", "count": 5, "class": "Priest" },
+            { "player": "DpsGoBrrr", "count": 3, "class": "Mage" },
+            { "player": "TankyMcTank", "count": 1, "class": "Warrior" }
+          ],
+          "catalyst_abilities": [
+            { "ability": "Void Eruption", "count": 6 },
+            { "ability": "Shadow Spike", "count": 4 }
+          ],
+          "death_timestamps": [48, 92, 115, 120, 142, 180, 210, 245]
+        },
+        "The Voidspire": {
+          "total_wipes": 6,
+          "avg_boss_hp": 32.4,
+          "phase_distribution": {
+            "Phase 1": 1,
+            "Phase 2": 2,
+            "Phase 3": 3
+          },
+          "hp_distribution": {
+            "100_80": 1,
+            "80_50": 1,
+            "50_20": 2,
+            "20_0": 2
+          },
+          "catalyst_players": [
+            { "player": "DpsGoBrrr", "count": 3, "class": "Mage" },
+            { "player": "SwirlyCatcher", "count": 2, "class": "Priest" }
+          ],
+          "catalyst_abilities": [
+            { "ability": "Void Eruption", "count": 4 },
+            { "ability": "Ground Smash", "count": 2 }
+          ],
+          "death_timestamps": [60, 110, 150, 195, 230]
+        }
       };
       
       if (statsFights) statsFights.innerText = "8";
@@ -5634,7 +5681,7 @@ async function loadGuildSuiteOverview() {
       renderBuffSynergy(mockBuffs);
       renderPanicAudit(mockPlayers);
       renderGoldLedger(mockPlayers);
-      renderWipeDiagnoser(mockKillers);
+      renderWipeDiagnoser(mockWipeAnalytics);
       return;
     }
     
@@ -5655,7 +5702,7 @@ async function loadGuildSuiteOverview() {
     renderBuffSynergy(data.synergy_buffs || { active: [], missing: [], suggestions: [] });
     renderPanicAudit(data.players_history || {});
     renderGoldLedger(data.players_history || {});
-    renderWipeDiagnoser(data.progression_killers || {});
+    renderWipeDiagnoser(data.wipe_analytics || {});
     
   } catch (error) {
     console.error("Failed to load premium Guild Suite overview:", error);
@@ -6033,37 +6080,243 @@ function renderGoldLedger(players) {
   body.innerHTML = html;
 }
 
-function renderWipeDiagnoser(killers) {
-  const grid = document.getElementById("progressionKillersGrid");
-  if (!grid) return;
+let activeWipeBoss = null;
+
+function renderWipeDiagnoser(wipeAnalytics) {
+  const sidebar = document.getElementById("wipeBossSidebar");
+  const panel = document.getElementById("wipeDashboardPanel");
+  if (!sidebar || !panel) return;
   
-  const sorted = Object.entries(killers)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.damage - a.damage);
-    
-  let html = "";
+  sidebar.innerHTML = "";
+  panel.innerHTML = "";
   
-  if (sorted.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--green); padding: 16px; border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(52,211,153,0.02);">🎉 Zero Wipes! The progression overview only contains boss kills.</div>`;
+  const encounters = Object.entries(wipeAnalytics || {});
+  
+  if (encounters.length === 0) {
+    sidebar.innerHTML = `<div style="color: var(--muted); font-size: 13px; font-weight: 600; padding: 12px; text-align: center; width: 100%;">No progression wipes recorded.</div>`;
+    panel.innerHTML = `
+      <div style="text-align: center; color: var(--green); padding: 32px; border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(52,211,153,0.02);">
+        <div style="font-size: 32px; margin-bottom: 12px;">🎉</div>
+        <div style="font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--green); margin-bottom: 6px;">Zero Progression Wipes!</div>
+        <p style="font-size: 13px; color: var(--muted); margin: 0; max-width: 320px; line-height: 1.6; display: inline-block;">All analyzed boss fights in this historical dataset resulted in clean boss kills.</p>
+      </div>
+    `;
     return;
   }
   
-  sorted.forEach(k => {
-    html += `
-      <div class="killer-card">
-        <span class="killer-card-title">${escapeHtml(k.name)}</span>
-        <div class="killer-card-meta">
-          <span>Wipes Impacted: <strong>${k.fights_count}</strong></span>
-          <span>Hits Logged: <strong>${k.hits}</strong></span>
+  // Set default active boss if not set or not in current dataset
+  if (!activeWipeBoss || !wipeAnalytics[activeWipeBoss]) {
+    activeWipeBoss = encounters[0][0];
+  }
+  
+  // 1. Render Sidebar buttons
+  encounters.forEach(([bossName, data]) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `wipe-boss-btn ${bossName === activeWipeBoss ? "active" : ""}`;
+    btn.innerHTML = `
+      <span>${escapeHtml(bossName)}</span>
+      <span class="wipe-boss-badge">${data.total_wipes}</span>
+    `;
+    btn.onclick = () => {
+      activeWipeBoss = bossName;
+      renderWipeDiagnoser(wipeAnalytics);
+    };
+    sidebar.appendChild(btn);
+  });
+  
+  // 2. Render Panel for Active Boss
+  const activeData = wipeAnalytics[activeWipeBoss];
+  
+  // A. Stats Row HTML
+  const statsHtml = `
+    <div class="wipe-stats-grid">
+      <div class="wipe-stat-card">
+        <span class="wipe-stat-label">Total Pulls Audited</span>
+        <span class="wipe-stat-value">${activeData.total_wipes} Wipes</span>
+      </div>
+      <div class="wipe-stat-card">
+        <span class="wipe-stat-label">Average Wipe HP</span>
+        <span class="wipe-stat-value" style="color: var(--red);">${activeData.avg_boss_hp}% HP</span>
+      </div>
+    </div>
+  `;
+  
+  // B. Distributions HTML
+  // Phase Distribution progress bars
+  let phaseHtml = "";
+  const phases = Object.entries(activeData.phase_distribution || {}).sort((a, b) => b[1] - a[1]);
+  if (phases.length === 0) {
+    phaseHtml = `<div style="color: var(--muted); font-size: 13px; padding-top: 10px;">No phase breakdown data.</div>`;
+  } else {
+    phases.forEach(([phaseName, count]) => {
+      const pct = Math.round((count / activeData.total_wipes) * 100);
+      phaseHtml += `
+        <div class="distribution-row">
+          <div class="distribution-meta">
+            <span>${escapeHtml(phaseName)}</span>
+            <span>${count} wipes (${pct}%)</span>
+          </div>
+          <div class="distribution-progress">
+            <div class="distribution-fill phase" style="width: ${pct}%;"></div>
+          </div>
         </div>
-        <div class="killer-card-metric">
-          Total Wipe Damage: <span style="color: var(--red); font-weight: bold;">${formatNumber(k.damage)}</span>
+      `;
+    });
+  }
+  
+  // HP Distribution progress bars
+  let hpDistHtml = "";
+  const hpBrackets = [
+    { key: "100_80", label: "100% - 80% HP (Early Wipe)" },
+    { key: "80_50", label: "80% - 50% HP (Mid Phase)" },
+    { key: "50_20", label: "50% - 20% HP (Late Phase)" },
+    { key: "20_0", label: "Under 20% HP (Heartbreakers)" }
+  ];
+  
+  hpBrackets.forEach(b => {
+    const count = activeData.hp_distribution[b.key] || 0;
+    const pct = Math.round((count / activeData.total_wipes) * 100);
+    hpDistHtml += `
+      <div class="distribution-row">
+        <div class="distribution-meta">
+          <span>${b.label}</span>
+          <span>${count} wipes (${pct}%)</span>
+        </div>
+        <div class="distribution-progress">
+          <div class="distribution-fill hp" style="width: ${pct}%;"></div>
         </div>
       </div>
     `;
   });
   
-  grid.innerHTML = html;
+  const distributionsHtml = `
+    <div class="wipe-distribution-section">
+      <div class="distribution-card">
+        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">📈 Pull HP progression distribution</h4>
+        ${hpDistHtml}
+      </div>
+      <div class="distribution-card">
+        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">🛡️ Bottleneck Phase audits</h4>
+        ${phaseHtml}
+      </div>
+    </div>
+  `;
+  
+  // C. Accolades (Catalysts lists) HTML
+  let playerListHtml = "";
+  const topPlayers = activeData.catalyst_players || [];
+  if (topPlayers.length === 0) {
+    playerListHtml = `<div style="color: var(--muted); font-size: 13px; padding: 12px; text-align: center;">No player deaths recorded.</div>`;
+  } else {
+    topPlayers.slice(0, 3).forEach(p => {
+      // Find class color if player spec exists (free/live lookup compatibility)
+      let classColor = "var(--text)";
+      if (typeof p.class === "string" && CLASS_COLORS[p.class]) {
+        classColor = CLASS_COLORS[p.class];
+      }
+      playerListHtml += `
+        <div class="accolade-item">
+          <span class="accolade-item-name" style="color: ${classColor};"><span style="font-size: 12px; margin-right: 4px;">👤</span> ${escapeHtml(p.player)}</span>
+          <span class="accolade-item-count">${p.count} Wipes</span>
+        </div>
+      `;
+    });
+  }
+  
+  let abilityListHtml = "";
+  const topAbilities = activeData.catalyst_abilities || [];
+  if (topAbilities.length === 0) {
+    abilityListHtml = `<div style="color: var(--muted); font-size: 13px; padding: 12px; text-align: center;">No catalyst spells recorded.</div>`;
+  } else {
+    topAbilities.slice(0, 3).forEach(a => {
+      abilityListHtml += `
+        <div class="accolade-item">
+          <span class="accolade-item-name" style="color: var(--red);"><span style="font-size: 12px; margin-right: 4px;">⚔️</span> ${escapeHtml(a.ability)}</span>
+          <span class="accolade-item-count">${a.count} Wipes</span>
+        </div>
+      `;
+    });
+  }
+  
+  const accoladesHtml = `
+    <div class="wipe-accolades-section">
+      <div class="accolades-pane">
+        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="font-size: 16px;">🩸</span> Wipe Catalyst Leaders</h4>
+        <p class="card-desc">Players who died first, triggering the initial raid failure check.</p>
+        <div class="accolade-list">
+          ${playerListHtml}
+        </div>
+      </div>
+      
+      <div class="accolades-pane">
+        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="font-size: 16px;">⚡</span> Top Wipe Trigger Abilities</h4>
+        <p class="card-desc">Mechanical abilities causing the first raid death most frequently.</p>
+        <div class="accolade-list">
+          ${abilityListHtml}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // D. Timeline Heatmap and Recommendations
+  // Map timestamps to progress markers along the bar (assume max display range is 360 seconds/6 mins for the visual timeline display)
+  const timestamps = activeData.death_timestamps || [];
+  let markersHtml = "";
+  let recText = "Great defensive discipline! No first death timestamps recorded on these pulls.";
+  
+  if (timestamps.length > 0) {
+    timestamps.forEach(t => {
+      const pct = Math.max(2, Math.min(98, (t / 360) * 100));
+      markersHtml += `<div class="heatmap-marker" style="left: ${pct}%;"></div>`;
+    });
+    
+    // Compute recommendation recommendation based on dense clusters
+    const early = timestamps.filter(t => t < 90).length;
+    const mid = timestamps.filter(t => t >= 90 && t < 180).length;
+    const late = timestamps.filter(t => t >= 180).length;
+    
+    if (early >= mid && early >= late) {
+      recText = `🚨 **Early encounter check failure:** Most pull failures are triggered in the **first 90 seconds**. This points to rotational gaps, unmitigated initial tank-busters, or standing in early swirls. Assign basic mechanics focus.`;
+    } else if (mid >= early && mid >= late) {
+      recText = `⚠️ **Mid-fight cooldown bottleneck:** Failures cluster heavily between **1:30 and 3:00**. This is typically when high-damage mechanics overlap and healer cooldowns run dry. Review Healer CD sheets and assign major survivals here.`;
+    } else {
+      recText = `💔 **Endgame execution exhaustion:** Wipes cluster consistently in **late-fight/execute phases**. Rotations and mechanical errors are clean early, but healer mana or player fatigue is causing wipes. Prioritize DPS potions/execution uptime.`;
+    }
+  }
+  
+  const heatmapHtml = `
+    <div class="wipe-heatmap-section">
+      <h4 style="font-size: 13.5px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">⏱️ Wipe Catalyst Timeline Heatmap</h4>
+      <p class="card-desc">Visual density of when the first deaths occur during pull timelines (Max display: 6 mins).</p>
+      <div class="heatmap-bar-container">
+        <div class="heatmap-track">
+          ${markersHtml}
+        </div>
+        <div class="heatmap-axis-labels">
+          <span>0:00 (Pull)</span>
+          <span>1:30</span>
+          <span>3:00</span>
+          <span>4:30</span>
+          <span>6:00 (Execute)</span>
+        </div>
+      </div>
+      
+      <!-- Tactician coaching card -->
+      <div class="wipe-rec-drawer">
+        <span class="wipe-rec-icon" style="margin-right: 8px;">💡</span>
+        <div class="wipe-rec-text">${recText}</div>
+      </div>
+    </div>
+  `;
+  
+  panel.innerHTML = `
+    <h3 style="font-size: 15px; font-weight: 800; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em;">Encounter Analysis: ${escapeHtml(activeWipeBoss)}</h3>
+    ${statsHtml}
+    ${distributionsHtml}
+    ${accoladesHtml}
+    ${heatmapHtml}
+  `;
 }
 
 async function postGuildLedgerToDiscord() {
