@@ -4545,6 +4545,360 @@ body {
 	}
 }
 
+/* ==============================================================================
+   Patreon Premium Guild Suite - Phase 2 Custom Component Styles
+   ============================================================================== */
+
+/* Primary Dashboard Navigation Bar */
+.primary-navbar {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 12px;
+}
+
+.primary-navbar.hidden {
+	display: none !important;
+}
+
+.nav-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 18px;
+	font-size: 13.5px;
+	font-weight: 700;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.01);
+	color: var(--muted);
+	cursor: pointer;
+	transition: all 0.2s ease-in-out;
+}
+
+.nav-tab:hover {
+	border-color: rgba(255, 255, 255, 0.25);
+	color: var(--text);
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-tab.active {
+	border-color: var(--blue);
+	color: var(--text);
+	background: rgba(59, 130, 246, 0.08);
+	box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+.premium-nav-badge {
+	background: linear-gradient(135deg, #fbbf24, #d97706);
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 9px;
+	font-weight: 800;
+	color: #0f172a;
+	text-transform: uppercase;
+	margin-left: 6px;
+	letter-spacing: 0.05em;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Premium Lock Screen Teaser Overlays */
+.premium-blur {
+	filter: blur(7px);
+	pointer-events: none;
+	user-select: none;
+	opacity: 0.35;
+	transition: all 0.3s ease;
+}
+
+.guild-premium-lock-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: rgba(15, 23, 42, 0.45);
+	backdrop-filter: blur(1px);
+	z-index: 10;
+	padding: 20px;
+}
+
+.guild-premium-lock-overlay.hidden {
+	display: none !important;
+}
+
+.guild-premium-lock-overlay .lock-card {
+	width: 100%;
+	max-width: 440px;
+	background: rgba(30, 41, 59, 0.85);
+	border: 1px solid rgba(251, 191, 36, 0.35);
+	border-radius: var(--radius);
+	padding: 36px 28px;
+	text-align: center;
+	box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(16px);
+	animation: slide-up-lock 0.3s ease;
+}
+
+.guild-premium-lock-overlay .lock-star {
+	font-size: 40px;
+	display: block;
+	margin-bottom: 16px;
+	animation: float-star 3s ease-in-out infinite;
+}
+
+.guild-premium-lock-overlay h2 {
+	font-size: 20px;
+	font-weight: 800;
+	margin-bottom: 12px;
+	background: linear-gradient(135deg, #fbbf24, #f59e0b);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.guild-premium-lock-overlay p {
+	font-size: 13.5px;
+	color: var(--muted);
+	line-height: 1.55;
+	margin-bottom: 24px;
+}
+
+/* Two-Column Command Layout */
+.guild-suite-grid {
+	display: flex;
+	gap: 20px;
+	margin-top: 18px;
+}
+
+@media (max-width: 1024px) {
+	.guild-suite-grid {
+		flex-direction: column;
+	}
+	.guild-suite-left-pane, .guild-suite-right-pane {
+		width: 100% !important;
+		max-width: 100% !important;
+	}
+}
+
+.guild-suite-left-pane {
+	flex: 1.5;
+	max-width: 600px;
+}
+
+.guild-suite-right-pane {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Scatter Matrix Interactive canvas & hovercard tooltip */
+.matrix-canvas-container {
+	position: relative;
+	width: 100%;
+}
+
+.matrix-tooltip {
+	position: absolute;
+	background: rgba(15, 23, 42, 0.92);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 12px 14px;
+	color: var(--text);
+	font-size: 12.5px;
+	line-height: 1.45;
+	pointer-events: none;
+	z-index: 100;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+	backdrop-filter: blur(8px);
+	width: 230px;
+	transition: opacity 0.1s ease;
+}
+
+.matrix-tooltip.hidden {
+	display: none !important;
+	opacity: 0;
+}
+
+.tooltip-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	padding-bottom: 6px;
+	margin-bottom: 6px;
+}
+
+.tooltip-name {
+	font-weight: 800;
+	font-size: 13.5px;
+}
+
+.tooltip-quadrant {
+	font-size: 10.5px;
+	font-weight: 700;
+	text-transform: uppercase;
+	padding: 2px 6px;
+	border-radius: 4px;
+	letter-spacing: 0.05em;
+}
+
+.tooltip-quadrant.carry { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+.tooltip-quadrant.hero { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.tooltip-quadrant.cannon { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.tooltip-quadrant.liability { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+
+/* Buff Synergy Checklist */
+.synergy-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, 0.04);
+	background: rgba(255, 255, 255, 0.005);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.synergy-item.active {
+	border-color: rgba(52, 211, 153, 0.2);
+	background: rgba(52, 211, 153, 0.02);
+	color: var(--green);
+}
+
+.synergy-item.missing {
+	border-color: rgba(245, 158, 11, 0.2);
+	background: rgba(245, 158, 11, 0.02);
+	color: #fbbf24;
+}
+
+.synergy-indicator {
+	font-size: 14px;
+	font-weight: 800;
+}
+
+/* Consumable Panic Audit Rows */
+.panic-audit-row {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.panic-audit-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.panic-meta {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.panic-progress-bar {
+	width: 100%;
+	height: 6px;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.panic-progress-fill {
+	height: 100%;
+	border-radius: 4px;
+	background: var(--blue);
+	transition: width 0.3s ease;
+}
+
+/* Ledger Accountability Rows */
+.ledger-table th {
+	padding: 10px 16px;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	border-bottom: 1px solid var(--border);
+}
+
+.ledger-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+	vertical-align: middle;
+}
+
+.ledger-table tr:hover td {
+	background: rgba(255, 255, 255, 0.015);
+}
+
+.coin-token {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-weight: 700;
+}
+
+.coin-icon {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	display: inline-block;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.coin-icon.gold { background: #fbbf24; border: 1px solid #d97706; }
+.coin-icon.silver { background: #cbd5e1; border: 1px solid #94a3b8; }
+.coin-icon.copper { background: #f97316; border: 1px solid #c2410c; }
+
+/* Wipe Progression Diagnoser widgets */
+.killer-card {
+	background: rgba(248, 113, 113, 0.01);
+	border: 1px solid rgba(248, 113, 113, 0.12);
+	border-radius: var(--radius);
+	padding: 14px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.killer-card-title {
+	font-size: 13.5px;
+	font-weight: 700;
+	color: #f87171;
+}
+
+.killer-card-meta {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11.5px;
+	color: var(--muted);
+}
+
+.killer-card-metric {
+	font-size: 12px;
+	color: var(--text);
+	font-weight: 600;
+	margin-top: 4px;
+}
+
+/* Animations */
+@keyframes float-star {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-6px); }
+}
+
+@keyframes slide-up-lock {
+	from { transform: translateY(15px); opacity: 0; }
+	to { transform: translateY(0); opacity: 1; }
+}
+
+
 
 
 

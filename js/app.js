@@ -125,8 +125,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Primary Dashboard Navigation Triggers
+  const navPersonal = document.getElementById("navPersonalBtn");
+  const navGuildSuite = document.getElementById("navGuildSuiteBtn");
+  if (navPersonal) navPersonal.addEventListener("click", switchToPersonalAnalyzer);
+  if (navGuildSuite) navGuildSuite.addEventListener("click", switchToGuildSuite);
+
+  // Guild Suite Post Ledger to Discord trigger
+  const postLedgerBtn = document.getElementById("postGuildLedgerButton");
+  if (postLedgerBtn) postLedgerBtn.addEventListener("click", postGuildLedgerToDiscord);
+
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
+
+  if (window.location.pathname === "/guild") {
+    switchToGuildSuite();
+  }
 
   const builderLink = document.querySelector(".builder-link");
   if (builderLink) {
@@ -3605,15 +3619,25 @@ async function checkUserSession() {
 
       document.getElementById("settingsButton").addEventListener("click", openSettingsDrawer);
       document.getElementById("logoutButton").addEventListener("click", logoutUser);
+      
+      const primaryNavbar = document.getElementById("primaryNavbar");
+      if (primaryNavbar) primaryNavbar.classList.remove("hidden");
+      
       loadGuildDashboard();
     } else {
       renderLoginButton();
       hideGuildDashboard();
+      
+      const primaryNavbar = document.getElementById("primaryNavbar");
+      if (primaryNavbar) primaryNavbar.classList.add("hidden");
     }
   } catch (error) {
     console.error("Failed to query user authentication status:", error);
     renderLoginButton();
     hideGuildDashboard();
+    
+    const primaryNavbar = document.getElementById("primaryNavbar");
+    if (primaryNavbar) primaryNavbar.classList.add("hidden");
   }
 }
 
@@ -5500,4 +5524,631 @@ window.showCalibratorSpikeTooltip = (e, time, spellName, amount, covered) => {
     { label: "Coverage Status", value: covered ? "🛡️ Mitigated successfully" : "❌ Zero active raid defensives" }
   ];
   showTooltip(e, title, fields);
-};
+};
+
+/* ==============================================================================
+   Patreon Premium Guild Suite - Phase 2 Frontend Core Features
+   ============================================================================== */
+let currentGuildOverviewData = null;
+let plottedPlayers = [];
+
+function switchToPersonalAnalyzer() {
+  const guildSuiteCard = document.getElementById("guildSuiteCard");
+  if (guildSuiteCard) guildSuiteCard.classList.add("hidden");
+  
+  document.getElementById("analyzeCard").classList.remove("hidden");
+  document.getElementById("statusCard").classList.remove("hidden");
+  
+  const dashboardCard = document.getElementById("guildDashboardCard");
+  if (dashboardCard && isPatreonLinked) {
+    dashboardCard.classList.remove("hidden");
+  }
+  
+  if (currentJobId) {
+    const resultCard = document.getElementById("resultCard");
+    const bossTilesCard = document.getElementById("bossTilesCard");
+    const detailsCard = document.getElementById("detailsCard");
+    if (resultCard) resultCard.classList.remove("hidden");
+    if (bossTilesCard) bossTilesCard.classList.remove("hidden");
+    if (detailsCard) detailsCard.classList.remove("hidden");
+  }
+  
+  const personalBtn = document.getElementById("navPersonalBtn");
+  const guildBtn = document.getElementById("navGuildSuiteBtn");
+  if (personalBtn) personalBtn.classList.add("active");
+  if (guildBtn) guildBtn.classList.remove("active");
+  
+  if (window.location.pathname === "/guild") {
+    window.history.pushState(null, "", "/");
+  }
+}
+
+async function switchToGuildSuite() {
+  document.getElementById("analyzeCard").classList.add("hidden");
+  document.getElementById("statusCard").classList.add("hidden");
+  
+  const dashboardCard = document.getElementById("guildDashboardCard");
+  if (dashboardCard) dashboardCard.classList.add("hidden");
+  
+  const resultCard = document.getElementById("resultCard");
+  const bossTilesCard = document.getElementById("bossTilesCard");
+  const detailsCard = document.getElementById("detailsCard");
+  const builderCard = document.getElementById("builderCard");
+  
+  if (resultCard) resultCard.classList.add("hidden");
+  if (bossTilesCard) bossTilesCard.classList.add("hidden");
+  if (detailsCard) detailsCard.classList.add("hidden");
+  if (builderCard) builderCard.classList.add("hidden");
+  
+  const guildSuiteCard = document.getElementById("guildSuiteCard");
+  if (guildSuiteCard) guildSuiteCard.classList.remove("hidden");
+  
+  const personalBtn = document.getElementById("navPersonalBtn");
+  const guildBtn = document.getElementById("navGuildSuiteBtn");
+  if (personalBtn) personalBtn.classList.remove("active");
+  if (guildBtn) guildBtn.classList.add("active");
+  
+  window.history.pushState(null, "", "/guild");
+  
+  await loadGuildSuiteOverview();
+}
+
+async function loadGuildSuiteOverview() {
+  const statsFights = document.getElementById("guildSuiteTotalFights");
+  const statsAvoidable = document.getElementById("guildSuiteAvgAvoidable");
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const contentArea = document.getElementById("guildSuiteContentArea");
+  
+  if (statsFights) statsFights.innerText = "...";
+  if (statsAvoidable) statsAvoidable.innerText = "...";
+  
+  try {
+    const response = await fetch("/api/guild/overview");
+    
+    if (response.status === 401 || response.status === 403) {
+      if (lockScreen) lockScreen.classList.remove("hidden");
+      if (contentArea) contentArea.classList.add("premium-blur");
+      
+      const mockPlayers = {
+        "TankyMcTank": { spec: "Protection", role: "Tank", fights_count: 8, avg_grade: "S", avg_avoidable_damage: 2500, avg_dps: 18000, avg_hps: 4000, total_deaths: 0, survival_score: 98, panic_healthstone_pct: 100, gold_debt: 0, class: "Warrior" },
+        "DpsGoBrrr": { spec: "Fire", role: "DPS", fights_count: 8, avg_grade: "B", avg_avoidable_damage: 48000, avg_dps: 94000, avg_hps: 0, total_deaths: 3, survival_score: 72, panic_healthstone_pct: 33, gold_debt: 4, class: "Mage" },
+        "SwirlyCatcher": { spec: "Shadow", role: "DPS", fights_count: 8, avg_grade: "D", avg_avoidable_damage: 185000, avg_dps: 55000, avg_hps: 0, total_deaths: 7, survival_score: 25, panic_healthstone_pct: 0, gold_debt: 18, class: "Priest" },
+        "GreenBeamEnjoyer": { spec: "Restoration", role: "Healer", fights_count: 8, avg_grade: "A", avg_avoidable_damage: 18000, avg_dps: 2000, avg_hps: 82000, total_deaths: 1, survival_score: 92, panic_healthstone_pct: 100, gold_debt: 1, class: "Druid" }
+      };
+      const mockBuffs = {
+        active: ["Battle Shout (5% Attack Power)", "Arcane Intellect (5% Intellect)", "Mark of the Wild (3% Versatility)"],
+        missing: ["Chaos Brand", "Mystic Touch", "Power Word: Fortitude"],
+        suggestions: [
+          { class: "Demon Hunter", benefit: "Chaos Brand which increases roster magic damage taken by 5%." }
+        ]
+      };
+      const mockKillers = {
+        "Void Eruption": { hits: 18, damage: 12000000, fights_count: 5 },
+        "Shadow Spike": { hits: 45, damage: 9500000, fights_count: 5 }
+      };
+      
+      if (statsFights) statsFights.innerText = "8";
+      if (statsAvoidable) statsAvoidable.innerText = "52,400";
+      
+      drawRosterMatrix(mockPlayers);
+      renderBuffSynergy(mockBuffs);
+      renderPanicAudit(mockPlayers);
+      renderGoldLedger(mockPlayers);
+      renderWipeDiagnoser(mockKillers);
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`Server returned status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    currentGuildOverviewData = data;
+    
+    if (lockScreen) lockScreen.classList.add("hidden");
+    if (contentArea) contentArea.classList.remove("premium-blur");
+    
+    if (statsFights) statsFights.innerText = data.guild_averages.total_fights_analyzed.toString();
+    if (statsAvoidable) statsAvoidable.innerText = formatNumber(data.guild_averages.average_avoidable_damage);
+    
+    drawRosterMatrix(data.players_history || {});
+    renderBuffSynergy(data.synergy_buffs || { active: [], missing: [], suggestions: [] });
+    renderPanicAudit(data.players_history || {});
+    renderGoldLedger(data.players_history || {});
+    renderWipeDiagnoser(data.progression_killers || {});
+    
+  } catch (error) {
+    console.error("Failed to load premium Guild Suite overview:", error);
+    if (statsFights) statsFights.innerText = "Error";
+    if (statsAvoidable) statsAvoidable.innerText = "Error";
+  }
+}
+
+function drawRosterMatrix(players) {
+  const canvas = document.getElementById("matrixCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 400 * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const width = rect.width;
+  const height = 400;
+  
+  ctx.clearRect(0, 0, width, height);
+  
+  const margin = { top: 40, right: 40, bottom: 50, left: 60 };
+  const graphWidth = width - margin.left - margin.right;
+  const graphHeight = height - margin.top - margin.bottom;
+  
+  ctx.fillStyle = "rgba(59, 130, 246, 0.02)";
+  ctx.fillRect(margin.left, margin.top, graphWidth / 2, graphHeight / 2);
+  
+  ctx.fillStyle = "rgba(52, 211, 153, 0.02)";
+  ctx.fillRect(margin.left + graphWidth / 2, margin.top, graphWidth / 2, graphHeight / 2);
+  
+  ctx.fillStyle = "rgba(248, 113, 113, 0.02)";
+  ctx.fillRect(margin.left, margin.top + graphHeight / 2, graphWidth / 2, graphHeight / 2);
+  
+  ctx.fillStyle = "rgba(251, 191, 36, 0.02)";
+  ctx.fillRect(margin.left + graphWidth / 2, margin.top + graphHeight / 2, graphWidth / 2, graphHeight / 2);
+  
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.12)";
+  ctx.lineWidth = 1;
+  
+  for (let i = 0; i <= 4; i++) {
+    const yVal = i * 25;
+    const yPix = margin.top + graphHeight - (yVal / 100) * graphHeight;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, yPix);
+    ctx.lineTo(margin.left + graphWidth, yPix);
+    ctx.stroke();
+    
+    ctx.fillStyle = "var(--muted)";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(yVal + "%", margin.left - 10, yPix + 3);
+  }
+  
+  for (let i = 0; i <= 4; i++) {
+    const xVal = i * 25;
+    const xPix = margin.left + (xVal / 100) * graphWidth;
+    ctx.beginPath();
+    ctx.moveTo(xPix, margin.top);
+    ctx.lineTo(xPix, margin.top + graphHeight);
+    ctx.stroke();
+    
+    ctx.fillStyle = "var(--muted)";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(xVal + "%", xPix, margin.top + graphHeight + 16);
+  }
+  
+  ctx.fillStyle = "var(--muted)";
+  ctx.font = "bold 11px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Active Output Rate (Relative DPS/HPS)", margin.left + graphWidth / 2, margin.top + graphHeight + 36);
+  
+  ctx.save();
+  ctx.translate(16, margin.top + graphHeight / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("Mechanics Dodged (Survival Score)", 0, 0);
+  ctx.restore();
+  
+  ctx.font = "bold 10px sans-serif";
+  ctx.textBaseline = "top";
+  
+  ctx.fillStyle = "#60a5fa";
+  ctx.textAlign = "left";
+  ctx.fillText("Progression Heroes", margin.left + 10, margin.top + 10);
+  
+  ctx.fillStyle = "#34d399";
+  ctx.textAlign = "right";
+  ctx.fillText("Elite Carries", margin.left + graphWidth - 10, margin.top + 10);
+  
+  ctx.fillStyle = "#f87171";
+  ctx.textAlign = "left";
+  ctx.fillText("Liabilities", margin.left + 10, margin.top + graphHeight - 20);
+  
+  ctx.fillStyle = "#fbbf24";
+  ctx.textAlign = "right";
+  ctx.fillText("Glass Cannons", margin.left + graphWidth - 10, margin.top + graphHeight - 20);
+  
+  let maxOutput = 1;
+  Object.values(players).forEach(p => {
+    const val = Math.max(p.avg_dps || 0, p.avg_hps || 0);
+    if (val > maxOutput) maxOutput = val;
+  });
+  
+  plottedPlayers = [];
+  
+  Object.entries(players).forEach(([name, p]) => {
+    const output = Math.max(p.avg_dps || 0, p.avg_hps || 0);
+    const xPct = maxOutput > 0 ? (output / maxOutput) * 100 : 0;
+    const yPct = p.survival_score || 0;
+    
+    const xPix = margin.left + (xPct / 100) * graphWidth;
+    const yPix = margin.top + graphHeight - (yPct / 100) * graphHeight;
+    
+    plottedPlayers.push({
+      name,
+      x: xPix,
+      y: yPix,
+      class: p.class || p.spec || "Unknown",
+      role: p.role || "DPS",
+      avg_avoidable: p.avg_avoidable_damage,
+      avg_dps: p.avg_dps,
+      avg_hps: p.avg_hps,
+      total_deaths: p.total_deaths,
+      survival_score: yPct,
+      output_pct: Math.round(xPct)
+    });
+  });
+  
+  plottedPlayers.forEach(p => {
+    let color = "var(--text)";
+    const cleanClass = p.class.replace(/\s+/g, "");
+    if (CLASS_COLORS[p.class]) color = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[cleanClass]) color = CLASS_COLORS[cleanClass];
+    
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4;
+    
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  if (!canvas.dataset.hoverBound) {
+    canvas.dataset.hoverBound = "true";
+    
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      let hoverTarget = null;
+      let minDistance = 12;
+      
+      plottedPlayers.forEach(p => {
+        const dx = mouseX - p.x;
+        const dy = mouseY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDistance) {
+          minDistance = dist;
+          hoverTarget = p;
+        }
+      });
+      
+      showMatrixTooltip(e, hoverTarget, canvas);
+    });
+    
+    canvas.addEventListener("mouseleave", () => {
+      showMatrixTooltip(null, null);
+    });
+  }
+}
+
+function showMatrixTooltip(e, p, canvas) {
+  const tooltip = document.getElementById("matrixTooltip");
+  if (!tooltip) return;
+  
+  if (!p) {
+    tooltip.classList.add("hidden");
+    return;
+  }
+  
+  let quadrant = "Liability";
+  let quadClass = "liability";
+  if (p.output_pct >= 50 && p.survival_score >= 50) {
+    quadrant = "Elite Carry";
+    quadClass = "carry";
+  } else if (p.output_pct < 50 && p.survival_score >= 50) {
+    quadrant = "Progression Hero";
+    quadClass = "hero";
+  } else if (p.output_pct >= 50 && p.survival_score < 50) {
+    quadrant = "Glass Cannon";
+    quadClass = "cannon";
+  }
+  
+  let classColor = "var(--text)";
+  const cleanClass = p.class.replace(/\s+/g, "");
+  if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+  else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+
+  tooltip.innerHTML = `
+    <div class="tooltip-header">
+      <span class="tooltip-name" style="color: ${classColor}; font-weight: 800;">${escapeHtml(p.name)}</span>
+      <span class="tooltip-quadrant ${quadClass}">${quadrant}</span>
+    </div>
+    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+      <div><strong>Role:</strong> ${escapeHtml(p.role)}</div>
+      <div><strong>Survival Rate:</strong> ${p.survival_score}%</div>
+      <div><strong>Avg Avoidable:</strong> ${formatNumber(p.avg_avoidable)}</div>
+      <div><strong>Relative Output:</strong> ${p.output_pct}%</div>
+      <div><strong>DPS:</strong> ${formatNumber(p.avg_dps || 0)} | <strong>HPS:</strong> ${formatNumber(p.avg_hps || 0)}</div>
+      <div style="border-top: 1px solid rgba(255,255,255,0.06); margin-top: 6px; padding-top: 4px; font-size: 11px; color: var(--muted);">
+        <strong>Coaching:</strong> ${p.survival_score < 50 ? "Avoids mechanics poorly. Bench or coach." : "Excellent mechanic dodger!"}
+      </div>
+    </div>
+  `;
+  
+  const canvasRect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - canvasRect.left;
+  const mouseY = e.clientY - canvasRect.top;
+  
+  tooltip.style.left = (mouseX + 15) + "px";
+  tooltip.style.top = (mouseY - 20) + "px";
+  tooltip.classList.remove("hidden");
+}
+
+function renderBuffSynergy(synergyData) {
+  const grid = document.getElementById("synergyBuffsGrid");
+  const suggestions = document.getElementById("synergySuggestions");
+  if (!grid || !suggestions) return;
+  
+  if (!synergyData) {
+    grid.innerHTML = "No synergy data available.";
+    suggestions.innerHTML = "";
+    return;
+  }
+  
+  const active = synergyData.active || [];
+  const recs = synergyData.suggestions || [];
+  
+  let gridHtml = "";
+  
+  const buffKeys = [
+    { name: "Battle Shout", active: active.some(b => b.includes("Battle Shout")), desc: "5% Attack Power" },
+    { name: "Arcane Intellect", active: active.some(b => b.includes("Arcane Intellect")), desc: "5% Intellect" },
+    { name: "Mark of the Wild", active: active.some(b => b.includes("Mark of the Wild")), desc: "3% Versatility" },
+    { name: "Chaos Brand", active: active.some(b => b.includes("Chaos Brand")), desc: "5% Magic Dmg" },
+    { name: "Mystic Touch", active: active.some(b => b.includes("Mystic Touch")), desc: "5% Physical Dmg" },
+    { name: "Power Word: Fortitude", active: active.some(b => b.includes("Fortitude")), desc: "5% Stamina" }
+  ];
+  
+  buffKeys.forEach(b => {
+    const stateClass = b.active ? "active" : "missing";
+    const indicator = b.active ? "✔" : "✖";
+    gridHtml += `
+      <div class="synergy-item ${stateClass}">
+        <span>${escapeHtml(b.name)} <span style="font-size: 9px; opacity: 0.7; font-weight: normal;">(${b.desc})</span></span>
+        <span class="synergy-indicator">${indicator}</span>
+      </div>
+    `;
+  });
+  grid.innerHTML = gridHtml;
+  
+  if (recs.length === 0) {
+    suggestions.innerHTML = "🏆 Perfect Synergy! Your raid roster contains all vital class utility buffs.";
+  } else {
+    let recsHtml = `<div style="font-weight: 700; color: #fbbf24; margin-bottom: 6px;">Utility Suggestions:</div>`;
+    recs.forEach(r => {
+      recsHtml += `
+        <div style="margin-bottom: 4px;">
+          • <strong style="color: var(--text);">${escapeHtml(r.class)}</strong> missing: ${r.benefit}
+        </div>
+      `;
+    });
+    suggestions.innerHTML = recsHtml;
+  }
+}
+
+function renderPanicAudit(players) {
+  const container = document.getElementById("panicAuditList");
+  if (!container) return;
+  
+  const sorted = Object.entries(players)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.total_deaths - a.total_deaths);
+    
+  let html = "";
+  
+  if (sorted.length === 0) {
+    container.innerHTML = "No player data available.";
+    return;
+  }
+  
+  sorted.forEach(p => {
+    if (p.total_deaths === 0) return;
+    
+    let classColor = "var(--text)";
+    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : p.spec.replace(/\s+/g, "");
+    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[p.spec]) classColor = CLASS_COLORS[p.spec];
+    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    
+    html += `
+      <div class="panic-audit-row">
+        <div class="panic-meta">
+          <span style="color: ${classColor};">${escapeHtml(p.name)}</span>
+          <span style="color: var(--muted); font-size: 11px;">Deaths: ${p.total_deaths} | Panic Rate: <strong style="color: ${p.panic_healthstone_pct < 40 ? "var(--red)" : "var(--green)"};">${p.panic_healthstone_pct}%</strong></span>
+        </div>
+        <div class="panic-progress-bar">
+          <div class="panic-progress-fill" style="width: ${p.panic_healthstone_pct}%; background: ${p.panic_healthstone_pct < 40 ? "var(--red)" : "var(--green)"};"></div>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html || `<div style="text-align: center; color: var(--green); padding: 10px;">🛡️ Clean Raid Survival! Zero roster deaths recorded in these fights.</div>`;
+}
+
+function renderGoldLedger(players) {
+  const body = document.getElementById("guildLedgerBody");
+  if (!body) return;
+  
+  const sorted = Object.entries(players)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.gold_debt - a.gold_debt);
+    
+  let html = "";
+  
+  if (sorted.length === 0) {
+    body.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 20px;">No ledger entries found.</td></tr>`;
+    return;
+  }
+  
+  sorted.forEach(p => {
+    let classColor = "var(--text)";
+    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : p.spec.replace(/\s+/g, "");
+    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[p.spec]) classColor = CLASS_COLORS[p.spec];
+    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    
+    let coinHtml = "0g";
+    if (p.gold_debt > 0) {
+      coinHtml = `
+        <span class="coin-token">
+          <span>${formatNumber(p.gold_debt)}</span>
+          <span class="coin-icon gold"></span>
+        </span>
+      `;
+    } else {
+      coinHtml = `<span style="color: var(--green); font-weight: 700;">Clean (0g)</span>`;
+    }
+    
+    html += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+        <td style="padding: 12px 16px; font-weight: bold; color: ${classColor};">${escapeHtml(p.name)}</td>
+        <td style="padding: 12px 16px; color: var(--muted);">${escapeHtml(p.role)}</td>
+        <td style="padding: 12px 16px; text-align: right; font-weight: 600;">${p.fights_count}</td>
+        <td style="padding: 12px 16px; text-align: right; color: var(--red); font-weight: 600;">${formatNumber(p.avg_avoidable_damage)}</td>
+        <td style="padding: 12px 16px; text-align: right;"><span class="badge badge-grade grade-${p.avg_grade || "C"}" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${p.avg_grade}</span></td>
+        <td style="padding: 12px 16px; text-align: right;">${coinHtml}</td>
+      </tr>
+    `;
+  });
+  
+  body.innerHTML = html;
+}
+
+function renderWipeDiagnoser(killers) {
+  const grid = document.getElementById("progressionKillersGrid");
+  if (!grid) return;
+  
+  const sorted = Object.entries(killers)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.damage - a.damage);
+    
+  let html = "";
+  
+  if (sorted.length === 0) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--green); padding: 16px; border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(52,211,153,0.02);">🎉 Zero Wipes! The progression overview only contains boss kills.</div>`;
+    return;
+  }
+  
+  sorted.forEach(k => {
+    html += `
+      <div class="killer-card">
+        <span class="killer-card-title">${escapeHtml(k.name)}</span>
+        <div class="killer-card-meta">
+          <span>Wipes Impacted: <strong>${k.fights_count}</strong></span>
+          <span>Hits Logged: <strong>${k.hits}</strong></span>
+        </div>
+        <div class="killer-card-metric">
+          Total Wipe Damage: <span style="color: var(--red); font-weight: bold;">${formatNumber(k.damage)}</span>
+        </div>
+      </div>
+    `;
+  });
+  
+  grid.innerHTML = html;
+}
+
+async function postGuildLedgerToDiscord() {
+  const postBtn = document.getElementById("postGuildLedgerButton");
+  if (!postBtn || !currentGuildOverviewData) return;
+  
+  if (!isPremium) {
+    alert("⭐ The Guild Suite is a Patreon Premium feature. Support us on Patreon to unlock the Guild Command Center!");
+    return;
+  }
+  
+  if (!currentUserWebhook) {
+    alert("Please configure and save your Discord Webhook URL in your Settings drawer first.");
+    openSettingsDrawer();
+    return;
+  }
+  
+  postBtn.disabled = true;
+  postBtn.textContent = "Posting...";
+  
+  const players = currentGuildOverviewData.players_history || {};
+  const sorted = Object.entries(players)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.gold_debt - a.gold_debt);
+    
+  let leaderboardText = "";
+  sorted.slice(0, 10).forEach((p, idx) => {
+    leaderboardText += `${idx + 1}. **${p.name}** (${p.role}) — **${p.gold_debt} gold** debt (${formatNumber(p.avg_avoidable_damage)} avg avoidable)\n`;
+  });
+  
+  if (!leaderboardText) leaderboardText = "Zero repair debt recorded!";
+  
+  const discordPayload = {
+    username: "ShortParse",
+    avatar_url: "https://raw.githubusercontent.com/ShortParse/ShortParse-Web/main/images/apple-touch-icon.png",
+    embeds: [
+      {
+        title: "🛡️ ShortParse Roster Repair Debt Ledger",
+        description: "Weekly projected gold repair bills computed based on avoidable mechanic damage taken.",
+        color: 16478597,
+        fields: [
+          {
+            name: "💰 Roster Repair Leaderboard (Top Avoidable Damage)",
+            value: leaderboardText
+          },
+          {
+            name: "📊 Guild Raid Averages",
+            value: `• **Total Fights Audited:** ${currentGuildOverviewData.guild_averages.total_fights_analyzed}\n• **Average Avoidable Damage:** ${formatNumber(currentGuildOverviewData.guild_averages.average_avoidable_damage)} taken per fight`
+          }
+        ],
+        footer: {
+          text: "ShortParse Guild Suite - Gamified Accountability & Banter"
+        },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+  
+  try {
+    const response = await fetch(currentUserWebhook, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(discordPayload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Discord API returned status ${response.status}`);
+    }
+    
+    postBtn.textContent = "Posted! 🚀";
+    postBtn.style.background = "var(--green)";
+    postBtn.style.color = "#0f1218";
+    
+    setTimeout(() => {
+      postBtn.disabled = false;
+      postBtn.textContent = "Post Ledger to Discord";
+      postBtn.style.background = "";
+      postBtn.style.color = "";
+    }, 2500);
+  } catch (error) {
+    alert(`Failed to share ledger to Discord: ${error.message}`);
+    postBtn.disabled = false;
+    postBtn.textContent = "Post Ledger to Discord";
+  }
+}
+

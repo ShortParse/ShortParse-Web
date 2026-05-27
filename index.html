@@ -54,6 +54,17 @@
         </div>
       </div>
     </header>
+
+    <!-- Primary Dashboard Navigation -->
+    <nav id="primaryNavbar" class="primary-navbar hidden">
+      <button id="navPersonalBtn" class="nav-tab active" type="button">
+        <span class="nav-tab-icon">📊</span> Personal Analyzer
+      </button>
+      <button id="navGuildSuiteBtn" class="nav-tab" type="button">
+        <span class="nav-tab-icon">🛡️</span> Guild Suite <span class="premium-nav-badge">⭐ Premium</span>
+      </button>
+    </nav>
+
     <section id="guildDashboardCard" class="card hidden">
       <div class="section-header guild-hub-header" id="guildHubHeader"
         style="cursor: pointer; user-select: none; margin-bottom: 0;">
@@ -75,6 +86,132 @@
       <div id="guildHubContent" class="guild-hub-content" style="margin-top: 18px;">
         <div id="guildTabContainer" class="guild-tabs"></div>
         <div id="guildReportsContainer" class="guild-reports-grid"></div>
+      </div>
+    </section>
+
+    <!-- Guild Command Center Card -->
+    <section id="guildSuiteCard" class="card hidden" style="position: relative; overflow: hidden;">
+      <div id="guildSuitePremiumLock" class="guild-premium-lock-overlay hidden">
+        <div class="lock-card">
+          <span class="lock-star">🔒</span>
+          <h2>Unlock the Guild Command Center</h2>
+          <p>
+            Expose DPS padders, track mechanic survival rates, audit consumable panic windows, and gamify logs accountability for your entire active roster.
+          </p>
+          <a id="unlockGuildPatreonButton" class="premium-unlock-btn" href="/api/auth/patreon/login" style="text-decoration: none; justify-content: center;">
+            Unlock with Patreon Premium
+          </a>
+        </div>
+      </div>
+
+      <div class="guild-suite-content" id="guildSuiteContentArea">
+        <div class="section-header guild-suite-header">
+          <div>
+            <h2 style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 0;">
+              🛡️ Guild Command Center
+            </h2>
+            <p class="section-description" style="margin-top: 4px; margin-bottom: 0;">
+              Aggregate and evaluate your active roster's overall combat efficiency and survival rates.
+            </p>
+          </div>
+          <div class="guild-suite-stats-bar">
+            <div class="guild-suite-stat-node">
+              <span class="stat-node-label">Fights Analyzed</span>
+              <span id="guildSuiteTotalFights" class="stat-node-value">-</span>
+            </div>
+            <div class="guild-suite-stat-node">
+              <span class="stat-node-label">Avg Avoidable Dmg</span>
+              <span id="guildSuiteAvgAvoidable" class="stat-node-value">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column Grid for Roster Matrix and Audits -->
+        <div class="guild-suite-grid">
+          <!-- Column 1: Scatter Matrix -->
+          <div class="guild-suite-left-pane">
+            <div class="matrix-header-row">
+              <h3 style="margin-bottom: 4px;">Roster Survival vs. Output Matrix</h3>
+              <p class="card-desc" style="margin-bottom: 12px;">Plots players based on performance (DPS/HPS) vs. mechanical survival score.</p>
+            </div>
+            <div class="matrix-canvas-container" style="position: relative;">
+              <canvas id="matrixCanvas" width="600" height="400" style="display: block; width: 100%; max-width: 600px; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></canvas>
+              <!-- Hovercard Tooltip -->
+              <div id="matrixTooltip" class="matrix-tooltip hidden"></div>
+            </div>
+            <div class="matrix-quadrant-legend" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
+              <div class="legend-item" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;"><span class="legend-dot hero" style="width: 8px; height: 8px; border-radius: 50%; background: #60a5fa; display: inline-block;"></span> Progression Hero</div>
+              <div class="legend-item" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;"><span class="legend-dot carry" style="width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block;"></span> Elite Carry</div>
+              <div class="legend-item" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;"><span class="legend-dot liability" style="width: 8px; height: 8px; border-radius: 50%; background: #f87171; display: inline-block;"></span> Liability</div>
+              <div class="legend-item" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;"><span class="legend-dot cannon" style="width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; display: inline-block;"></span> Glass Cannon</div>
+            </div>
+          </div>
+
+          <!-- Column 2: Buff Planner & Consumables Audit -->
+          <div class="guild-suite-right-pane">
+            <!-- Buffet Synergy Planner -->
+            <div class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+              <h3 style="font-size: 15px; margin-bottom: 4px;">Roster Synergy & Buff Planner</h3>
+              <p class="card-desc" style="margin-bottom: 12px;">Audits crucial raid-wide buffs present on your latest uploaded raid fight.</p>
+              <div id="synergyBuffsGrid" class="synergy-buffs-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <!-- Dynamically populated -->
+              </div>
+              <div id="synergySuggestions" class="synergy-suggestions" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.4;">
+                <!-- Recommendations -->
+              </div>
+            </div>
+
+            <!-- Consumables & Panic Button Audit -->
+            <div class="sub-card" style="margin-top: 16px; background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+              <h3 style="font-size: 15px; margin-bottom: 4px;">Consumables & Panic Button Audit</h3>
+              <p class="card-desc" style="margin-bottom: 12px;">Evaluates defensive and potion usage percentages during panic windows (&lt;20% HP) on wipe fights.</p>
+              <div id="panicAuditList" class="panic-audit-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accountability Repair Ledger -->
+        <div class="guild-suite-ledger-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-size: 16px; margin-bottom: 4px;">Avoidable Gold Repair Debt Ledger</h3>
+              <p class="card-desc">Computes roster repair billing based on total avoidable mechanic damage taken.</p>
+            </div>
+            <button id="postGuildLedgerButton" class="discord-post-btn" type="button" style="display: inline-flex; align-items: center; gap: 6px;">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+              </svg>
+              Post Ledger to Discord
+            </button>
+          </div>
+          
+          <div class="ledger-table-wrapper" style="overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.3);">
+            <table class="ledger-table" style="width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 600px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                  <th style="padding: 12px 16px; text-align: left; font-weight: bold; color: var(--muted);">Player Name</th>
+                  <th style="padding: 12px 16px; text-align: left; font-weight: bold; color: var(--muted);">Role</th>
+                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Fights</th>
+                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Avg Avoidable Taken</th>
+                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Average Grade</th>
+                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Projected Repair Debt</th>
+                </tr>
+              </thead>
+              <tbody id="guildLedgerBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Wipe Progression Killer widget -->
+        <div class="guild-suite-wipes-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <h3 style="font-size: 16px; margin-bottom: 4px;">Progression Killer Wipe Diagnoser</h3>
+          <p class="card-desc" style="margin-bottom: 16px;">Identifies mechanics causing multiple wipes and heavy damage on failed attempts.</p>
+          <div id="progressionKillersGrid" class="progression-killers-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+            </div>
       </div>
     </section>
 
