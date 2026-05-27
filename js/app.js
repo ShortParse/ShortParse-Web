@@ -805,6 +805,11 @@ function renderActiveTab() {
       return;
     }
 
+    if (selectedTab === "calibrator") {
+      renderCalibratorTab(analysis.defensive_calibrator || {}, playerLookup);
+      return;
+    }
+
     if (selectedTab === "timeline") {
       renderTimelineTab(analysis.timeline || [], playerLookup);
       return;
@@ -5106,4 +5111,206 @@ function copyBoilerplateToDiscord() {
       console.error("Failed to copy text: ", err);
       alert("Failed to copy snippet automatically. Please copy the code manually.");
     });
-}
+}
+
+
+function renderCalibratorTab(calibrator, playerLookup) {
+  const timeline = calibrator.timeline || [];
+  const spikes = calibrator.spikes || [];
+  const casts = calibrator.casts || [];
+
+  if (!timeline.length) {
+    renderEmptyTab("Defensive Calibrator", "No raid-wide damage data available to calibrate.");
+    return;
+  }
+
+  const duration = timeline.length;
+  const maxVal = Math.max(...timeline, 200000);
+
+  const width = 1000;
+  const height = 280;
+  const margin = { top: 30, right: 30, bottom: 40, left: 60 };
+  const graphWidth = width - margin.left - margin.right;
+  const graphHeight = height - margin.top - margin.bottom;
+
+  // 1. Calculate SVG Line Coordinates
+  const points = [];
+  for (let t = 0; t < timeline.length; t++) {
+    const val = timeline[t];
+    const x = margin.left + (t / duration) * graphWidth;
+    const y = height - margin.bottom - (val / maxVal) * graphHeight;
+    points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  const pointsStr = points.join(" ");
+
+  // 2. Generate Shaded Cooldown Areas
+  const cdAreas = casts.map(cast => {
+    const startX = margin.left + (cast.start_seconds / duration) * graphWidth;
+    const endX = margin.left + ((cast.start_seconds + cast.duration) / duration) * graphWidth;
+    const w = Math.max(2, endX - startX);
+
+    return `
+      <rect x="${startX}" y="${margin.top}" width="${w}" height="${graphHeight}" class="calibrator-svg-cd-rect" />
+      <text x="${startX + 4}" y="${margin.top + 14}" class="calibrator-svg-cd-text">${escapeHtml(cast.spell_name)}</text>
+    `;
+  }).join("");
+
+  // 3. Generate Spike Nodes
+  const spikeNodes = spikes.map(spike => {
+    const x = margin.left + (spike.seconds / duration) * graphWidth;
+    const val = timeline[spike.seconds] || 0;
+    const y = height - margin.bottom - (val / maxVal) * graphHeight;
+
+    const colorClass = spike.covered ? "covered" : "unmitigated";
+    const icon = spike.covered ? "🛡️" : "⚠️";
+
+    return `
+      <g class="calibrator-svg-spike-group" style="cursor: pointer;" onmouseenter="showCalibratorSpikeTooltip(event, '${escapeHtml(spike.time)}', '${escapeHtml(spike.spell_name)}', ${spike.amount}, ${spike.covered})" onmouseleave="hideTooltip()" onmousemove="moveTooltip(event)">
+        <circle cx="${x}" cy="${y}" r="12" class="calibrator-svg-spike-circle ${colorClass}" />
+        <text x="${x}" y="${y + 4}" text-anchor="middle" font-size="11px">${icon}</text>
+      </g>
+    `;
+  }).join("");
+
+  // 4. Generate Y-axis labels (Ticks)
+  const yTicks = [];
+  const numYTicks = 5;
+  for (let i = 0; i <= numYTicks; i++) {
+    const val = (maxVal / numYTicks) * i;
+    const y = height - margin.bottom - (val / maxVal) * graphHeight;
+    const label = val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : `${(val / 1000).toFixed(0)}k`;
+    yTicks.push(`
+      <line x1="${margin.left - 6}" y1="${y}" x2="${margin.left}" y2="${y}" stroke="var(--border)" stroke-width="1.5" />
+      <line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="rgba(255,255,255,0.02)" stroke-dasharray="4 4" />
+      <text x="${margin.left - 12}" y="${y + 4}" text-anchor="end" class="calibrator-svg-tick-text">${label}</text>
+    `);
+  }
+
+  // 5. Generate X-axis time labels (Ticks)
+  const xTicks = [];
+  const numXTicks = 6;
+  for (let i = 0; i <= numXTicks; i++) {
+    const elapsedSeconds = (duration / numXTicks) * i;
+    const pct = elapsedSeconds / duration;
+    const x = margin.left + pct * graphWidth;
+
+    const mins = Math.floor(elapsedSeconds / 60);
+    const secs = Math.floor(elapsedSeconds % 60);
+    const label = `${mins}:${String(secs).padStart(2, "0")}`;
+
+    xTicks.push(`
+      <line x1="${x}" y1="${height - margin.bottom}" x2="${x}" y2="${height - margin.bottom + 6}" stroke="var(--border)" stroke-width="1.5" />
+      <text x="${x}" y="${height - margin.bottom + 20}" text-anchor="middle" class="calibrator-svg-tick-text">${label}</text>
+    `);
+  }
+
+  // 6. Split Spikes into Covered and Unmitigated lists for dynamic Cards layout
+  const coveredSpikes = spikes.filter(s => s.covered);
+  const unmitigatedSpikes = spikes.filter(s => !s.covered);
+
+  const coveredHtml = coveredSpikes.length === 0 
+    ? `<div class="calibrator-empty-card">No covered spikes recorded.</div>`
+    : coveredSpikes.map(spike => {
+        const cdList = spike.active_cooldowns.map(cd => `<strong>${escapeHtml(cd.player)}</strong> (${escapeHtml(cd.spell_name)})`).join(", ");
+        return `
+          <div class="calibrator-spike-card covered">
+            <div class="card-icon">🛡️</div>
+            <div class="card-body">
+              <div class="card-meta">${escapeHtml(spike.time)} · COVERED SPIKE</div>
+              <div class="card-title">${escapeHtml(spike.spell_name)}</div>
+              <div class="card-desc">Mitigated successfully by: ${cdList}.</div>
+              <div class="card-amount">+${formatNumber(spike.amount)} raw damage</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  const unmitigatedHtml = unmitigatedSpikes.length === 0
+    ? `
+      <div class="calibrator-perfect-mitigation">
+        <div class="perfect-icon">👑</div>
+        <div class="perfect-title">Perfect Defensive Coverage!</div>
+        <div class="perfect-desc">Sensational execution! Every single massive damage spike during this encounter was mitigated by at least one major defensive cooldown.</div>
+      </div>
+    `
+    : unmitigatedSpikes.map(spike => {
+        return `
+          <div class="calibrator-spike-card unmitigated">
+            <div class="card-icon">⚠️</div>
+            <div class="card-body">
+              <div class="card-meta">${escapeHtml(spike.time)} · UNMITIGATED SPIKE</div>
+              <div class="card-title">${escapeHtml(spike.spell_name)}</div>
+              <div class="card-desc">Zero healer or tank raid defensive cooldowns were active during this peak damage window!</div>
+              <div class="card-amount">${formatNumber(spike.amount)} unmitigated damage</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  document.getElementById("tabContent").innerHTML = `
+    <h2 class="tab-panel-title">Zero-Downtime Defensive Calibrator</h2>
+    <p class="tab-panel-description">
+      Cross-references boss damage spikes with healer/tank raid defensive CD windows. Review active coverage (shaded bands) and identify critical gaps.
+    </p>
+
+    <!-- Calibrator SVG chart -->
+    <div class="calibrator-chart-card">
+      <div class="calibrator-chart-title">Raid Damage & Cooldown Overlay Timeline</div>
+      <div class="calibrator-svg-container">
+        <svg viewBox="0 0 ${width} ${height}" class="calibrator-svg">
+          <!-- X & Y Axes -->
+          <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="var(--border)" stroke-width="1.5" />
+          <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="var(--border)" stroke-width="1.5" />
+
+          ${cdAreas}
+          ${yTicks}
+          ${xTicks}
+
+          <!-- Damage Line Path -->
+          <polyline fill="none" stroke="url(#calibratorGlow)" stroke-width="2.5" points="${pointsStr}" />
+          ${spikeNodes}
+
+          <!-- Glowing Line Gradient -->
+          <defs>
+            <linearGradient id="calibratorGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--blue)" />
+              <stop offset="50%" stop-color="#a855f7" />
+              <stop offset="100%" stop-color="var(--red)" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Covered and Unmitigated Grid columns -->
+    <div class="calibrator-grid">
+      <!-- Unmitigated Spikes (Raid concerns) -->
+      <div class="calibrator-column warning-col">
+        <h3 class="column-title">⚠️ Mitigation Gaps (Critical Gaps)</h3>
+        <p class="column-desc">Spikes where the raid took heavy damage with no major defensives running. Plan cooldowns here.</p>
+        <div class="calibrator-cards-list">
+          ${unmitigatedHtml}
+        </div>
+      </div>
+
+      <!-- Covered Spikes -->
+      <div class="calibrator-column success-col">
+        <h3 class="column-title">🛡️ Successful Mitigations</h3>
+        <p class="column-desc">Raid damage spikes that were correctly covered by healer/tank defensive rotations.</p>
+        <div class="calibrator-cards-list">
+          ${coveredHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.showCalibratorSpikeTooltip = (e, time, spellName, amount, covered) => {
+  const title = `${time} · ${covered ? "🛡️ Covered Spike" : "⚠️ Mitigation Gap"}`;
+  const fields = [
+    { label: "Boss Ability", value: spellName },
+    { label: "Raid Damage Taken", value: `${formatNumber(amount)} total` },
+    { label: "Coverage Status", value: covered ? "🛡️ Mitigated successfully" : "❌ Zero active raid defensives" }
+  ];
+  showTooltip(e, title, fields);
+};
