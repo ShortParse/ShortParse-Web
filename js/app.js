@@ -12,6 +12,7 @@ let currentCoachPlayerName = null;
 let isPatreonLinked = false;
 let isPremium = false;
 let premiumTier = null;
+let priorityQueueEnabled = false;
 
 
 function setOfflineMode(enabled) {
@@ -434,13 +435,26 @@ function renderAnalysisConsole(summary) {
   const currentStep = summary.current_step || summary.status || "Working...";
   const logs = summary.logs || [];
 
+  // Determine queue status badge
+  let queueBadgeHtml = "";
+  if (priorityQueueEnabled) {
+    if (isPremium) {
+      queueBadgeHtml = `<span class="priority-badge active" style="margin-top: 4px;">⭐ Premium Priority</span>`;
+    } else {
+      queueBadgeHtml = `<span class="priority-badge standard" style="margin-top: 4px;">Standard Queue</span>`;
+    }
+  }
+
   statusCard.innerHTML = `
-    <div class="section-header">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
       <div>
         <h2>Analysis Console</h2>
         <p class="section-description">
           ShortParse is working through the report. This updates live while the job runs.
         </p>
+      </div>
+      <div>
+        ${queueBadgeHtml}
       </div>
     </div>
 
@@ -3568,6 +3582,7 @@ async function checkUserSession() {
       isPremium = user.is_premium || false;
       premiumTier = user.premium_tier || null;
       isPatreonLinked = user.is_patreon_linked || false;
+      priorityQueueEnabled = user.priority_queue_enabled || false;
 
       const firstLetter = user.username ? user.username.charAt(0) : "U";
       const tierLabel = isPremium ? (premiumTier || "Premium") : "Free Account";
@@ -4505,6 +4520,16 @@ function openSettingsDrawer() {
 
   updateDiscordWebhookUI();
 
+  // Toggle settings priority queue promo card
+  const promoCard = document.getElementById("priorityQueuePromoCard");
+  if (promoCard) {
+    if (priorityQueueEnabled && !isPremium) {
+      promoCard.classList.remove("hidden");
+    } else {
+      promoCard.classList.add("hidden");
+    }
+  }
+
   // Update Patreon integration UI elements
   const unlinkedBlock = document.getElementById("patreonUnlinkedBlock");
   const linkedBlock = document.getElementById("patreonLinkedBlock");
@@ -4665,7 +4690,18 @@ async function syncPatreonSubscription() {
     const data = await response.json();
     isPremium = data.is_premium;
     premiumTier = data.premium_tier;
+    priorityQueueEnabled = data.priority_queue_enabled || false;
     updateDiscordWebhookUI();
+
+    // Toggle settings priority queue promo card
+    const promoCard = document.getElementById("priorityQueuePromoCard");
+    if (promoCard) {
+      if (priorityQueueEnabled && !isPremium) {
+        promoCard.classList.remove("hidden");
+      } else {
+        promoCard.classList.add("hidden");
+      }
+    }
 
     if (tierBadge) {
       tierBadge.textContent = isPremium ? `${premiumTier || "Premium Patron"}` : "Patreon Connected";
