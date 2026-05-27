@@ -976,7 +976,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     "B": "Expert",
     "C": "Adequate",
     "D": "Fair",
-    "F": "Optimizing"
+    "F": "Needs Focus"
   };
 
   // ==========================================
@@ -1183,7 +1183,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
               deathsCell = `<span style="color: var(--muted); opacity: 0.35;">0</span>`;
             }
 
-            const displayGrade = gradeMap[row.grade] || row.grade || "Optimizing";
+            const displayGrade = gradeMap[row.grade] || row.grade || "Needs Focus";
 
             return `
               <tr>
@@ -2978,8 +2978,8 @@ function showPlayerCoachCard(playerName) {
     "B": "Expert",
     "C": "Adequate",
     "D": "Fair",
-    "F": "Optimizing",
-    "-": "Optimizing"
+    "F": "Needs Focus",
+    "-": "Needs Focus"
   };
   const displayGrade = gradeMap[grade] || grade;
 
@@ -2987,7 +2987,7 @@ function showPlayerCoachCard(playerName) {
   if (gradeEl) {
     gradeEl.textContent = displayGrade;
     if (displayGrade.length > 5) {
-      gradeEl.style.fontSize = "16px";
+      gradeEl.style.fontSize = "11.5px";
     } else {
       gradeEl.style.fontSize = "";
     }
@@ -3001,6 +3001,12 @@ function showPlayerCoachCard(playerName) {
     else if (grade === "F") gradeColor = "#fb7185"; // Red
     
     gradeEl.style.color = gradeColor;
+
+    const badgeEl = document.getElementById("coachGradeBadge");
+    if (badgeEl) {
+      badgeEl.style.borderColor = gradeColor + "40"; // 25% opacity border
+      badgeEl.style.boxShadow = `0 0 16px ${gradeColor}1c, 0 4px 12px rgba(0, 0, 0, 0.25)`;
+    }
   }
 
   const titleEl = document.getElementById("coachGradeTitle");
