@@ -206,6 +206,19 @@
           </div>
         </div>
 
+        <!-- Roster Evolution & Progression Trends -->
+        <div class="guild-suite-trends-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: 16px; margin-bottom: 4px;">📈 Roster Evolution & Progression Trends</h3>
+            <p class="card-desc">Tracks historical avoidable damage averages and pull progressions over the last 50 fights.</p>
+          </div>
+          <div class="trends-canvas-container" style="position: relative;">
+            <canvas id="trendsCanvas" width="800" height="280" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></canvas>
+            <!-- Hovercard Tooltip -->
+            <div id="trendsTooltip" class="matrix-tooltip hidden" style="position: absolute; pointer-events: none; z-index: 1000;"></div>
+          </div>
+        </div>
+
         <!-- Wipe Progression & Catalyst Dashboard -->
         <div class="guild-suite-wipes-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
           <div style="margin-bottom: 16px;">
@@ -628,6 +641,18 @@
                   style="padding: 12px; font-size: 13px; font-weight: 700; border-color: var(--border);">Test
                   Link</button>
               </div>
+              
+              <!-- Auto-Post Toggles -->
+              <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+                <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="discordAutoPostToggle" style="cursor: pointer; margin: 0;">
+                  Enable Discord Auto-Post
+                </label>
+                <p style="font-size: 11.5px; color: var(--muted); margin: 0 0 0 22px; line-height: 1.4;">
+                  Automatically send a premium raid review embed to Discord as soon as a new log analysis completes.
+                </p>
+              </div>
+              
               <p id="webhookStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
             </div>
 

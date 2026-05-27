@@ -5,6 +5,7 @@ let selectedAnalysisIndex = 0;
 let selectedTab = "scorecard";
 let currentShareUrl = "";
 let currentUserWebhook = "";
+let currentUserAutoPost = false;
 let offlineMode = false;
 let benchmarkSelectedPlayer = null;
 let benchmarkComparisonMode = "high_performer";
@@ -3603,6 +3604,7 @@ async function checkUserSession() {
       const tierClass = isPremium ? "premium" : "free";
 
       currentUserWebhook = user.discord_webhook_url || "";
+      currentUserAutoPost = user.discord_auto_post || false;
       updateDiscordWebhookUI();
 
       container.innerHTML = `
@@ -4537,6 +4539,11 @@ function openSettingsDrawer() {
     webhookInput.value = currentUserWebhook;
   }
 
+  const autoPostToggle = document.getElementById("discordAutoPostToggle");
+  if (autoPostToggle) {
+    autoPostToggle.checked = currentUserAutoPost;
+  }
+
   if (statusMsg) {
     statusMsg.classList.add("hidden");
     statusMsg.className = "";
@@ -4610,6 +4617,8 @@ async function saveWebhookSettings() {
   if (!webhookInput || !saveBtn || !statusMsg) return;
 
   const url = webhookInput.value.trim();
+  const autoPostToggle = document.getElementById("discordAutoPostToggle");
+  const autoPost = autoPostToggle ? autoPostToggle.checked : false;
 
   statusMsg.classList.add("hidden");
   saveBtn.disabled = true;
@@ -4621,7 +4630,10 @@ async function saveWebhookSettings() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ discord_webhook_url: url || null })
+      body: JSON.stringify({
+        discord_webhook_url: url || null,
+        discord_auto_post: autoPost
+      })
     });
 
     if (!response.ok) {
@@ -4631,7 +4643,11 @@ async function saveWebhookSettings() {
 
     const data = await response.json();
     currentUserWebhook = data.discord_webhook_url || "";
+    currentUserAutoPost = data.discord_auto_post || false;
     webhookInput.value = currentUserWebhook;
+    if (autoPostToggle) {
+      autoPostToggle.checked = currentUserAutoPost;
+    }
 
     statusMsg.textContent = "Webhook saved successfully!";
     statusMsg.className = "status-msg-success";
@@ -5677,7 +5693,22 @@ async function loadGuildSuiteOverview() {
       if (statsFights) statsFights.innerText = "8";
       if (statsAvoidable) statsAvoidable.innerText = "52,400";
       
+      const mockFights = [
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 285000, avg_grade: "D", created_at: 1716800000000, duration_seconds: 180 },
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 242000, avg_grade: "D", created_at: 1716801000000, duration_seconds: 210 },
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 195000, avg_grade: "C", created_at: 1716802000000, duration_seconds: 240 },
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 168000, avg_grade: "C", created_at: 1716803000000, duration_seconds: 220 },
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 120000, avg_grade: "B", created_at: 1716804000000, duration_seconds: 260 },
+        { boss_name: "Midnight Falls", is_kill: false, avoidable_damage: 98000, avg_grade: "B", created_at: 1716805000000, duration_seconds: 250 },
+        { boss_name: "Midnight Falls", is_kill: true, avoidable_damage: 42000, avg_grade: "A", created_at: 1716806000000, duration_seconds: 242 },
+        { boss_name: "The Voidspire", is_kill: false, avoidable_damage: 310000, avg_grade: "F", created_at: 1716807000000, duration_seconds: 140 },
+        { boss_name: "The Voidspire", is_kill: false, avoidable_damage: 220000, avg_grade: "D", created_at: 1716808000000, duration_seconds: 195 },
+        { boss_name: "The Voidspire", is_kill: false, avoidable_damage: 180000, avg_grade: "C", created_at: 1716809000000, duration_seconds: 230 },
+        { boss_name: "The Voidspire", is_kill: true, avoidable_damage: 55000, avg_grade: "A", created_at: 1716810000000, duration_seconds: 214 }
+      ];
+
       drawRosterMatrix(mockPlayers);
+      drawTrendsChart(mockFights);
       renderBuffSynergy(mockBuffs);
       renderPanicAudit(mockPlayers);
       renderGoldLedger(mockPlayers);
@@ -5699,6 +5730,7 @@ async function loadGuildSuiteOverview() {
     if (statsAvoidable) statsAvoidable.innerText = formatNumber(data.guild_averages.average_avoidable_damage);
     
     drawRosterMatrix(data.players_history || {});
+    drawTrendsChart(data.fights_history || []);
     renderBuffSynergy(data.synergy_buffs || { active: [], missing: [], suggestions: [] });
     renderPanicAudit(data.players_history || {});
     renderGoldLedger(data.players_history || {});
@@ -5934,6 +5966,238 @@ function showMatrixTooltip(e, p, canvas) {
   const mouseX = e.clientX - canvasRect.left;
   const mouseY = e.clientY - canvasRect.top;
   
+  tooltip.style.left = (mouseX + 15) + "px";
+  tooltip.style.top = (mouseY - 20) + "px";
+  tooltip.classList.remove("hidden");
+}
+
+let plottedFights = [];
+
+function drawTrendsChart(fights) {
+  const canvas = document.getElementById("trendsCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 280 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const width = rect.width;
+  const height = 280;
+
+  ctx.clearRect(0, 0, width, height);
+
+  if (!fights || fights.length === 0) {
+    ctx.fillStyle = "var(--muted)";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("No historical fights available yet.", width / 2, height / 2);
+    return;
+  }
+
+  const margin = { top: 40, right: 40, bottom: 50, left: 65 };
+  const graphWidth = width - margin.left - margin.right;
+  const graphHeight = height - margin.top - margin.bottom;
+
+  // Find max avoidable damage to scale Y axis (baseline is always 0)
+  let maxAvoidable = 100000; // minimum scale of 100k
+  fights.forEach(f => {
+    if (f.avoidable_damage > maxAvoidable) maxAvoidable = f.avoidable_damage;
+  });
+
+  // Round maxAvoidable to a clean number
+  const magnitude = Math.pow(10, Math.floor(Math.log10(maxAvoidable)));
+  const roundedMax = Math.ceil(maxAvoidable / (magnitude / 2)) * (magnitude / 2);
+
+  // Draw Y-axis gridlines and labels
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
+  ctx.lineWidth = 1;
+  const divisions = 4;
+  for (let i = 0; i <= divisions; i++) {
+    const ratio = i / divisions;
+    const yVal = ratio * roundedMax;
+    const yPix = margin.top + graphHeight - ratio * graphHeight;
+
+    ctx.beginPath();
+    ctx.moveTo(margin.left, yPix);
+    ctx.lineTo(margin.left + graphWidth, yPix);
+    ctx.stroke();
+
+    // Format label in thousands or millions
+    let label = "0";
+    if (yVal >= 1000000) {
+      label = (yVal / 1000000).toFixed(1) + "M";
+    } else if (yVal >= 1000) {
+      label = Math.round(yVal / 1000) + "k";
+    } else {
+      label = Math.round(yVal).toString();
+    }
+
+    ctx.fillStyle = "var(--muted)";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(label, margin.left - 10, yPix + 3.5);
+  }
+
+  // Calculate coordinates for each fight point
+  plottedFights = [];
+  const pointCount = fights.length;
+  fights.forEach((f, idx) => {
+    const xRatio = pointCount > 1 ? idx / (pointCount - 1) : 0.5;
+    const xPix = margin.left + xRatio * graphWidth;
+
+    const yRatio = roundedMax > 0 ? f.avoidable_damage / roundedMax : 0;
+    const yPix = margin.top + graphHeight - yRatio * graphHeight;
+
+    plottedFights.push({
+      ...f,
+      x: xPix,
+      y: yPix
+    });
+  });
+
+  // 1. Draw glowing gradient line
+  if (plottedFights.length > 0) {
+    ctx.save();
+    
+    // Draw fill area under the line
+    ctx.beginPath();
+    ctx.moveTo(plottedFights[0].x, margin.top + graphHeight);
+    plottedFights.forEach(p => {
+      ctx.lineTo(p.x, p.y);
+    });
+    ctx.lineTo(plottedFights[plottedFights.length - 1].x, margin.top + graphHeight);
+    ctx.closePath();
+    
+    const fillGrad = ctx.createLinearGradient(0, margin.top, 0, margin.top + graphHeight);
+    fillGrad.addColorStop(0, "rgba(96, 165, 250, 0.15)");
+    fillGrad.addColorStop(1, "rgba(96, 165, 250, 0.0)");
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
+    // Draw the main line with neon glow
+    ctx.beginPath();
+    ctx.moveTo(plottedFights[0].x, plottedFights[0].y);
+    for (let i = 1; i < plottedFights.length; i++) {
+      ctx.lineTo(plottedFights[i].x, plottedFights[i].y);
+    }
+    
+    ctx.strokeStyle = "#60a5fa";
+    ctx.lineWidth = 3;
+    ctx.shadowColor = "#3b82f6";
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+
+  // 2. Draw fight points (Green for Kills, Red for Wipes)
+  plottedFights.forEach((p, idx) => {
+    const dotColor = p.is_kill ? "#34d399" : "#f87171";
+    
+    // Outer glow halo
+    ctx.save();
+    ctx.shadowColor = dotColor;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Inner solid core
+    ctx.fillStyle = dotColor;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // X-axis label for major milestones (e.g. Kills or labels at intervals)
+    if (pointCount <= 12 || idx === 0 || idx === pointCount - 1 || p.is_kill || idx % Math.ceil(pointCount / 6) === 0) {
+      ctx.save();
+      ctx.fillStyle = "var(--muted)";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(p.boss_name, p.x, margin.top + graphHeight + 16);
+      
+      const resultLabel = p.is_kill ? "Kill" : "Wipe";
+      ctx.fillStyle = p.is_kill ? "#34d399" : "#f87171";
+      ctx.font = "bold 8px sans-serif";
+      ctx.fillText(resultLabel, p.x, margin.top + graphHeight + 28);
+      ctx.restore();
+    }
+  });
+
+  // Bind mouse interaction listeners if not already bound
+  if (!canvas.dataset.hoverBound) {
+    canvas.dataset.hoverBound = "true";
+
+    canvas.addEventListener("mousemove", (e) => {
+      const canvasRect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - canvasRect.left;
+      const mouseY = e.clientY - canvasRect.top;
+
+      let hoverTarget = null;
+      let minDistance = 10;
+
+      plottedFights.forEach(p => {
+        const dx = mouseX - p.x;
+        const dy = mouseY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDistance) {
+          minDistance = dist;
+          hoverTarget = p;
+        }
+      });
+
+      showTrendsTooltip(e, hoverTarget, canvas);
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      showTrendsTooltip(null, null);
+    });
+  }
+}
+
+function showTrendsTooltip(e, f, canvas) {
+  const tooltip = document.getElementById("trendsTooltip");
+  if (!tooltip) return;
+
+  if (!f) {
+    tooltip.classList.add("hidden");
+    return;
+  }
+
+  const resultColor = f.is_kill ? "#34d399" : "#f87171";
+  const resultText = f.is_kill ? "Kill Pull" : "Wipe Pull";
+  
+  // Format date elegantly if created_at timestamp is present
+  let dateText = "";
+  if (f.created_at) {
+    try {
+      const date = new Date(f.created_at);
+      dateText = `<div style="font-size: 11px; color: var(--muted); margin-top: 4px;">${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>`;
+    } catch(err) {}
+  }
+
+  tooltip.innerHTML = `
+    <div class="tooltip-header">
+      <span class="tooltip-name" style="color: var(--blue); font-weight: 800;">${escapeHtml(f.boss_name)}</span>
+      <span class="tooltip-quadrant" style="background: rgba(${f.is_kill ? "52,211,153" : "248,113,113"}, 0.15); color: ${resultColor}; border: 1px solid rgba(${f.is_kill ? "52,211,153" : "248,113,113"}, 0.3); font-weight: 700; font-size: 10px; padding: 2px 6px; border-radius: 4px;">${resultText}</span>
+    </div>
+    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text);">
+      <div><strong>Avoidable Damage:</strong> <span style="color: #fbbf24; font-weight: bold;">${formatNumber(f.avoidable_damage)}</span> taken</div>
+      <div><strong>Roster Average Grade:</strong> <span style="font-weight: bold;">${escapeHtml(f.avg_grade)}</span></div>
+      <div><strong>Duration:</strong> ${Math.floor(f.duration_seconds / 60)}m ${f.duration_seconds % 60}s</div>
+      ${dateText}
+    </div>
+  `;
+
+  const canvasRect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - canvasRect.left;
+  const mouseY = e.clientY - canvasRect.top;
+
   tooltip.style.left = (mouseX + 15) + "px";
   tooltip.style.top = (mouseY - 20) + "px";
   tooltip.classList.remove("hidden");
