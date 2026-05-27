@@ -4113,6 +4113,55 @@ body {
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Glassmorphic Glossary Panel */
+.glossary-banner {
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+	backdrop-filter: blur(8px);
+}
+.glossary-banner:hover {
+	border-color: rgba(56, 189, 248, 0.35) !important;
+	box-shadow: 0 0 16px rgba(56, 189, 248, 0.1);
+	background: rgba(30, 41, 59, 0.5) !important;
+}
+
+/* Premium Trophy Awards Shelf */
+.trophy-card {
+	backdrop-filter: blur(10px);
+	transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease, border-color 0.25s ease;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.trophy-card:hover {
+	transform: translateY(-4px) scale(1.03);
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+.trophy-card:nth-child(1):hover {
+	border-color: rgba(56, 189, 248, 0.4) !important;
+	box-shadow: 0 8px 24px rgba(56, 189, 248, 0.15);
+}
+.trophy-card:nth-child(2):hover {
+	border-color: rgba(34, 197, 94, 0.4) !important;
+	box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+}
+.trophy-card:nth-child(3):hover {
+	border-color: rgba(234, 179, 8, 0.4) !important;
+	box-shadow: 0 8px 24px rgba(234, 179, 8, 0.15);
+}
+.trophy-card:nth-child(4):hover {
+	border-color: rgba(239, 68, 68, 0.4) !important;
+	box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15);
+}
+
+/* Consolidated Tactical Columns */
+.coaching-column-card {
+	backdrop-filter: blur(6px);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.coaching-column-card:hover {
+	border-color: rgba(255, 255, 255, 0.12) !important;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
 
 
 

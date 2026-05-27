@@ -979,11 +979,177 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     "F": "Optimizing"
   };
 
-  document.getElementById("tabContent").innerHTML = `
-    <h2 class="tab-panel-title">Roster Optimization Scorecard</h2>
-    <p class="tab-panel-description">Roster review sorted by primary coaching priority (highest issue score first).</p>
+  // ==========================================
+  // DYNAMIC STAR PERFORMER SCANNER
+  // ==========================================
+  let mvpName = "—";
+  let mvpValue = "";
+  let mvpClass = "";
+  let maxOutput = 0;
 
-    <div class="table-wrapper">
+  let survivorName = "—";
+  let survivorDamage = Infinity;
+  let survivorClass = "";
+
+  let mechMasterNames = [];
+  let coachingFocusName = "—";
+  let coachingFocusScore = 0;
+  let coachingFocusClass = "";
+  let coachingFocusIssue = "";
+
+  const playerMetrics = analysis?.player_metrics || {};
+
+  for (const [name, metric] of Object.entries(playerMetrics)) {
+    const perf = metric.performance || {};
+    const identity = metric.identity || {};
+    const deaths = perf.deaths || 0;
+    const role = identity.role;
+    const output = role === "Healer" ? (perf.hps || 0) : (perf.dps || 0);
+
+    // MVP: highest output among survivors
+    if (deaths === 0) {
+      if (output > maxOutput) {
+        maxOutput = output;
+        mvpName = name;
+        mvpClass = identity.class;
+        mvpValue = `${formatNumber(output)} ${role === "Healer" ? 'HPS' : 'DPS'}`;
+      }
+    }
+
+    // Survival Star: lowest avoidable damage among survivors
+    if (deaths === 0) {
+      const avoidableDamage = perf.avoidable_damage_taken || 0;
+      if (avoidableDamage < survivorDamage) {
+        survivorDamage = avoidableDamage;
+        survivorName = name;
+        survivorClass = identity.class;
+      }
+    }
+
+    // Mechanical Master: 0 avoidable hits
+    const hits = perf.avoidable_hit_count || 0;
+    if (hits === 0) {
+      mechMasterNames.push(name);
+    }
+  }
+
+  // Coaching Focus: first player in scorecard (highest issue score player)
+  if (scorecard.length > 0) {
+    const worst = scorecard[0];
+    const metric = playerMetrics[worst.player] || {};
+    const identity = metric.identity || {};
+    coachingFocusName = worst.player;
+    coachingFocusScore = worst.issue_score;
+    coachingFocusClass = identity.class || "";
+    coachingFocusIssue = worst.top_issue || "Standing in avoidable mechanics";
+  }
+
+  document.getElementById("tabContent").innerHTML = `
+    <!-- Jargon-Free Glossary Banner -->
+    <div class="glossary-banner" style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; padding: 14px 20px; font-family: inherit;">
+      <div id="glossaryToggle" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+        <span style="font-weight: 600; color: var(--blue); font-size: 14px; display: flex; align-items: center; gap: 8px;">
+          📖 Understanding the Terms & Numbers (Jargon-Free Glossary)
+        </span>
+        <span id="glossaryChevron" style="font-size: 14px; opacity: 0.6; transition: transform 0.2s;">▶</span>
+      </div>
+      <div id="glossaryContent" style="display: none; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 12.5px; line-height: 1.5;">
+        <div>
+          <strong style="color: #f1f5f9;">🛡️ Performance Level (Grade):</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">How well this player did compared to players worldwide wearing the **exact same gear level**. It rates output (damage/healing) and ignores unhelpful stats.</p>
+        </div>
+        <div>
+          <strong style="color: #f1f5f9;">⚠️ Issue Penalty:</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">Points added when a player stands in avoidable damage, forgets to interrupt a spell, or dies early. **Lower is better (0 is perfect).**</p>
+        </div>
+        <div>
+          <strong style="color: #f1f5f9;">🔥 DPS (Damage):</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">"Damage Per Second" — How fast this player hits the boss. Higher DPS means the boss dies faster before healers run out of mana.</p>
+        </div>
+        <div>
+          <strong style="color: #f1f5f9;">💚 HPS (Healing):</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">"Healing Per Second" — How fast this player saves teammates from dying. We adjust this based on the healer size so it stays fair.</p>
+        </div>
+        <div>
+          <strong style="color: #f1f5f9;">💥 Avoidable Damage (Mistakes):</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">Damage taken from standing in glowing ground fire, swirls, cones, or mechanics that are 100% dodgeable.</p>
+        </div>
+        <div>
+          <strong style="color: #f1f5f9;">🌀 RSI (Raid Stress Index):</strong>
+          <p style="color: var(--muted); margin: 4px 0 0 0;">Raid Stress Index. Measures how close your raid came to wiping based on unavoidable spikes and player positioning stress.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Star Performer Trophies Shelf -->
+    <h2 class="tab-panel-title" style="margin-top: 10px;">Encounter Performers & Star Awards</h2>
+    <p class="tab-panel-description">Special visual trophies awarded to raid members who excelled in output or mechanics.</p>
+    
+    <div class="trophy-shelf" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 14px 0 28px 0;">
+      <!-- MVP Card -->
+      <div class="trophy-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">🏆</div>
+        <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--blue); font-weight: 700; letter-spacing: 0.05em;">Raid MVP</div>
+        <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(mvpClass) || '#fff'};">${escapeHtml(mvpName)}</div>
+        <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mvpName !== '—' ? `Survived with ${mvpValue}` : 'No survivors'}</div>
+      </div>
+      
+      <!-- Survival Star Card -->
+      <div class="trophy-card" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">🛡️</div>
+        <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--green); font-weight: 700; letter-spacing: 0.05em;">Survival Star</div>
+        <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(survivorClass) || '#fff'};">${escapeHtml(survivorName)}</div>
+        <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${survivorName !== '—' ? `Cleanest run: ${formatNumber(survivorDamage)} avoidable dmg` : 'No survivors'}</div>
+      </div>
+
+      <!-- Mechanical Mastery Card -->
+      <div class="trophy-card" style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">⚡</div>
+        <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: #eab308; font-weight: 700; letter-spacing: 0.05em;">Mechanical Master</div>
+        <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: #fff;">${mechMasterNames.length > 0 ? `${mechMasterNames.length} Players` : '—'}</div>
+        <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mechMasterNames.length > 0 ? 'Took 0 avoidable damage hits!' : 'Every player took avoidable damage'}</div>
+      </div>
+
+      <!-- Coaching Focus Card -->
+      <div class="trophy-card" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">⚠️</div>
+        <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--red); font-weight: 700; letter-spacing: 0.05em;">Needs Coaching</div>
+        <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(coachingFocusClass) || '#fff'};">${escapeHtml(coachingFocusName)}</div>
+        <div class="trophy-sub" style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Score: ${coachingFocusScore} • ${escapeHtml(coachingFocusIssue)}</div>
+      </div>
+    </div>
+
+    <!-- Tactical Raid Coaching read columns -->
+    <div class="raid-coach-grid-cols" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 28px;">
+      <!-- Raid Coach Quick Read -->
+      <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--blue); font-weight: 600; display: flex; align-items: center; gap: 8px;">📋 Tactical Coaching Read</h3>
+        <p style="font-size: 13px; line-height: 1.6; color: #f1f5f9; margin-bottom: 14px;">
+          ${escapeHtml(analysis.raid_coach?.overall_read || "No overall coaching summary generated yet.")}
+        </p>
+        <ul style="padding-left: 20px; font-size: 12.5px; color: var(--muted); line-height: 1.8; margin-bottom: 0;">
+          ${(analysis.raid_coach?.top_priorities || []).slice(0, 3).map(p => `
+            <li style="margin-bottom: 6px;">${escapeHtml(p)}</li>
+          `).join("")}
+        </ul>
+      </div>
+
+      <!-- Action Items Checklist -->
+      <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--orange); font-weight: 600; display: flex; align-items: center; gap: 8px;">🎯 Pull Focus & Recommendations</h3>
+        <ul style="padding-left: 20px; font-size: 12.5px; color: #f1f5f9; line-height: 1.8; margin-bottom: 0;">
+          ${(analysis.raid_coach?.next_pull_focus || []).map(focus => `
+            <li style="margin-bottom: 8px; list-style-type: '🔸 ';">${escapeHtml(focus)}</li>
+          `).join("")}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Scorecard Roster Table Section -->
+    <h2 class="tab-panel-title">Roster Performance Scorecard</h2>
+    <p class="tab-panel-description">Roster review sorted by primary coaching priority (highest issue score first). Click a name to open their personal Coach Drawer.</p>
+
+    <div class="table-wrapper" style="margin-top: 14px;">
       <table>
         <thead>
           <tr>
@@ -1002,7 +1168,6 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
         <tbody>
           ${scorecard.map(row => {
             const player = playerLookup[row.player] || {};
-            const playerMetrics = analysis?.player_metrics || {};
             const playerMetric = playerMetrics[row.player] || {};
             const performance = playerMetric.performance || {};
             const deathCount = performance.deaths || 0;
@@ -1022,7 +1187,11 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
             return `
               <tr>
-                <td>${renderPlayerName(row.player, playerLookup)}</td>
+                <td>
+                  <button type="button" class="player-name-coaching-trigger" onclick="showPlayerCoachCard('${escapeHtml(row.player)}')" style="background: none; border: none; font-weight: 600; color: ${getClassColor(player.className) || '#fff'}; cursor: pointer; text-align: left; padding: 0; font-family: inherit; font-size: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.15);">
+                    ${escapeHtml(row.player)}
+                  </button>
+                </td>
                 <td>${escapeHtml(player.className || "Unknown")}</td>
                 <td>${escapeHtml(player.spec || "Unknown")}</td>
                 <td>${escapeHtml(player.role || "Unknown")}</td>
@@ -1031,7 +1200,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
                 <td>${escapeHtml(row.issue_score)}</td>
                 <td>${escapeHtml(row.major_count)}</td>
                 <td>${escapeHtml(row.warning_count)}</td>
-                <td>${escapeHtml(row.top_issue || "")}</td>
+                <td>${escapeHtml(row.top_issue || "None")}</td>
               </tr>
             `;
           }).join("")}
@@ -1039,6 +1208,21 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
       </table>
     </div>
   `;
+
+  // Attach interactive glossary toggle handler
+  setTimeout(() => {
+    const toggle = document.getElementById("glossaryToggle");
+    const content = document.getElementById("glossaryContent");
+    const chevron = document.getElementById("glossaryChevron");
+    if (toggle && content && chevron) {
+      toggle.addEventListener("click", () => {
+        const isHidden = content.style.display === "none" || content.style.display === "";
+        content.style.display = isHidden ? "grid" : "none";
+        chevron.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
+        toggle.style.background = isHidden ? "rgba(255,255,255,0.02)" : "none";
+      });
+    }
+  }, 50);
 }
 
 function renderBenchmarksTab(analysis, playerLookup) {
