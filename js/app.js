@@ -9,6 +9,9 @@ let offlineMode = false;
 let benchmarkSelectedPlayer = null;
 let benchmarkComparisonMode = "high_performer";
 let currentCoachPlayerName = null;
+let isPatreonLinked = false;
+let isPremium = false;
+let premiumTier = null;
 
 
 function setOfflineMode(enabled) {
@@ -103,6 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Patreon Subscription Sync Trigger
+  const syncPatreonBtn = document.getElementById("syncPatreonButton");
+  if (syncPatreonBtn) syncPatreonBtn.addEventListener("click", syncPatreonSubscription);
 
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
@@ -3545,9 +3552,13 @@ async function checkUserSession() {
     const response = await fetch("/api/auth/me");
     if (response.ok) {
       const user = await response.json();
+      isPremium = user.is_premium || false;
+      premiumTier = user.premium_tier || null;
+      isPatreonLinked = user.is_patreon_linked || false;
+
       const firstLetter = user.username ? user.username.charAt(0) : "U";
-      const tierLabel = user.is_premium ? (user.premium_tier || "Premium") : "Free Account";
-      const tierClass = user.is_premium ? "" : "free";
+      const tierLabel = isPremium ? (premiumTier || "Premium") : "Free Account";
+      const tierClass = isPremium ? "premium" : "free";
 
       currentUserWebhook = user.discord_webhook_url || "";
 
@@ -4456,6 +4467,37 @@ function openSettingsDrawer() {
     statusMsg.className = "";
   }
 
+  // Update Patreon integration UI elements
+  const unlinkedBlock = document.getElementById("patreonUnlinkedBlock");
+  const linkedBlock = document.getElementById("patreonLinkedBlock");
+  const tierBadge = document.getElementById("patreonTierBadge");
+  const accountName = document.getElementById("patreonAccountName");
+  const patreonStatusMsg = document.getElementById("patreonStatusMessage");
+
+  if (patreonStatusMsg) {
+    patreonStatusMsg.classList.add("hidden");
+    patreonStatusMsg.className = "";
+  }
+
+  if (unlinkedBlock && linkedBlock) {
+    if (isPatreonLinked) {
+      unlinkedBlock.classList.add("hidden");
+      linkedBlock.classList.remove("hidden");
+      if (tierBadge) {
+        tierBadge.textContent = isPremium ? `${premiumTier || "Premium Patron"}` : "Patreon Connected";
+        tierBadge.parentElement.style.background = isPremium ? "rgba(74, 222, 128, 0.08)" : "rgba(251, 113, 133, 0.08)";
+        tierBadge.parentElement.style.borderColor = isPremium ? "rgba(74, 222, 128, 0.3)" : "rgba(251, 113, 133, 0.3)";
+        tierBadge.style.color = isPremium ? "var(--green)" : "var(--red)";
+      }
+      if (accountName) {
+        accountName.textContent = isPremium ? "ShortParse Premium tier active! ⭐" : "Patreon linked, but no active campaign tier detected.";
+      }
+    } else {
+      unlinkedBlock.classList.remove("hidden");
+      linkedBlock.classList.add("hidden");
+    }
+  }
+
   drawer.classList.remove("hidden");
   drawer.offsetHeight; // force layout reflow
   drawer.classList.add("active");
@@ -4554,6 +4596,66 @@ async function testWebhookSettings() {
   } finally {
     testBtn.disabled = false;
     testBtn.textContent = "Test Link";
+  }
+}
+
+async function syncPatreonSubscription() {
+  const syncBtn = document.getElementById("syncPatreonButton");
+  const statusMsg = document.getElementById("patreonStatusMessage");
+  const tierBadge = document.getElementById("patreonTierBadge");
+  const accountName = document.getElementById("patreonAccountName");
+
+  if (!syncBtn || !statusMsg) return;
+
+  syncBtn.disabled = true;
+  syncBtn.textContent = "Syncing...";
+  statusMsg.classList.add("hidden");
+
+  try {
+    const response = await fetch("/api/auth/patreon/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || "Failed to synchronize Patreon status.");
+    }
+
+    const data = await response.json();
+    isPremium = data.is_premium;
+    premiumTier = data.premium_tier;
+
+    if (tierBadge) {
+      tierBadge.textContent = isPremium ? `${premiumTier || "Premium Patron"}` : "Patreon Connected";
+      tierBadge.parentElement.style.background = isPremium ? "rgba(74, 222, 128, 0.08)" : "rgba(251, 113, 133, 0.08)";
+      tierBadge.parentElement.style.borderColor = isPremium ? "rgba(74, 222, 128, 0.3)" : "rgba(251, 113, 133, 0.3)";
+      tierBadge.style.color = isPremium ? "var(--green)" : "var(--red)";
+    }
+    
+    if (accountName) {
+      accountName.textContent = isPremium ? "ShortParse Premium tier active! ⭐" : "Patreon linked, but no active campaign tier detected.";
+    }
+
+    statusMsg.textContent = "Subscription synced successfully!";
+    statusMsg.className = "status-msg-success";
+    statusMsg.classList.remove("hidden");
+
+    // Also update main user profile widget
+    const userTierWidget = document.querySelector(".user-profile-widget .user-tier");
+    if (userTierWidget) {
+      userTierWidget.textContent = isPremium ? (premiumTier || "Premium") : "Free Account";
+      userTierWidget.className = `user-tier ${isPremium ? "" : "free"}`;
+    }
+  } catch (error) {
+    statusMsg.textContent = error.message;
+    statusMsg.className = "status-msg-error";
+    statusMsg.classList.remove("hidden");
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = "Sync";
   }
 }
 
