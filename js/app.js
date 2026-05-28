@@ -6668,4 +6668,706 @@ async function postGuildLedgerToDiscord() {
     postBtn.textContent = "Post Ledger to Discord";
   }
 }
+
+
+// ==============================================================================
+// Patreon Premium Blockbuster Features JS Implementation
+// ==============================================================================
+
+// Global variables for premium features
+let currentGuildOverviewData = null;
+let isRaidCoachTyping = false;
+
+// 1. Subtab Switching Event Registration
+document.addEventListener("DOMContentLoaded", () => {
+  // Bind subtabs
+  const subtabs = [
+    { btn: "subtabRosterBtn", area: "subtabRosterArea" },
+    { btn: "subtabHealerAuditorBtn", area: "subtabHealerAuditorArea" },
+    { btn: "subtabCooldownNotesBtn", area: "subtabCooldownNotesArea" },
+    { btn: "subtabSpecFlexBtn", area: "subtabSpecFlexArea" }
+  ];
+
+  subtabs.forEach((tab) => {
+    const btnEl = document.getElementById(tab.btn);
+    if (btnEl) {
+      btnEl.addEventListener("click", () => {
+        // Toggle active classes on buttons
+        subtabs.forEach(t => {
+          const b = document.getElementById(t.btn);
+          if (b) {
+            b.classList.toggle("active", t.btn === tab.btn);
+            b.style.color = (t.btn === tab.btn) ? "var(--foreground)" : "var(--muted)";
+          }
+          const a = document.getElementById(t.area);
+          if (a) {
+            a.classList.toggle("hidden", t.area !== tab.area);
+          }
+        });
+
+        // Run tab-specific loading/rendering functions
+        if (tab.btn === "subtabHealerAuditorBtn") {
+          renderHealerAuditorPanel();
+        } else if (tab.btn === "subtabCooldownNotesBtn") {
+          initializeCooldownNotesTab();
+        } else if (tab.btn === "subtabSpecFlexBtn") {
+          renderSpecFlexTab();
+        }
+      });
+    }
+  });
+
+  // Bind Raid Coach trigger floating button & drawer
+  const triggerCoachBtn = document.getElementById("triggerRaidCoachBtn");
+  if (triggerCoachBtn) {
+    triggerCoachBtn.addEventListener("click", openRaidCoachDrawer);
+  }
+
+  const closeCoachBtn = document.getElementById("closeRaidCoachBtn");
+  if (closeCoachBtn) {
+    closeCoachBtn.addEventListener("click", closeRaidCoachDrawer);
+  }
+
+  const coachOverlay = document.getElementById("raidCoachOverlay");
+  if (coachOverlay) {
+    coachOverlay.addEventListener("click", closeRaidCoachDrawer);
+  }
+
+  // Send message button in coach
+  const sendCoachMsgBtn = document.getElementById("sendCoachMessageBtn");
+  if (sendCoachMsgBtn) {
+    sendCoachMsgBtn.addEventListener("click", sendCoachMessage);
+  }
+
+  const coachInput = document.getElementById("coachChatInput");
+  if (coachInput) {
+    coachInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        sendCoachMessage();
+      }
+    });
+  }
+
+  // Preset chips event listener
+  document.querySelectorAll("#raidCoachDrawer .preset-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const prompt = chip.dataset.prompt;
+      if (prompt) {
+        submitCoachQuery(prompt);
+      }
+    });
+  });
+});
+
+// Update the float coach button visibility based on which tab/suite is active
+function updateRaidCoachBtnVisibility() {
+  const triggerCoachBtn = document.getElementById("triggerRaidCoachBtn");
+  if (!triggerCoachBtn) return;
+
+  const guildSuiteCard = document.getElementById("guildSuiteCard");
+  const isGuildSuiteVisible = guildSuiteCard && !guildSuiteCard.classList.contains("hidden");
+
+  // Show only if in Guild Command Center and premium status is active (or lock overlay is hidden)
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+
+  if (isGuildSuiteVisible && !isLocked) {
+    triggerCoachBtn.classList.remove("hidden");
+  } else {
+    triggerCoachBtn.classList.add("hidden");
+  }
+}
+
+// Intercept original route views to update coach floating button visibility
+const originalRenderGuildSuite = renderGuildSuite;
+renderGuildSuite = async function(guildId) {
+  if (originalRenderGuildSuite) {
+    await originalRenderGuildSuite(guildId);
+  }
+  updateRaidCoachBtnVisibility();
+};
+
+const originalShowGuildSuiteCard = showGuildSuiteCard;
+showGuildSuiteCard = async function() {
+  if (originalShowGuildSuiteCard) {
+    await originalShowGuildSuiteCard();
+  }
+  updateRaidCoachBtnVisibility();
+};
+
+// 2. Healer Cooldown & "Dry Spell" Auditor Renderer
+function renderHealerAuditorPanel() {
+  const overlapsContainer = document.getElementById("healerOverlapsContainer");
+  const drySpellsContainer = document.getElementById("healerDrySpellsContainer");
+  const adviceList = document.getElementById("healerOfficerAdvice");
+
+  if (!overlapsContainer || !drySpellsContainer || !adviceList) return;
+
+  // Clear existing content
+  overlapsContainer.innerHTML = "";
+  drySpellsContainer.innerHTML = "";
+  adviceList.innerHTML = "";
+
+  // A. Check if live fight analysis report is loaded
+  let overlaps = [];
+  let drySpells = [];
+  let advice = [];
+  let fightName = "";
+
+  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
+    const analysis = currentReportData.analyses[selectedAnalysisIndex];
+    fightName = analysis.fight.name;
+    const calibrator = analysis.defensive_calibrator || {};
+    overlaps = calibrator.overlaps || [];
+    drySpells = calibrator.dry_spells || [];
+    advice = calibrator.officer_advice || ["No direct officer advice compiled for this pull."];
+  } else if (currentGuildOverviewData && currentGuildOverviewData.healer_audit) {
+    // Pull from weekly guild summary aggregates
+    overlaps = currentGuildOverviewData.healer_audit.recent_overlaps || [];
+    drySpells = currentGuildOverviewData.healer_audit.recent_dry_spells || [];
+    advice = [
+      `Aggregate overlaps logged: ${currentGuildOverviewData.healer_audit.total_overlaps} wasteful overlaps.`,
+      `Aggregate dry spell gaps logged: ${currentGuildOverviewData.healer_audit.total_dry_spells} vulnerable periods.`,
+      "Review the Cooldown Notes tab to adjust rosters and mitigate these spikes."
+    ];
+    fightName = "Raid Progression";
+  } else {
+    // Premium Lock Mock preview
+    overlaps = [
+      { summary: "Wasteful Overlap: SwirlyCatcher's Divine Hymn and RestoGuy's Tranquility were active concurrently.", time_range: "01:18 - 01:26", overhealing_pct: 82 },
+      { summary: "Wasteful Overlap: Tanky's Rallying Cry and Bubbles' Aura Mastery were active concurrently.", time_range: "03:15 - 03:25", overhealing_pct: 75 }
+    ];
+    drySpells = [
+      { summary: "Defensive Dry Spell: The raid took 1,240,000 damage over 8 seconds with no active raid cooldowns!", time_range: "02:30 - 02:38", damage_taken: 1240000 }
+    ];
+    advice = [
+      "Move RestoGuy's Tranquility at 01:18 to cover the dry spell damage spike at 02:30.",
+      "Alternate Rallying Cry and Aura Mastery at 03:15 to increase uptime efficiency."
+    ];
+    fightName = "Boss Demo Pull";
+  }
+
+  // Populate Overlaps
+  if (overlaps.length === 0) {
+    overlapsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">🌟 Zero concurrent healer overlaps logged! co-healers rotated perfectly.</div>`;
+  } else {
+    overlaps.forEach((o) => {
+      const card = document.createElement("div");
+      card.className = "overlap-card";
+      card.innerHTML = `
+        <div class="audit-card-title">
+          <span>${o.summary}</span>
+          <span class="audit-card-time">${o.time_range}</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--muted); margin-top: 2px;">
+          Estimated Overhealing: <strong style="color: #ef4444;">${o.overhealing_pct || 80}%</strong> (wasted mana & output)
+        </div>
+      `;
+      overlapsContainer.appendChild(card);
+    });
+  }
+
+  // Populate Dry Spells
+  if (drySpells.length === 0) {
+    drySpellsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">🌟 Zero dry spell gaps logged! heavy damage was always covered.</div>`;
+  } else {
+    drySpells.forEach((d) => {
+      const card = document.createElement("div");
+      card.className = "dryspell-card";
+      card.innerHTML = `
+        <div class="audit-card-title">
+          <span>${d.summary}</span>
+          <span class="audit-card-time">${d.time_range}</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--muted); margin-top: 2px;">
+          Raid Damage Vulnerability: <strong style="color: #f59e0b;">${(d.damage_taken || 0).toLocaleString()} taken</strong> with 0 active CDs.
+        </div>
+      `;
+      drySpellsContainer.appendChild(card);
+    });
+  }
+
+  // Populate Advice
+  advice.forEach((line) => {
+    const li = document.createElement("li");
+    li.innerHTML = `🛡️ ${line}`;
+    adviceList.appendChild(li);
+  });
+}
+
+// 3. Cooldown Notes generator
+function initializeCooldownNotesTab() {
+  const mrtBossSelect = document.getElementById("mrtBossSelect");
+  const mrtNotesOutput = document.getElementById("mrtNotesOutput");
+  const mrtRosterDefensives = document.getElementById("mrtRosterDefensives");
+
+  if (!mrtBossSelect || !mrtNotesOutput || !mrtRosterDefensives) return;
+
+  // Clear and populate Boss Selector based on history
+  mrtBossSelect.innerHTML = "";
+  
+  let bosses = [];
+  if (currentGuildOverviewData && currentGuildOverviewData.wipe_analytics) {
+    bosses = Object.keys(currentGuildOverviewData.wipe_analytics);
+  }
+
+  if (bosses.length === 0) {
+    // Fallback Mock selection
+    bosses = ["Midnight Falls", "The Voidspire"];
+  }
+
+  bosses.forEach((bossName) => {
+    const opt = document.createElement("option");
+    opt.value = bossName;
+    opt.innerText = bossName;
+    mrtBossSelect.appendChild(opt);
+  });
+
+  // Handle boss change
+  mrtBossSelect.onchange = async () => {
+    const selectedBoss = mrtBossSelect.value;
+    await loadMrtNotesForBoss(selectedBoss);
+  };
+
+  // Populate Roster Defensives mapping
+  mrtRosterDefensives.innerHTML = "";
+  let roster = [];
+  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
+    roster = currentReportData.analyses[selectedAnalysisIndex].roster || [];
+  } else {
+    // Mock preview roster
+    roster = [
+      { name: "SwirlyCatcher", class: "Priest", spec: "Holy" },
+      { name: "RestoGuy", class: "Druid", spec: "Restoration" },
+      { name: "TankyMcTank", class: "Warrior", spec: "Protection" }
+    ];
+  }
+
+  // Defensives registration
+  const cooldownSpells = {
+    "Priest": "Divine Hymn / Power Word: Barrier",
+    "Druid": "Tranquility",
+    "Shaman": "Spirit Link / Healing Tide",
+    "Paladin": "Aura Mastery",
+    "Monk": "Revival",
+    "Warrior": "Rallying Cry",
+    "Death Knight": "Anti-Magic Zone",
+    "Demon Hunter": "Darkness"
+  };
+
+  let foundAny = false;
+  roster.forEach((player) => {
+    const cls = player.class || "";
+    if (cooldownSpells[cls]) {
+      foundAny = true;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.justify = "space-between";
+      row.style.padding = "6px 8px";
+      row.style.background = "rgba(255,255,255,0.02)";
+      row.style.border = "1px solid rgba(255,255,255,0.04)";
+      row.style.borderRadius = "4px";
+      
+      const classColor = CLASS_COLORS[cls] || "var(--foreground)";
+      row.innerHTML = `
+        <span style="color: ${classColor}; font-weight: 600;">${player.name}</span>
+        <span style="color: var(--muted); font-size: 11.5px;">${cooldownSpells[cls]}</span>
+      `;
+      mrtRosterDefensives.appendChild(row);
+    }
+  });
+
+  if (!foundAny) {
+    mrtRosterDefensives.innerHTML = `<div style="color: var(--muted); font-style: italic; padding: 10px;">No major healer/utility CD holders found in active roster.</div>`;
+  }
+
+  // Load notes for first boss
+  if (bosses.length > 0) {
+    loadMrtNotesForBoss(bosses[0]);
+  }
+
+  // Copy notes event
+  const copyBtn = document.getElementById("copyMrtNotesBtn");
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const code = document.getElementById("mrtNotesOutput").innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const oldText = copyBtn.textContent;
+        copyBtn.textContent = "Copied! 📋";
+        copyBtn.style.background = "var(--green)";
+        copyBtn.style.color = "#0f1218";
+        setTimeout(() => {
+          copyBtn.textContent = oldText;
+          copyBtn.style.background = "";
+          copyBtn.style.color = "";
+        }, 1500);
+      });
+    };
+  }
+}
+
+async function loadMrtNotesForBoss(bossName) {
+  const outputEl = document.getElementById("mrtNotesOutput");
+  if (!outputEl) return;
+
+  outputEl.innerText = "// Compiling cooldown notes timeline...";
+
+  // Check if we are premium or using locked mock view
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+
+  if (isLocked) {
+    // Generate beautiful preview mock MRT note
+    setTimeout(() => {
+      outputEl.innerText = `; --- ShortParse Premium Preview Notes for ${bossName} ---
+; Copy and paste this directly into Method Raid Tools / Angry Assignments
+
+{time:01:15} -- Void Eruption Spike --
+{time:01:15}   TankyMcTank (Rallying Cry)
+{time:01:18}   SwirlyCatcher (Divine Hymn)
+
+{time:02:30} -- Shadow Pulse Waves --
+{time:02:30}   RestoGuy (Tranquility)
+
+{time:03:45} -- Deep Void Devourer --
+{time:03:45}   [Assign Cooldown Here!]
+`;
+    }, 400);
+    return;
+  }
+
+  try {
+    // Call API
+    const response = await fetch(`/api/guild/mrt-notes?job_id=${currentJobId}&analysis_index=${selectedAnalysisIndex}`);
+    if (response.ok) {
+      const data = await response.json();
+      outputEl.innerText = data.notes;
+    } else {
+      throw new Error(`Server returned ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Failed to load MRT notes:", error);
+    outputEl.innerText = `// Failed to compile live MRT notes automatically: ${error.message}
+// Fallback manual planning note compiled:
+
+{time:01:15} -- Boss Damage Spike --
+{time:01:15}   [Assign Rallying Cry]
+{time:02:30} -- Boss Damage Spike --
+{time:02:30}   [Assign Tranquility]
+`;
+  }
+}
+
+// 4. Smart Spec-Flex Finder & Bench leaderboard
+async function renderSpecFlexTab() {
+  const resultsContainer = document.getElementById("flexFinderResults");
+  const leaderboardBody = document.getElementById("specFlexLeaderboardBody");
+
+  if (!resultsContainer || !leaderboardBody) return;
+
+  resultsContainer.innerHTML = `<div style="color: var(--muted); font-size: 13px;">Analyzing roster specs...</div>`;
+  leaderboardBody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Analyzing consistency data...</td></tr>`;
+
+  // Check if we are premium or locked
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+
+  if (isLocked) {
+    // Generate beautiful preview mock cards
+    setTimeout(() => {
+      resultsContainer.innerHTML = `
+        <div class="flex-card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: #60a5fa; font-size: 14px;">SwirlyCatcher</strong>
+            <span class="flex-badge">Flex Active</span>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+            Class: <strong style="color: white;">Priest</strong> | Specs Played: <strong style="color: #34d399;">Holy, Shadow</strong>
+          </div>
+          <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
+            💬 <strong>Flex Recommendation:</strong> Excellent Shadow DPS, but flexes to Holy Healer with 88% Uptime rating when raid is healer-starved.
+          </div>
+        </div>
+        <div class="flex-card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: #f48cba; font-size: 14px;">PaladinGuy</strong>
+            <span class="flex-badge potential">Potential Flex</span>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+            Class: <strong style="color: white;">Paladin</strong> | Spec Played: <strong style="color: #fbbf24;">Retribution</strong>
+          </div>
+          <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
+            💬 <strong>Flex Recommendation:</strong> Dual spec identified in logs! Can flex to Protection Tank if extra tank support is required.
+          </div>
+        </div>
+      `;
+
+      leaderboardBody.innerHTML = `
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px 14px; font-weight: 600; color: #ff7c0a;">GreenBeamEnjoyer</td>
+          <td style="padding: 12px 14px;">Restoration Druid</td>
+          <td style="padding: 12px 14px; text-align: right;">8 fights</td>
+          <td style="padding: 12px 14px; text-align: right; color: var(--green); font-weight: 700;">100%</td>
+          <td style="padding: 12px 14px; text-align: right; color: var(--green); font-weight: 700;">92 (Grade A)</td>
+          <td style="padding: 12px 14px; text-align: center;"><span class="flex-badge" style="background: rgba(255,255,255,0.03); color: var(--muted);">Stable Healer</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px 14px; font-weight: 600; color: #c69b6d;">TankyMcTank</td>
+          <td style="padding: 12px 14px;">Protection Warrior</td>
+          <td style="padding: 12px 14px; text-align: right;">8 fights</td>
+          <td style="padding: 12px 14px; text-align: right; color: var(--green); font-weight: 700;">98%</td>
+          <td style="padding: 12px 14px; text-align: right; color: var(--green); font-weight: 700;">98 (Grade S)</td>
+          <td style="padding: 12px 14px; text-align: center;"><span class="flex-badge" style="background: rgba(255,255,255,0.03); color: var(--muted);">Main Tank</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 12px 14px; font-weight: 600; color: #ffffff;">SwirlyCatcher</td>
+          <td style="padding: 12px 14px;">Shadow Priest</td>
+          <td style="padding: 12px 14px; text-align: right;">8 fights</td>
+          <td style="padding: 12px 14px; text-align: right; color: #ef4444; font-weight: 700;">33%</td>
+          <td style="padding: 12px 14px; text-align: right; color: #ef4444; font-weight: 700;">25 (Grade D)</td>
+          <td style="padding: 12px 14px; text-align: center;"><span class="flex-badge">Flex DPS/Heal</span></td>
+        </tr>
+      `;
+    }, 400);
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/guild/roster-calibrator");
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Populate Recommendations Cards
+      resultsContainer.innerHTML = "";
+      if (data.flex_recommendations.length === 0) {
+        resultsContainer.innerHTML = `<div style="color: var(--muted); font-size: 13px; font-style: italic; grid-column: 1 / -1;">No multi-spec flex options parsed yet. Check back after more logs are analyzed.</div>`;
+      } else {
+        data.flex_recommendations.forEach((rec) => {
+          const card = document.createElement("div");
+          card.className = "flex-card";
+          
+          const classColor = CLASS_COLORS[rec.class] || "var(--foreground)";
+          const badgeText = rec.specs_played.length > 1 ? "Flex Active" : "Potential Flex";
+          const badgeClass = rec.specs_played.length > 1 ? "flex-badge" : "flex-badge potential";
+          
+          const potSpecText = rec.potential_specs.length > 0 ? rec.potential_specs.join(", ") : "None";
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: ${classColor}; font-size: 14.5px;">${rec.player}</strong>
+              <span class="${badgeClass}">${badgeText}</span>
+            </div>
+            <div style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">
+              Class: <strong style="color: white;">${rec.class}</strong> | Active Spec: <strong style="color: #60a5fa;">${rec.current_spec}</strong>
+            </div>
+            <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
+              💬 <strong>Specs History:</strong> Played: ${rec.specs_played.join(", ") || "None"} | Potential Specs: ${potSpecText}
+            </div>
+            <div style="font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; margin-top: 4px;">
+              <span>URS Survival: <strong>${rec.urs}%</strong></span>
+              <span>SPI Index: <strong>${rec.spi}/100</strong></span>
+            </div>
+          `;
+          resultsContainer.appendChild(card);
+        });
+      }
+
+      // Populate Bench Leaderboard Table
+      leaderboardBody.innerHTML = "";
+      const grades = data.roster_bench_grades || {};
+      const playerNames = Object.keys(grades);
+      
+      if (playerNames.length === 0) {
+        leaderboardBody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">No player records compiled.</td></tr>`;
+      } else {
+        // Sort players by URS (survival)
+        const sortedPlayers = Object.entries(grades).sort((a, b) => b[1].urs - a[1].urs);
+        
+        sortedPlayers.forEach(([name, p]) => {
+          const row = document.createElement("tr");
+          row.style.borderBottom = "1px solid var(--border)";
+          
+          const classColor = CLASS_COLORS[p.spec.split(" ").pop()] || "var(--foreground)";
+          
+          // Color code URS and SPI
+          const ursColor = p.urs >= 80 ? "var(--green)" : (p.urs >= 50 ? "#fbbf24" : "#ef4444");
+          const spiColor = p.spi >= 80 ? "var(--green)" : (p.spi >= 50 ? "#fbbf24" : "#ef4444");
+
+          row.innerHTML = `
+            <td style="padding: 12px 14px; font-weight: 600; color: ${classColor};">${name}</td>
+            <td style="padding: 12px 14px;">${p.spec} (${p.role})</td>
+            <td style="padding: 12px 14px; text-align: right;">${p.fights_count} pulls</td>
+            <td style="padding: 12px 14px; text-align: right; color: ${ursColor}; font-weight: 700;">${p.urs}%</td>
+            <td style="padding: 12px 14px; text-align: right; color: ${spiColor}; font-weight: 700;">${p.spi} (Grade ${p.avg_grade})</td>
+            <td style="padding: 12px 14px; text-align: center;">
+              <span class="flex-badge ${p.is_flex ? '' : 'potential'}" style="${p.is_flex ? '' : 'background: rgba(255,255,255,0.03); color: var(--muted); border: 1px solid rgba(255,255,255,0.05);'}">
+                ${p.is_flex ? 'Flex Active' : 'Single Spec'}
+              </span>
+            </td>
+          `;
+          leaderboardBody.appendChild(row);
+        });
+      }
+
+    } else {
+      throw new Error(`Server returned ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Failed to load Spec-Flex calibrator:", error);
+    resultsContainer.innerHTML = `<div style="color: #ef4444; font-size: 13px;">Error loading Spec-Flex finder data.</div>`;
+    leaderboardBody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #ef4444;">Error fetching roster consistency database records.</td></tr>`;
+  }
+}
+
+// 5. "Raid Coach" Conversational Chat Drawer (Gemini AI Client)
+function openRaidCoachDrawer() {
+  const drawer = document.getElementById("raidCoachDrawer");
+  const metaText = document.getElementById("coachActiveEncounterName");
+  
+  if (!drawer) return;
+  
+  drawer.classList.remove("hidden");
+  setTimeout(() => drawer.classList.add("active"), 10);
+  
+  // Identify active fight boss
+  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
+    const analysis = currentReportData.analyses[selectedAnalysisIndex];
+    if (metaText) {
+      metaText.innerText = `${analysis.fight.name} (${analysis.fight.kill ? 'Kill' : 'Wipe pull'})`;
+    }
+  } else {
+    if (metaText) metaText.innerText = "Weekly Guild Raid Overview (Mock pull)";
+  }
+}
+
+function closeRaidCoachDrawer() {
+  const drawer = document.getElementById("raidCoachDrawer");
+  if (!drawer) return;
+  
+  drawer.classList.remove("active");
+  setTimeout(() => drawer.classList.add("hidden"), 250);
+}
+
+function appendCoachBubble(sender, text) {
+  const container = document.getElementById("coachChatMessages");
+  if (!container) return;
+  
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble ${sender}`;
+  
+  // Support formatting for code blocks or bold tags
+  // Replace newlines with <br> and wrap markdown style code in code fencing style
+  let formattedText = text
+    .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+    
+  bubble.innerHTML = formattedText;
+  container.appendChild(bubble);
+  
+  // Auto-scroll chat area
+  container.scrollTop = container.scrollHeight;
+}
+
+function showCoachTypingIndicator() {
+  const container = document.getElementById("coachChatMessages");
+  if (!container || isRaidCoachTyping) return;
+  
+  isRaidCoachTyping = true;
+  
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble coach typing-bubble";
+  bubble.id = "coachTypingIndicator";
+  bubble.innerHTML = `
+    <div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeCoachTypingIndicator() {
+  const indicator = document.getElementById("coachTypingIndicator");
+  if (indicator) {
+    indicator.remove();
+  }
+  isRaidCoachTyping = false;
+}
+
+async function sendCoachMessage() {
+  const input = document.getElementById("coachChatInput");
+  if (!input) return;
+  
+  const query = input.value.trim();
+  if (!query) return;
+  
+  input.value = "";
+  await submitCoachQuery(query);
+}
+
+async function submitCoachQuery(queryText) {
+  if (isRaidCoachTyping) return;
+  
+  // 1. Append user bubble
+  appendCoachBubble("user", queryText);
+  
+  // 2. Show AI typing animation
+  showCoachTypingIndicator();
+  
+  // 3. Check if premium lock is active
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+
+  if (isLocked) {
+    // Generate beautiful preview mock query response after 1.2s delay
+    setTimeout(() => {
+      removeCoachTypingIndicator();
+      
+      let mockReply = "";
+      const q = queryText.toLowerCase();
+      if (q.includes("wipe") || q.includes("why")) {
+        mockReply = "**Raid Coach Analysis:** On our **Midnight Falls** pull, the wipe was caused by avoidable mechanic failures during Phase 2. Players stood inside the *Void Eruption* circles, taking unmitigated ticks. **SwirlyCatcher** died first, which caused a snowball DPS deficit.\n\nWe need to dodge those swirls and make sure a defensive CD is running!";
+      } else if (q.includes("heal") || q.includes("cooldown") || q.includes("overlap")) {
+        mockReply = "**Raid Coach Healer Audit:** I reviewed the healing cooldown rotation for this pull. We had a wasteful concurrent overlap of **Divine Hymn** and **Tranquility** at 01:18, leading to 82% overhealing. We also had a 1.2M damage dry spell starvation at 02:30. Spreading these out will easily keep the raid healthy!";
+      } else {
+        mockReply = "**Raid Coach:** Welcome to the Patreon Premium preview! To query live combat logs dynamically using Gemini AI Studio, unlock the full Command Center using settings or our Patreon connection.";
+      }
+      appendCoachBubble("coach", mockReply);
+    }, 1200);
+    return;
+  }
+
+  try {
+    // Premium query backend endpoint
+    const response = await fetch("/api/guild/coach-chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        job_id: currentJobId,
+        analysis_index: selectedAnalysisIndex,
+        message: queryText
+      })
+    });
+
+    removeCoachTypingIndicator();
+
+    if (response.ok) {
+      const data = await response.json();
+      appendCoachBubble("coach", data.reply);
+    } else {
+      throw new Error(`Server returned ${response.status}`);
+    }
+  } catch (error) {
+    removeCoachTypingIndicator();
+    console.error("Failed to query Raid Coach:", error);
+    appendCoachBubble("coach", `**Raid Coach System Error:** I couldn't reach the AI analysis servers to review this pull: ${error.message}. Please check your connection or GEMINI_API_KEY settings.`);
+  }
+}
+
 

@@ -5189,6 +5189,219 @@ body {
 }
 
 
+/* ==============================================================================
+   Patreon Premium Blockbuster Features UI Styling
+   ============================================================================== */
+
+/* Subtab styling */
+.nav-subtab {
+	background: none;
+	border: none;
+	padding: 8px 14px;
+	border-radius: var(--radius);
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--muted);
+	cursor: pointer;
+	transition: all 0.2s ease-in-out;
+}
+
+.nav-subtab:hover {
+	color: var(--foreground);
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-subtab.active {
+	color: var(--foreground) !important;
+	background: rgba(99, 102, 241, 0.15) !important;
+	border: 1px solid rgba(99, 102, 241, 0.3) !important;
+	box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
+}
+
+/* Healer Auditor overlap & dry spell cards */
+.overlap-card {
+	background: rgba(239, 68, 68, 0.04);
+	border: 1px solid rgba(239, 68, 68, 0.15);
+	border-left: 4px solid #ef4444;
+	border-radius: var(--radius);
+	padding: 12px 16px;
+	font-size: 13px;
+	transition: transform 0.2s;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.overlap-card:hover {
+	transform: translateX(4px);
+	background: rgba(239, 68, 68, 0.06);
+}
+
+.dryspell-card {
+	background: rgba(245, 158, 11, 0.04);
+	border: 1px solid rgba(245, 158, 11, 0.15);
+	border-left: 4px solid #f59e0b;
+	border-radius: var(--radius);
+	padding: 12px 16px;
+	font-size: 13px;
+	transition: transform 0.2s;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.dryspell-card:hover {
+	transform: translateX(4px);
+	background: rgba(245, 158, 11, 0.06);
+}
+
+.audit-card-title {
+	font-weight: 700;
+	margin-bottom: 2px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13.5px;
+}
+
+.audit-card-time {
+	font-size: 11.5px;
+	color: var(--muted);
+	background: rgba(255, 255, 255, 0.05);
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+/* Chat bubble styling for Raid Coach Drawer */
+.chat-bubble {
+	max-width: 85%;
+	padding: 12px 16px;
+	border-radius: var(--radius);
+	font-size: 13px;
+	line-height: 1.5;
+	word-wrap: break-word;
+	animation: popIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes popIn {
+	from {
+		opacity: 0;
+		transform: scale(0.95) translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+.chat-bubble.user {
+	align-self: flex-end;
+	background: #4f46e5;
+	color: white;
+	border-bottom-right-radius: 2px;
+	box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.chat-bubble.coach {
+	align-self: flex-start;
+	background: rgba(30, 41, 59, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	color: var(--foreground);
+	border-bottom-left-radius: 2px;
+}
+
+.chat-bubble.system {
+	align-self: center;
+	max-width: 90%;
+	background: rgba(245, 158, 11, 0.05);
+	border: 1px solid rgba(245, 158, 11, 0.2);
+	color: #f59e0b;
+	border-radius: var(--radius);
+	text-align: center;
+}
+
+/* Preset prompt chips interactive styling */
+.preset-chip:hover {
+	color: var(--foreground) !important;
+	border-color: rgba(255, 255, 255, 0.2) !important;
+	background: rgba(255, 255, 255, 0.08) !important;
+	transform: translateY(-1px);
+}
+
+.preset-chip:active {
+	transform: translateY(0);
+}
+
+/* Floating Ask Raid Coach button hovering */
+.raid-coach-float-btn:hover {
+	transform: translateY(-2px) scale(1.03);
+	background: #4f46e5 !important;
+	box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+}
+
+.raid-coach-float-btn:active {
+	transform: translateY(0) scale(1);
+}
+
+/* Roster flex finder card */
+.flex-card {
+	background: rgba(15, 23, 42, 0.4);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: var(--radius);
+	padding: 14px;
+	transition: all 0.2s ease;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.flex-card:hover {
+	border-color: rgba(52, 211, 153, 0.3);
+	background: rgba(52, 211, 153, 0.03);
+	transform: translateY(-2px);
+}
+
+.flex-badge {
+	background: rgba(52, 211, 153, 0.15);
+	color: #34d399;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 700;
+	display: inline-block;
+}
+
+.flex-badge.potential {
+	background: rgba(129, 140, 248, 0.15);
+	color: #818cf8;
+}
+
+/* Typing animation bubble */
+.typing-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 8px;
+}
+
+.typing-dot {
+	width: 6px;
+	height: 6px;
+	background: var(--muted);
+	border-radius: 50%;
+	animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+	0%, 80%, 100% { transform: scale(0); }
+	40% { transform: scale(1); }
+}
+
+
+
 
 
 
