@@ -6675,7 +6675,6 @@ async function postGuildLedgerToDiscord() {
 // ==============================================================================
 
 // Global variables for premium features
-let currentGuildOverviewData = null;
 let isRaidCoachTyping = false;
 
 // 1. Subtab Switching Event Registration
