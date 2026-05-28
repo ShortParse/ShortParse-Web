@@ -100,6 +100,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveGeminiKeyBtn = document.getElementById("saveGeminiKeyButton");
   if (saveGeminiKeyBtn) saveGeminiKeyBtn.addEventListener("click", saveGeminiKeySettings);
 
+  const geminiPremiumOverlay = document.getElementById("geminiPremiumOverlay");
+  if (geminiPremiumOverlay) {
+    geminiPremiumOverlay.addEventListener("click", () => {
+      geminiPremiumOverlay.classList.add("hidden");
+    });
+  }
+
   const tabRaidCoachBtn = document.getElementById("tabRaidCoachBtn");
   if (tabRaidCoachBtn) tabRaidCoachBtn.addEventListener("click", openRaidCoachDrawer);
 
@@ -4702,6 +4709,16 @@ function openSettingsDrawer() {
   }
 
   updateDiscordWebhookUI();
+
+  // Show/Hide Gemini Premium active overlay
+  const geminiPremiumOverlay = document.getElementById("geminiPremiumOverlay");
+  if (geminiPremiumOverlay) {
+    if (isPremium) {
+      geminiPremiumOverlay.classList.remove("hidden");
+    } else {
+      geminiPremiumOverlay.classList.add("hidden");
+    }
+  }
 
   // Toggle settings priority queue promo card
   const promoCard = document.getElementById("priorityQueuePromoCard");
