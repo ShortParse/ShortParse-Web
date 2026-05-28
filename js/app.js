@@ -208,19 +208,34 @@ function analyzeCard() {
   return document.getElementById("analyzeCard");
 }
 
+function restoreAnalyzeAndGuildCards() {
+  const analyzeCardEl = document.getElementById("analyzeCard");
+  if (analyzeCardEl) analyzeCardEl.classList.remove("hidden");
+  
+  const guildDashboardCardEl = document.getElementById("guildDashboardCard");
+  if (guildDashboardCardEl && isPatreonLinked) {
+    guildDashboardCardEl.classList.remove("hidden");
+  }
+}
+
+function hideAnalyzeAndGuildCards() {
+  const analyzeCardEl = document.getElementById("analyzeCard");
+  if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
+  
+  const guildDashboardCardEl = document.getElementById("guildDashboardCard");
+  if (guildDashboardCardEl) guildDashboardCardEl.classList.add("hidden");
+}
+
 function headerActions() {
   return document.getElementById("headerActions");
 }
 
 async function startAnalysis() {
-  statusCard().classList.remove("hidden");
-
   const reportUrl = document.getElementById("reportUrl").value.trim();
   const button = document.getElementById("analyzeButton");
 
-  clearRenderedResults();
-
   if (!reportUrl) {
+    statusCard().classList.remove("hidden");
     renderAnalysisConsole({
       status: "waiting",
       progress: 0,
@@ -233,9 +248,15 @@ async function startAnalysis() {
         }
       ]
     });
-
     return;
   }
+
+  statusCard().classList.remove("hidden");
+
+  // Hide the search and guild dashboard hub cards to prevent double clicking/actions during run
+  hideAnalyzeAndGuildCards();
+
+  clearRenderedResults();
 
   button.disabled = true;
 
@@ -264,31 +285,30 @@ async function startAnalysis() {
     });
 
     if (!response.ok) {
-
       if (response.status >= 500) {
-
         setOfflineMode(true);
 
-    renderAnalysisConsole({
-      status: "failed",
-      progress: 100,
-      current_step: "Server Offline",
-      logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message:
-            "ShortParse backend is currently offline or restarting."
-        }
-      ]
-    });
+        renderAnalysisConsole({
+          status: "failed",
+          progress: 100,
+          current_step: "Server Offline",
+          logs: [
+            {
+              time: new Date().toISOString(),
+              level: "error",
+              message:
+                "ShortParse backend is currently offline or restarting."
+            }
+          ]
+        });
 
-    button.disabled = false;
-    return;
-  }
+        button.disabled = false;
+        restoreAnalyzeAndGuildCards();
+        return;
+      }
 
-  throw new Error(`Failed to create job: ${response.status}`);
-}
+      throw new Error(`Failed to create job: ${response.status}`);
+    }
 
     const job = await response.json();
 
@@ -318,16 +338,17 @@ async function startAnalysis() {
       progress: 100,
       current_step: "Server Offline",
       logs: [
-          {
-            time: new Date().toISOString(),
-            level: "error",
-            message:
-                "Unable to reach the ShortParse API server."
-          }
-          ]
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "Unable to reach the ShortParse API server."
+        }
+      ]
     });
 
     button.disabled = false;
+    restoreAnalyzeAndGuildCards();
   }
 }
 
@@ -341,32 +362,31 @@ async function pollJob() {
   try {
     const response = await fetch(`/api/jobs/${currentJobId}/summary`);
 
-if (!response.ok) {
+    if (!response.ok) {
+      if (response.status >= 500) {
+        setOfflineMode(true);
 
-  if (response.status >= 500) {
+        renderAnalysisConsole({
+          status: "failed",
+          progress: 100,
+          current_step: "Server Offline",
+          logs: [
+            {
+              time: new Date().toISOString(),
+              level: "error",
+              message:
+                "ShortParse backend is currently offline or restarting."
+            }
+          ]
+        });
 
-    setOfflineMode(true);
+        button.disabled = false;
+        restoreAnalyzeAndGuildCards();
+        return;
+      }
 
-    renderAnalysisConsole({
-      status: "failed",
-      progress: 100,
-      current_step: "Server Offline",
-      logs: [
-        {
-          time: new Date().toISOString(),
-          level: "error",
-          message:
-            "ShortParse backend is currently offline or restarting."
-        }
-      ]
-    });
-
-    button.disabled = false;
-    return;
-  }
-
-  throw new Error(`Failed to create job: ${response.status}`);
-}
+      throw new Error(`Failed to create job: ${response.status}`);
+    }
 
     const summary = await response.json();
 
@@ -406,6 +426,7 @@ if (!response.ok) {
       );
 
       button.disabled = false;
+      restoreAnalyzeAndGuildCards();
     }
   } catch (error) {
     setOfflineMode(true);
@@ -415,17 +436,18 @@ if (!response.ok) {
       progress: 100,
       current_step: "Server Offline",
       logs: [
-          {
-            time: new Date().toISOString(),
-            level: "error",
-            message:
-                "Unable to reach the ShortParse API server."
-          }
-          ]
+        {
+          time: new Date().toISOString(),
+          level: "error",
+          message:
+            "Unable to reach the ShortParse API server."
+        }
+      ]
     });
 
     button.disabled = false;
     clearInterval(pollTimer);
+    restoreAnalyzeAndGuildCards();
   }
 }
 
@@ -638,6 +660,11 @@ function enterReportMode(jobId) {
   headerActions().classList.remove("hidden");
   
   toggleGuildHub(true); // Collapse Guild Logs Hub when looking at a report
+
+  const guildDashboardCardEl = document.getElementById("guildDashboardCard");
+  if (guildDashboardCardEl && isPatreonLinked) {
+    guildDashboardCardEl.classList.remove("hidden");
+  }
 }
 
 function resetToAnalyzeMode() {
@@ -651,6 +678,11 @@ function resetToAnalyzeMode() {
   headerActions().classList.add("hidden");
   
   toggleGuildHub(false); // Expand Guild Logs Hub when NOT looking at a report
+
+  const guildDashboardCardEl = document.getElementById("guildDashboardCard");
+  if (guildDashboardCardEl && isPatreonLinked) {
+    guildDashboardCardEl.classList.remove("hidden");
+  }
 
   statusCard().innerHTML = `
     <div class="section-header">
