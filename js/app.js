@@ -660,7 +660,17 @@ async function loadSharedJobFromUrl() {
         return;
       }
 
-      throw new Error(`Failed to load shared report: ${response.status}`);
+      // Handle any non-ok status under 500 (e.g. 404, 400) by alerting the user,
+      // resetting the SPA, and cleaning up the URL so it doesn't stay broken.
+      alert(`The requested report could not be loaded (Error ${response.status}). It may have expired or been purged.`);
+      window.history.replaceState({}, "", "/");
+      resetToAnalyzeMode();
+      
+      const statusEl = document.getElementById("status");
+      if (statusEl) {
+        statusEl.textContent = `Report not found (status ${response.status}). Paste a new link below to begin.`;
+      }
+      return;
     }
 
     const analysis = await response.json();
