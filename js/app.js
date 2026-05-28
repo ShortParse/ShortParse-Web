@@ -7700,6 +7700,7 @@ async function submitCoachQuery(queryText) {
       body: JSON.stringify({
         job_id: currentJobId,
         analysis_index: selectedAnalysisIndex,
+        pull_index: activePullIndex,
         message: queryText
       })
     });
