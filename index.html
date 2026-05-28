@@ -630,10 +630,16 @@
         </section>
 
         <section id="resultCard" class="card hidden">
-          <div class="section-header" style="margin-bottom: 12px;">
+          <div class="section-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <h2 id="selectedBossTitle" style="font-size: 20px;">Report Summary</h2>
               <p id="selectedBossSubtitle" class="section-description" style="margin-top: 2px;"></p>
+            </div>
+            <div id="pullDrilldownContainer" class="pull-drilldown-container hidden" style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Focus Pull:</span>
+              <select id="pullDrilldownSelect" style="background: rgba(255, 255, 255, 0.03); color: var(--fg); border: 1px solid var(--border); padding: 6px 12px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; cursor: pointer; outline: none; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                <option value="all">Aggregated (All Pulls)</option>
+              </select>
             </div>
           </div>
           <div id="summaryGrid" class="stat-grid"></div>

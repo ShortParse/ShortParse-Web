@@ -2,6 +2,7 @@ let currentJobId = null;
 let pollTimer = null;
 let currentReportData = null;
 let selectedAnalysisIndex = 0;
+let activePullIndex = "all";
 let selectedTab = "scorecard";
 let currentShareUrl = "";
 let currentUserWebhook = "";
@@ -149,6 +150,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
   if (deleteBtn) deleteBtn.addEventListener("click", excludeSelectedLedgerPlayers);
+
+  // Focus Pull drilldown selector trigger
+  const pullSelect = document.getElementById("pullDrilldownSelect");
+  if (pullSelect) {
+    pullSelect.addEventListener("change", (e) => {
+      activePullIndex = e.target.value;
+      renderActivePullAnalysis();
+    });
+  }
 
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
@@ -754,9 +764,13 @@ function renderBossTiles(data) {
 
     const difficulty = formatDifficulty(fight.difficulty);
     const resultClass = fight.kill ? "kill" : "wipe";
-    const resultLabel = fight.kill
+    let resultLabel = fight.kill
       ? "Kill"
       : `Wipe (${fight.boss_percentage ?? "?"}%)`;
+
+    if (fight.total_pulls && fight.total_pulls > 1) {
+      resultLabel = `${fight.kills_count > 0 ? "🏆 Kill" : "Wipe"} (${fight.total_pulls} pulls: ${fight.kills_count} K, ${fight.wipes_count} W)`;
+    }
 
     return `
       <button
@@ -831,8 +845,65 @@ function formatDifficulty(value) {
   return difficultyMap[value] || "Unknown";
 }
 
+function getActiveAnalysis() {
+  const baseAnalysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  if (!baseAnalysis) return null;
+
+  if (activePullIndex === "all" || !baseAnalysis.pulls_details || !baseAnalysis.pulls_details[activePullIndex]) {
+    return baseAnalysis;
+  }
+
+  return baseAnalysis.pulls_details[activePullIndex];
+}
+
+function renderActivePullAnalysis() {
+  const baseAnalysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  if (!baseAnalysis) return;
+
+  const analysis = getActiveAnalysis();
+  const playerLookup = buildPlayerLookup(analysis);
+
+  renderSummary(currentReportData, analysis, playerLookup);
+  renderActiveTab();
+}
+
+function updatePullDrilldownDropdown(analysis) {
+  const container = document.getElementById("pullDrilldownContainer");
+  const select = document.getElementById("pullDrilldownSelect");
+  if (!container || !select) return;
+
+  const pulls = analysis.pulls_details || [];
+  if (pulls.length <= 1) {
+    container.classList.add("hidden");
+    return;
+  }
+
+  container.classList.remove("hidden");
+  
+  // Save current selection value
+  const currentVal = activePullIndex;
+
+  select.innerHTML = `
+    <option value="all">Aggregated (${pulls.length} Pulls)</option>
+    ${pulls.map((pull, idx) => {
+      const isKill = pull.fight?.kill;
+      const pct = pull.fight?.boss_percentage;
+      const label = isKill ? `Pull ${idx + 1} (Kill 🏆)` : `Pull ${idx + 1} (Wipe - ${pct ?? "?"}%)`;
+      return `<option value="${idx}">${escapeHtml(label)}</option>`;
+    }).join("")}
+  `;
+
+  // Restore selection value or default to "all"
+  select.value = currentVal;
+  if (!select.value) {
+    select.value = "all";
+    activePullIndex = "all";
+  }
+}
+
 function selectBoss(index) {
   selectedAnalysisIndex = index;
+  activePullIndex = "all"; // Reset focus pull to aggregated
   selectedTab = "scorecard";
 
   renderBossTiles(currentReportData);
@@ -846,12 +917,15 @@ function selectBoss(index) {
 }
 
 function renderSelectedAnalysis(index) {
-  const analysis = currentReportData.analyses[index];
+  const baseAnalysis = currentReportData.analyses[index];
 
-  if (!analysis) {
+  if (!baseAnalysis) {
     return;
   }
 
+  updatePullDrilldownDropdown(baseAnalysis);
+
+  const analysis = getActiveAnalysis();
   const playerLookup = buildPlayerLookup(analysis);
 
   renderSummary(currentReportData, analysis, playerLookup);
@@ -861,7 +935,7 @@ function renderSelectedAnalysis(index) {
 }
 
 function renderActiveTab() {
-  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
 
   if (!analysis) {
     return;
@@ -1927,7 +2001,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 function renderMechanicsTab(mechanics) {
   console.log("ShortParse renderMechanicsTab fired", mechanics);
 
-  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
   const playerLookup = buildPlayerLookup(analysis || {});
   const raidMechanics = mechanics.raid_mechanics || {};
   const rows = Object.entries(raidMechanics);
@@ -2064,7 +2138,7 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
   window.cooldownWeightFilter = window.cooldownWeightFilter || "high_med";
   window.cooldownSearchQuery = window.cooldownSearchQuery || "";
 
-  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
   const fight = analysis?.fight || {};
   const startTime = fight.start_time || 0;
 
@@ -2700,7 +2774,7 @@ function renderTimelineTab(timeline, playerLookup) {
     return;
   }
 
-  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
   const fight = analysis?.fight || {};
   const duration = fight.duration_seconds || 1;
   const startTime = fight.start_time || 0;
@@ -3050,7 +3124,7 @@ window.toggleRotationalGapTooltip = function(event) {
 
 function showPlayerCoachCard(playerName) {
   if (!currentReportData) return;
-  const analysis = currentReportData.analyses[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
   if (!analysis) return;
 
   currentCoachPlayerName = playerName;
@@ -4954,7 +5028,7 @@ async function postActiveReportToDiscord() {
    ============================================================================= */
 
 function showDeathRecap(playerName, timestamp) {
-  const analysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const analysis = getActiveAnalysis();
   if (!analysis) return;
 
   const playerMetrics = analysis.player_metrics || {};
@@ -5056,7 +5130,7 @@ function showDeathRecap(playerName, timestamp) {
 }
 
 function showPlayerDeathsRecap(playerName) {
-  const tennis = currentReportData?.analyses?.[selectedAnalysisIndex];
+  const tennis = getActiveAnalysis();
   if (!tennis) return;
 
   const playerMetrics = tennis.player_metrics || {};
@@ -7072,8 +7146,8 @@ function renderHealerAuditorPanel() {
   let advice = [];
   let fightName = "";
 
-  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
-    const analysis = currentReportData.analyses[selectedAnalysisIndex];
+  if (currentReportData && getActiveAnalysis()) {
+    const analysis = getActiveAnalysis();
     fightName = analysis.fight.name;
     const calibrator = analysis.defensive_calibrator || {};
     overlaps = calibrator.overlaps || [];
@@ -7190,8 +7264,8 @@ function initializeCooldownNotesTab() {
   // Populate Roster Defensives mapping
   mrtRosterDefensives.innerHTML = "";
   let roster = [];
-  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
-    roster = currentReportData.analyses[selectedAnalysisIndex].roster || [];
+  if (currentReportData && getActiveAnalysis()) {
+    roster = getActiveAnalysis().roster || [];
   } else {
     // Mock preview roster
     roster = [
@@ -7489,8 +7563,8 @@ function openRaidCoachDrawer() {
   drawer.classList.add("active");
   
   // Identify active fight boss
-  if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
-    const analysis = currentReportData.analyses[selectedAnalysisIndex];
+  if (currentReportData && getActiveAnalysis()) {
+    const analysis = getActiveAnalysis();
     if (metaText) {
       metaText.innerText = `${analysis.fight.name} (${analysis.fight.kill ? 'Kill' : 'Wipe pull'})`;
     }
