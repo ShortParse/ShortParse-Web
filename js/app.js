@@ -694,7 +694,6 @@ function resetToAnalyzeMode() {
   }
 
   updateRaidCoachBtnVisibility();
-}
 
   statusCard().innerHTML = `
     <div class="section-header">
