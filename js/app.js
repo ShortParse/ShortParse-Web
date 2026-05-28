@@ -6,6 +6,7 @@ let selectedTab = "scorecard";
 let currentShareUrl = "";
 let currentUserWebhook = "";
 let currentUserAutoPost = false;
+let currentUserGeminiKey = "";
 let offlineMode = false;
 let benchmarkSelectedPlayer = null;
 let benchmarkComparisonMode = "high_performer";
@@ -94,6 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const testWebhookBtn = document.getElementById("testWebhookButton");
   if (testWebhookBtn) testWebhookBtn.addEventListener("click", testWebhookSettings);
+
+  const saveGeminiKeyBtn = document.getElementById("saveGeminiKeyButton");
+  if (saveGeminiKeyBtn) saveGeminiKeyBtn.addEventListener("click", saveGeminiKeySettings);
+
+  const tabRaidCoachBtn = document.getElementById("tabRaidCoachBtn");
+  if (tabRaidCoachBtn) tabRaidCoachBtn.addEventListener("click", openRaidCoachDrawer);
 
   // Post to Discord Trigger
   const postDiscordBtn = document.getElementById("postDiscordButton");
@@ -665,6 +672,8 @@ function enterReportMode(jobId) {
   if (guildDashboardCardEl && isPatreonLinked) {
     guildDashboardCardEl.classList.remove("hidden");
   }
+
+  updateRaidCoachBtnVisibility();
 }
 
 function resetToAnalyzeMode() {
@@ -683,6 +692,9 @@ function resetToAnalyzeMode() {
   if (guildDashboardCardEl && isPatreonLinked) {
     guildDashboardCardEl.classList.remove("hidden");
   }
+
+  updateRaidCoachBtnVisibility();
+}
 
   statusCard().innerHTML = `
     <div class="section-header">
@@ -3637,6 +3649,7 @@ async function checkUserSession() {
 
       currentUserWebhook = user.discord_webhook_url || "";
       currentUserAutoPost = user.discord_auto_post || false;
+      currentUserGeminiKey = user.gemini_api_key || "";
       updateDiscordWebhookUI();
 
       container.innerHTML = `
@@ -4571,6 +4584,17 @@ function openSettingsDrawer() {
     webhookInput.value = currentUserWebhook;
   }
 
+  const geminiInput = document.getElementById("geminiApiKeyInput");
+  if (geminiInput) {
+    geminiInput.value = currentUserGeminiKey;
+  }
+
+  const geminiStatusMsg = document.getElementById("geminiKeyStatusMessage");
+  if (geminiStatusMsg) {
+    geminiStatusMsg.classList.add("hidden");
+    geminiStatusMsg.className = "";
+  }
+
   const autoPostToggle = document.getElementById("discordAutoPostToggle");
   if (autoPostToggle) {
     autoPostToggle.checked = currentUserAutoPost;
@@ -4691,6 +4715,54 @@ async function saveWebhookSettings() {
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = "Save Webhook";
+  }
+}
+
+async function saveGeminiKeySettings() {
+  const geminiInput = document.getElementById("geminiApiKeyInput");
+  const saveBtn = document.getElementById("saveGeminiKeyButton");
+  const statusMsg = document.getElementById("geminiKeyStatusMessage");
+
+  if (!geminiInput || !saveBtn || !statusMsg) return;
+
+  const key = geminiInput.value.trim();
+
+  statusMsg.classList.add("hidden");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+
+  try {
+    const response = await fetch("/api/auth/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        gemini_api_key: key || null
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.detail || "Failed to update Gemini API Key settings.");
+    }
+
+    const data = await response.json();
+    currentUserGeminiKey = data.gemini_api_key || "";
+    geminiInput.value = currentUserGeminiKey;
+
+    statusMsg.textContent = "Gemini API Key saved successfully!";
+    statusMsg.className = "status-msg-success";
+    statusMsg.classList.remove("hidden");
+    
+    updateRaidCoachBtnVisibility();
+  } catch (error) {
+    statusMsg.textContent = error.message;
+    statusMsg.className = "status-msg-error";
+    statusMsg.classList.remove("hidden");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save API Key";
   }
 }
 
@@ -5609,6 +5681,9 @@ function switchToPersonalAnalyzer() {
   if (window.location.pathname === "/guild") {
     window.history.pushState(null, "", "/");
   }
+
+  updateRaidCoachBtnVisibility();
+}
 }
 
 async function switchToGuildSuite() {
@@ -5639,6 +5714,8 @@ async function switchToGuildSuite() {
   window.history.pushState(null, "", "/guild");
   
   await loadGuildSuiteOverview();
+  updateRaidCoachBtnVisibility();
+}
 }
 
 async function loadGuildSuiteOverview() {
@@ -6802,7 +6879,10 @@ function updateRaidCoachBtnVisibility() {
   const lockScreen = document.getElementById("guildSuitePremiumLock");
   const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
 
-  if (isGuildSuiteVisible && !isLocked) {
+  const hasOwnKey = currentUserGeminiKey && currentUserGeminiKey.trim();
+
+  // Show if looking at any report (has jobId) OR in unlocked Guild Command Center, or if they have their own Gemini key
+  if (currentJobId || (isGuildSuiteVisible && (!isLocked || hasOwnKey))) {
     triggerCoachBtn.classList.remove("hidden");
   } else {
     triggerCoachBtn.classList.add("hidden");
@@ -7352,8 +7432,9 @@ async function submitCoachQuery(queryText) {
   // 3. Check if premium lock is active
   const lockScreen = document.getElementById("guildSuitePremiumLock");
   const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+  const hasOwnKey = currentUserGeminiKey && currentUserGeminiKey.trim();
 
-  if (isLocked) {
+  if (isLocked && !hasOwnKey) {
     // Generate beautiful preview mock query response after 1.2s delay
     setTimeout(() => {
       removeCoachTypingIndicator();

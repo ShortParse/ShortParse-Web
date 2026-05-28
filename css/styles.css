@@ -66,6 +66,13 @@
 	background: #162235;
 }
 
+.tab-coach-button:hover {
+	background: rgba(99, 102, 241, 0.25) !important;
+	border-color: rgba(99, 102, 241, 0.6) !important;
+	color: white !important;
+	box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
 .tab-button.active {
 	background: var(--blue);
 	color: #081018;

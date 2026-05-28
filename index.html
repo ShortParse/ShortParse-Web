@@ -638,6 +638,7 @@
             <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
             <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
             <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
+            <button class="tab-coach-button" type="button" id="tabRaidCoachBtn" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; margin-left: auto; padding: 10px 14px; font-size: 13px; cursor: pointer; border-radius: 8px; transition: all 0.2s;">💬 Ask AI Coach</button>
           </div>
           <div id="tabContent"></div>
         </section>
@@ -792,6 +793,18 @@
                 Unlock with Patreon
               </button>
             </div>
+          </div>
+        </div>
+
+        <div class="coach-section" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+          <h3>Gemini AI Coach Settings</h3>
+          <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 12px 0;">
+            Power the AI Raid Coach chatbot for free! Paste your own custom <strong>Google AI Studio Gemini API Key</strong> below to query live combat logs dynamically without requiring a Patreon Premium subscription.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <input id="geminiApiKeyInput" type="password" placeholder="AIzaSy..." style="font-size: 14px; padding: 12px;" />
+            <button id="saveGeminiKeyButton" type="button" style="padding: 12px; font-size: 13px; font-weight: 700;">Save API Key</button>
+            <p id="geminiKeyStatusMessage" style="font-size: 12px; margin: 4px 0 0 0;" class="hidden"></p>
           </div>
         </div>
 
