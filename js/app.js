@@ -143,6 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const postLedgerBtn = document.getElementById("postGuildLedgerButton");
   if (postLedgerBtn) postLedgerBtn.addEventListener("click", postGuildLedgerToDiscord);
 
+  // Bulk Exclude/Restore Ledger player events
+  const selectAllCheckbox = document.getElementById("selectAllLedgerPlayers");
+  if (selectAllCheckbox) selectAllCheckbox.addEventListener("change", handleSelectAllLedgerPlayers);
+
+  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
+  if (deleteBtn) deleteBtn.addEventListener("click", excludeSelectedLedgerPlayers);
+
   checkUserSession(); // Query session on page load
   loadSharedJobFromUrl();
 
@@ -5876,6 +5883,7 @@ async function loadGuildSuiteOverview() {
     renderPanicAudit(data.players_history || {});
     renderGoldLedger(data.players_history || {});
     renderWipeDiagnoser(data.wipe_analytics || {});
+    renderExcludedPlayers(data.excluded_players || []);
     
   } catch (error) {
     console.error("Failed to load premium Guild Suite overview:", error);
@@ -6440,6 +6448,12 @@ function renderGoldLedger(players) {
   const body = document.getElementById("guildLedgerBody");
   if (!body) return;
   
+  const selectAllCheckbox = document.getElementById("selectAllLedgerPlayers");
+  if (selectAllCheckbox) selectAllCheckbox.checked = false;
+  
+  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
+  if (deleteBtn) deleteBtn.classList.add("hidden");
+
   const sorted = Object.entries(players)
     .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.gold_debt - a.gold_debt);
@@ -6447,7 +6461,7 @@ function renderGoldLedger(players) {
   let html = "";
   
   if (sorted.length === 0) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 20px;">No ledger entries found.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 20px;">No ledger entries found.</td></tr>`;
     return;
   }
   
@@ -6472,6 +6486,9 @@ function renderGoldLedger(players) {
     
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+        <td style="padding: 12px 16px; text-align: left;">
+          <input type="checkbox" class="ledger-player-checkbox" data-player="${p.name}" style="cursor: pointer; transform: scale(1.15);" />
+        </td>
         <td style="padding: 12px 16px; font-weight: bold; color: ${classColor};">${escapeHtml(p.name)}</td>
         <td style="padding: 12px 16px; color: var(--muted);">${escapeHtml(p.role)}</td>
         <td style="padding: 12px 16px; text-align: right; font-weight: 600;">${p.fights_count}</td>
@@ -6483,6 +6500,121 @@ function renderGoldLedger(players) {
   });
   
   body.innerHTML = html;
+
+  // Bind change listeners to checkboxes to toggle bulk delete button
+  const rowCheckboxes = body.querySelectorAll(".ledger-player-checkbox");
+  rowCheckboxes.forEach(cb => {
+    cb.addEventListener("change", updateLedgerBulkDeleteButtonVisibility);
+  });
+}
+
+function updateLedgerBulkDeleteButtonVisibility() {
+  const body = document.getElementById("guildLedgerBody");
+  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
+  if (!body || !deleteBtn) return;
+  
+  const checked = body.querySelectorAll(".ledger-player-checkbox:checked");
+  if (checked.length > 0) {
+    deleteBtn.classList.remove("hidden");
+  } else {
+    deleteBtn.classList.add("hidden");
+  }
+}
+
+function handleSelectAllLedgerPlayers(e) {
+  const body = document.getElementById("guildLedgerBody");
+  if (!body) return;
+  
+  const rowCheckboxes = body.querySelectorAll(".ledger-player-checkbox");
+  rowCheckboxes.forEach(cb => {
+    cb.checked = e.target.checked;
+  });
+  
+  updateLedgerBulkDeleteButtonVisibility();
+}
+
+async function excludeSelectedLedgerPlayers() {
+  const body = document.getElementById("guildLedgerBody");
+  if (!body) return;
+  
+  const checked = body.querySelectorAll(".ledger-player-checkbox:checked");
+  if (checked.length === 0) return;
+  
+  const playerNames = Array.from(checked).map(cb => cb.getAttribute("data-player"));
+  
+  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
+  if (deleteBtn) {
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Excluding...";
+  }
+  
+  try {
+    const response = await fetch("/api/guild/exclude-players", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ players: playerNames })
+    });
+    
+    if (response.ok) {
+      await loadGuildSuiteOverview(); // Re-fetch history which dynamically updates matrix, ledger, trend charts, etc.!
+    } else {
+      alert("Failed to exclude players.");
+    }
+  } catch (error) {
+    console.error("Error excluding players:", error);
+    alert("Error excluding players.");
+  } finally {
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = "🗑 Exclude Selected";
+    }
+  }
+}
+
+async function restoreLedgerPlayer(playerName) {
+  try {
+    const response = await fetch("/api/guild/restore-players", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ players: [playerName] })
+    });
+    
+    if (response.ok) {
+      await loadGuildSuiteOverview(); // Re-fetch and update UI!
+    } else {
+      alert("Failed to restore player.");
+    }
+  } catch (error) {
+    console.error("Error restoring player:", error);
+    alert("Error restoring player.");
+  }
+}
+
+function renderExcludedPlayers(excludedList) {
+  const section = document.getElementById("excludedPlayersSection");
+  const listContainer = document.getElementById("excludedPlayersList");
+  if (!section || !listContainer) return;
+
+  if (!excludedList || excludedList.length === 0) {
+    section.classList.add("hidden");
+    listContainer.innerHTML = "";
+    return;
+  }
+
+  section.classList.remove("hidden");
+  let html = "";
+  excludedList.forEach(name => {
+    html += `
+      <span class="preset-chip" style="padding: 4px 10px; border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.05); color: #f87171; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; font-weight: 500;" onclick="restoreLedgerPlayer('${escapeHtml(name)}')">
+        ${escapeHtml(name)} <strong style="font-size: 11px; opacity: 0.7;">&times;</strong>
+      </span>
+    `;
+  });
+  listContainer.innerHTML = html;
 }
 
 let activeWipeBoss = null;
@@ -7389,9 +7521,9 @@ function appendCoachBubble(sender, text) {
   // Support formatting for code blocks or bold tags
   // Replace newlines with <br> and wrap markdown style code in code fencing style
   let formattedText = text
-    .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
     .replace(/\n/g, '<br>');
     
   bubble.innerHTML = formattedText;
