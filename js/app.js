@@ -7353,7 +7353,8 @@ function openRaidCoachDrawer() {
   if (!drawer) return;
   
   drawer.classList.remove("hidden");
-  setTimeout(() => drawer.classList.add("active"), 10);
+  drawer.offsetHeight; // trigger reflow
+  drawer.classList.add("active");
   
   // Identify active fight boss
   if (currentReportData && currentReportData.analyses && currentReportData.analyses[selectedAnalysisIndex]) {
@@ -7371,7 +7372,11 @@ function closeRaidCoachDrawer() {
   if (!drawer) return;
   
   drawer.classList.remove("active");
-  setTimeout(() => drawer.classList.add("hidden"), 250);
+  setTimeout(() => {
+    if (!drawer.classList.contains("active")) {
+      drawer.classList.add("hidden");
+    }
+  }, 300);
 }
 
 function appendCoachBubble(sender, text) {
