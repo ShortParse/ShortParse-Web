@@ -5683,7 +5683,6 @@ function switchToPersonalAnalyzer() {
 
   updateRaidCoachBtnVisibility();
 }
-}
 
 async function switchToGuildSuite() {
   document.getElementById("analyzeCard").classList.add("hidden");
@@ -5714,7 +5713,6 @@ async function switchToGuildSuite() {
   
   await loadGuildSuiteOverview();
   updateRaidCoachBtnVisibility();
-}
 }
 
 async function loadGuildSuiteOverview() {
