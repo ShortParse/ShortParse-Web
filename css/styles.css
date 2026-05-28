@@ -5408,6 +5408,45 @@ body {
 	40% { transform: scale(1); }
 }
 
+/* Focus Pull Dropdown Styling for visual excellence */
+#pullDrilldownSelect {
+	background-color: #111722 !important;
+	color: var(--text) !important;
+	border: 1px solid var(--border) !important;
+	padding: 6px 32px 6px 12px !important; /* Extra padding on right for custom arrow space if needed */
+	border-radius: 8px !important;
+	font-size: 13.5px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	outline: none !important;
+	transition: all 0.2s ease !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+	appearance: none !important; /* Remove browser default styling */
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M7 9l3 3 3-3' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 8px center !important;
+	background-size: 18px !important;
+}
+
+#pullDrilldownSelect:hover {
+	border-color: var(--blue) !important;
+	background-color: #162235 !important;
+	box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15), 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+#pullDrilldownSelect:focus {
+	border-color: var(--blue) !important;
+	box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+}
+
+#pullDrilldownSelect option {
+	background-color: #0f1218 !important;
+	color: var(--text) !important;
+	padding: 8px !important;
+}
+
 
 
 

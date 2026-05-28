@@ -752,7 +752,7 @@ function renderReport(data) {
   }
 
   renderBossTiles(data);
-  renderSelectedAnalysis(0);
+  renderSelectedAnalysis(selectedAnalysisIndex);
 }
 
 function renderBossTiles(data) {
@@ -917,6 +917,7 @@ function selectBoss(index) {
 }
 
 function renderSelectedAnalysis(index) {
+  selectedAnalysisIndex = index; // Synchronize global active boss index
   const baseAnalysis = currentReportData.analyses[index];
 
   if (!baseAnalysis) {
