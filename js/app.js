@@ -6886,23 +6886,6 @@ function updateRaidCoachBtnVisibility() {
   }
 }
 
-// Intercept original route views to update coach floating button visibility
-const originalRenderGuildSuite = renderGuildSuite;
-renderGuildSuite = async function(guildId) {
-  if (originalRenderGuildSuite) {
-    await originalRenderGuildSuite(guildId);
-  }
-  updateRaidCoachBtnVisibility();
-};
-
-const originalShowGuildSuiteCard = showGuildSuiteCard;
-showGuildSuiteCard = async function() {
-  if (originalShowGuildSuiteCard) {
-    await originalShowGuildSuiteCard();
-  }
-  updateRaidCoachBtnVisibility();
-};
-
 // 2. Healer Cooldown & "Dry Spell" Auditor Renderer
 function renderHealerAuditorPanel() {
   const overlapsContainer = document.getElementById("healerOverlapsContainer");
