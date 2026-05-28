@@ -652,7 +652,12 @@ async function loadSharedJobFromUrl() {
     selectedAnalysisIndex = Math.min(Math.max(0, bossIndex), (analysis.analyses || []).length - 1);
     selectedTab = tabName;
 
-    enterReportMode(jobId);
+    const isGuildPath = window.location.pathname.startsWith("/guild");
+    if (isGuildPath) {
+      switchToGuildSuite();
+    } else {
+      enterReportMode(jobId);
+    }
     renderReport(analysis);
   } catch (error) {
     status.textContent = error.message;
@@ -669,8 +674,8 @@ function enterReportMode(jobId) {
   toggleGuildHub(true); // Collapse Guild Logs Hub when looking at a report
 
   const guildDashboardCardEl = document.getElementById("guildDashboardCard");
-  if (guildDashboardCardEl && isPatreonLinked) {
-    guildDashboardCardEl.classList.remove("hidden");
+  if (guildDashboardCardEl) {
+    guildDashboardCardEl.classList.add("hidden");
   }
 
   updateRaidCoachBtnVisibility();
@@ -5655,29 +5660,52 @@ function switchToPersonalAnalyzer() {
   const guildSuiteCard = document.getElementById("guildSuiteCard");
   if (guildSuiteCard) guildSuiteCard.classList.add("hidden");
   
-  document.getElementById("analyzeCard").classList.remove("hidden");
-  document.getElementById("statusCard").classList.remove("hidden");
-  
-  const dashboardCard = document.getElementById("guildDashboardCard");
-  if (dashboardCard && isPatreonLinked) {
-    dashboardCard.classList.remove("hidden");
-  }
+  const personalBtn = document.getElementById("navPersonalBtn");
+  const guildBtn = document.getElementById("navGuildSuiteBtn");
+  if (personalBtn) personalBtn.classList.add("active");
+  if (guildBtn) guildBtn.classList.remove("active");
   
   if (currentJobId) {
+    // We are actively viewing a report - hide setup cards so they don't shove the report down!
+    const analyzeCardEl = document.getElementById("analyzeCard");
+    if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
+    
+    const statusCardEl = document.getElementById("statusCard");
+    if (statusCardEl) statusCardEl.classList.add("hidden");
+    
+    const dashboardCard = document.getElementById("guildDashboardCard");
+    if (dashboardCard) dashboardCard.classList.add("hidden");
+
     const resultCard = document.getElementById("resultCard");
     const bossTilesCard = document.getElementById("bossTilesCard");
     const detailsCard = document.getElementById("detailsCard");
     if (resultCard) resultCard.classList.remove("hidden");
     if (bossTilesCard) bossTilesCard.classList.remove("hidden");
     if (detailsCard) detailsCard.classList.remove("hidden");
-  }
-  
-  const personalBtn = document.getElementById("navPersonalBtn");
-  const guildBtn = document.getElementById("navGuildSuiteBtn");
-  if (personalBtn) personalBtn.classList.add("active");
-  if (guildBtn) guildBtn.classList.remove("active");
-  
-  if (window.location.pathname === "/guild") {
+
+    // Restore correct report address bar path
+    let path = `/report/${currentJobId}`;
+    if (selectedAnalysisIndex > 0 || selectedTab !== "scorecard") {
+      path += `/${selectedAnalysisIndex}`;
+    }
+    if (selectedTab !== "scorecard") {
+      path += `/${selectedTab}`;
+    }
+    window.history.pushState(null, "", path);
+    currentShareUrl = `${window.location.origin}${path}`;
+  } else {
+    // No active report, show search form and guild hub dashboard
+    const analyzeCardEl = document.getElementById("analyzeCard");
+    if (analyzeCardEl) analyzeCardEl.classList.remove("hidden");
+    
+    const statusCardEl = document.getElementById("statusCard");
+    if (statusCardEl) statusCardEl.classList.remove("hidden");
+    
+    const dashboardCard = document.getElementById("guildDashboardCard");
+    if (dashboardCard && isPatreonLinked) {
+      dashboardCard.classList.remove("hidden");
+    }
+
     window.history.pushState(null, "", "/");
   }
 
@@ -5685,8 +5713,11 @@ function switchToPersonalAnalyzer() {
 }
 
 async function switchToGuildSuite() {
-  document.getElementById("analyzeCard").classList.add("hidden");
-  document.getElementById("statusCard").classList.add("hidden");
+  const analyzeCardEl = document.getElementById("analyzeCard");
+  if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
+  
+  const statusCardEl = document.getElementById("statusCard");
+  if (statusCardEl) statusCardEl.classList.add("hidden");
   
   const dashboardCard = document.getElementById("guildDashboardCard");
   if (dashboardCard) dashboardCard.classList.add("hidden");
@@ -5709,7 +5740,11 @@ async function switchToGuildSuite() {
   if (personalBtn) personalBtn.classList.remove("active");
   if (guildBtn) guildBtn.classList.add("active");
   
-  window.history.pushState(null, "", "/guild");
+  if (currentJobId) {
+    window.history.pushState(null, "", `/guild/report/${currentJobId}`);
+  } else {
+    window.history.pushState(null, "", "/guild");
+  }
   
   await loadGuildSuiteOverview();
   updateRaidCoachBtnVisibility();
