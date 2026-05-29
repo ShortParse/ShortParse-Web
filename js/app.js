@@ -186,6 +186,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initVisualBuilder();
   }
 
+  if (window.location.pathname === "/admin") {
+    initAdminDashboard();
+  }
+
   // Guild Logs Hub Collapse Trigger
   const guildHeader = document.getElementById("guildHubHeader");
   if (guildHeader) {
@@ -7734,6 +7738,214 @@ async function submitCoachQuery(queryText) {
     removeCoachTypingIndicator();
     console.error("Failed to query Raid Coach:", error);
     appendCoachBubble("coach", `**Raid Coach System Error:** I couldn't reach the AI analysis servers to review this pull: ${error.message}. Please check your connection or GEMINI_API_KEY settings.`);
+  }
+}
+
+function initAdminDashboard() {
+  // Hide all standard cards
+  document.getElementById("analyzeCard").classList.add("hidden");
+  document.getElementById("statusCard").classList.add("hidden");
+  
+  const dashboard = document.getElementById("guildDashboardCard");
+  if (dashboard) dashboard.classList.add("hidden");
+  
+  const resultCard = document.getElementById("resultCard");
+  if (resultCard) resultCard.classList.add("hidden");
+  
+  const bossTilesCard = document.getElementById("bossTilesCard");
+  if (bossTilesCard) bossTilesCard.classList.add("hidden");
+  
+  const detailsCard = document.getElementById("detailsCard");
+  if (detailsCard) detailsCard.classList.add("hidden");
+
+  const builderCard = document.getElementById("builderCard");
+  if (builderCard) builderCard.classList.add("hidden");
+
+  // Show admin card
+  const adminCard = document.getElementById("adminCard");
+  if (adminCard) {
+    adminCard.classList.remove("hidden");
+    adminCard.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Update address bar
+  if (window.location.pathname !== "/admin") {
+    window.history.pushState({}, "", "/admin");
+  }
+
+  // Bind close buttons
+  const closeBtn = document.getElementById("adminCloseButton");
+  if (closeBtn) {
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    document.getElementById("adminCloseButton").addEventListener("click", () => {
+      window.history.pushState({}, "", "/");
+      document.getElementById("adminCard").classList.add("hidden");
+      document.getElementById("analyzeCard").classList.remove("hidden");
+      document.getElementById("statusCard").classList.remove("hidden");
+      const d = document.getElementById("guildDashboardCard");
+      if (d && isPatreonLinked) d.classList.remove("hidden");
+    });
+  }
+
+  fetchAdminStats();
+}
+
+async function fetchAdminStats() {
+  const adminCard = document.getElementById("adminCard");
+  try {
+    const response = await fetch("/api/admin/stats");
+    
+    if (response.status === 401 || response.status === 403) {
+      // Access Denied! Render beautiful error overlay
+      adminCard.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; background: rgba(15, 23, 42, 0.4); border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.2); backdrop-filter: blur(20px);">
+          <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+          <h2 style="color: #f87171; font-size: 24px; font-weight: 800; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Administrative Access Restricted</h2>
+          <p style="color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto 24px; line-height: 1.6;">
+            This portal is reserved strictly for authenticated administrators. Your Warcraft Logs account lacks the required privileges to view these statistics.
+          </p>
+          <div style="font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+            Redirecting you back to safety in <span id="adminRedirectTimer">3</span> seconds...
+          </div>
+        </div>
+      `;
+      
+      let seconds = 3;
+      const interval = setInterval(() => {
+        seconds--;
+        const timerEl = document.getElementById("adminRedirectTimer");
+        if (timerEl) timerEl.textContent = seconds;
+        if (seconds <= 0) {
+          clearInterval(interval);
+          window.history.pushState({}, "", "/");
+          adminCard.classList.add("hidden");
+          document.getElementById("analyzeCard").classList.remove("hidden");
+          document.getElementById("statusCard").classList.remove("hidden");
+          // Re-load to home page state
+          location.href = "/";
+        }
+      }, 1000);
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Populate user stats
+    document.getElementById("adminMetricTotalUsers").textContent = data.user_stats.total_users;
+    document.getElementById("adminMetricPatreonAdoption").textContent = 
+      `${data.user_stats.patreon_members} Patreon Members (${data.user_stats.patreon_adoption_ratio}%)`;
+    
+    document.getElementById("adminMetricTotalReports").textContent = data.user_stats.total_reports;
+    document.getElementById("adminMetricMostActiveUser").textContent = 
+      `Most Active: ${data.user_stats.most_active_user} (${data.user_stats.most_active_user_jobs} jobs)`;
+
+    // Populate cooldown stats
+    document.getElementById("adminMetricTotalSpells").textContent = data.cooldown_stats.total_spells;
+    document.getElementById("adminMetricClassesSpecs").textContent = 
+      `${data.cooldown_stats.total_classes} Classes • ${data.cooldown_stats.total_specs} Specs`;
+    
+    document.getElementById("adminCDClasses").textContent = `${data.cooldown_stats.total_classes} classes`;
+    document.getElementById("adminCDSpecs").textContent = `${data.cooldown_stats.total_specs} specs`;
+    document.getElementById("adminCDSpells").textContent = `${data.cooldown_stats.total_spells} spells`;
+
+    // Populate encounter stats
+    document.getElementById("adminMetricTotalMechanics").textContent = data.encounter_stats.total_mechanics;
+    document.getElementById("adminMetricZonesBosses").textContent = 
+      `${data.encounter_stats.total_raid_zones} Raids • ${data.encounter_stats.total_bosses} Bosses`;
+
+    // Render Raid Zones List
+    const zoneListEl = document.getElementById("adminRaidZonesList");
+    zoneListEl.innerHTML = "";
+    data.encounter_stats.raid_zones.forEach(zone => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
+      row.style.background = "rgba(255,255,255,0.02)";
+      row.style.padding = "10px 14px";
+      row.style.border = "1px solid var(--border)";
+      row.style.borderRadius = "8px";
+      
+      row.innerHTML = `
+        <div>
+          <div style="font-weight: 700; color: #fbbf24; font-size: 14px;">${zone.name}</div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">${zone.mechanics} avoidable mechanics loaded</div>
+        </div>
+        <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 700; color: #fbbf24;">
+          ${zone.bosses} Bosses
+        </div>
+      `;
+      zoneListEl.appendChild(row);
+    });
+
+    // Populate queue counts
+    document.getElementById("adminQueueQueued").textContent = data.queue_stats.queued;
+    document.getElementById("adminQueueRunning").textContent = data.queue_stats.running;
+    document.getElementById("adminQueueCompleted").textContent = data.queue_stats.completed;
+    document.getElementById("adminQueueFailed").textContent = data.queue_stats.failed;
+
+    // Render Recent Jobs List
+    const recentListEl = document.getElementById("adminRecentJobsList");
+    recentListEl.innerHTML = "";
+    if (!data.queue_stats.recent_jobs || data.queue_stats.recent_jobs.length === 0) {
+      recentListEl.innerHTML = `<div style="color: var(--muted); font-size: 13px; font-style: italic;">No reports analyzed recently.</div>`;
+    } else {
+      data.queue_stats.recent_jobs.forEach(job => {
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.justifyContent = "space-between";
+        row.style.alignItems = "center";
+        row.style.background = "rgba(255,255,255,0.015)";
+        row.style.padding = "8px 12px";
+        row.style.border = "1px solid var(--border)";
+        row.style.borderRadius = "var(--radius)";
+        row.style.fontSize = "13px";
+
+        const statusColorMap = {
+          queued: { bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)", text: "#818cf8" },
+          running: { bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", text: "#fbbf24" },
+          completed: { bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", text: "#34d399" },
+          failed: { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.3)", text: "#f87171" }
+        };
+        const badgeColor = statusColorMap[job.status] || statusColorMap.queued;
+        const dateStr = formatLogTime(job.created_at);
+
+        row.innerHTML = `
+          <div>
+            <span style="font-weight: 700; color: var(--foreground);">${job.username}</span>
+            <span style="color: var(--muted); margin: 0 4px;">•</span>
+            <a href="https://www.warcraftlogs.com/reports/${job.report_code}" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">${job.report_code}</a>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; color: var(--muted);">${dateStr}</span>
+            <span style="background: ${badgeColor.bg}; border: 1px solid ${badgeColor.border}; color: ${badgeColor.text}; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+              ${job.status}
+            </span>
+          </div>
+        `;
+        recentListEl.appendChild(row);
+      });
+    }
+
+    // Populate system health
+    document.getElementById("adminHealthRedis").textContent = data.system_health.redis_status;
+    document.getElementById("adminHealthRedisInfo").textContent = data.system_health.redis_info;
+    document.getElementById("adminHealthDBSize").textContent = `${data.system_health.db_size_mb} MB`;
+
+  } catch (error) {
+    console.error("Failed to load admin stats:", error);
+    adminCard.innerHTML = `
+      <div style="text-align: center; padding: 40px; border: 1px solid rgba(239,68,68,0.2); background: rgba(239,68,68,0.03); border-radius: var(--radius);">
+        <h3 style="color: #ef4444; margin-bottom: 8px;">Failed to Load Admin Panel</h3>
+        <p style="color: var(--muted); font-size: 13.5px;">There was an error communicating with the backend server: ${error.message}</p>
+        <button onclick="fetchAdminStats()" class="post-btn" style="margin-top: 12px; background: var(--primary);">Retry Connection</button>
+      </div>
+    `;
   }
 }
 
