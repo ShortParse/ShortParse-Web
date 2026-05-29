@@ -7890,6 +7890,82 @@ function initAdminDashboard() {
     });
   }
 
+  const btnUpdateEncounters = document.getElementById("btnActionUpdateEncounters");
+  if (btnUpdateEncounters) {
+    btnUpdateEncounters.replaceWith(btnUpdateEncounters.cloneNode(true));
+    document.getElementById("btnActionUpdateEncounters").addEventListener("click", async () => {
+      const inputZone = document.getElementById("inputZoneId");
+      const zoneId = parseInt(inputZone ? inputZone.value : "46");
+      if (!zoneId || isNaN(zoneId)) {
+        alert("⚠️ Please enter a valid WCL Zone ID first.");
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to AI-compile all encounters for Zone ID ${zoneId}? This compiles logs from WCL, pulls official Blizzard spell descriptions, and triggers the Gemini code writer.`)) return;
+      
+      const btn = document.getElementById("btnActionUpdateEncounters");
+      const originalText = btn.innerHTML;
+      btn.innerHTML = "⏳ AI Auto-Compiling...";
+      btn.disabled = true;
+      btn.style.opacity = "0.7";
+      
+      try {
+        const res = await fetch("/api/admin/actions/update-encounters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ zone_id: zoneId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Raid Encounters Compiled Successfully!\n\nRaid: ${data.raid_name}\n\nSummary:\n${data.message}`);
+          fetchAdminStats(); // Refresh stats registry counts!
+        } else {
+          alert(`❌ Encounters Compile Failed: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`❌ Network/Server Error: ${err.message}`);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      }
+    });
+  }
+
+  const btnUpdateCooldowns = document.getElementById("btnActionUpdateCooldowns");
+  if (btnUpdateCooldowns) {
+    btnUpdateCooldowns.replaceWith(btnUpdateCooldowns.cloneNode(true));
+    document.getElementById("btnActionUpdateCooldowns").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to run the dynamic player cooldowns discovery audit? This scans top WCL rankings, runs gap telemetry analysis, fetches spell details from Battle.net, and drafts new spec configs.")) return;
+      
+      const btn = document.getElementById("btnActionUpdateCooldowns");
+      const originalText = btn.innerHTML;
+      btn.innerHTML = "⏳ Auditing Cooldowns...";
+      btn.disabled = true;
+      btn.style.opacity = "0.7";
+      
+      try {
+        const res = await fetch("/api/admin/actions/update-cooldowns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Cooldowns Discovery Complete!\n\nSummary:\n${data.message}`);
+          fetchAdminStats(); // Refresh stats
+        } else {
+          alert(`❌ Cooldowns Audit Failed: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`❌ Network/Server Error: ${err.message}`);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = "1";
+      }
+    });
+  }
+
   fetchAdminStats();
 }
 

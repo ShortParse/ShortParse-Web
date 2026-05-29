@@ -767,18 +767,21 @@
               </div>
             </div>
 
-            <!-- Column 3: Functions (Placeholders) -->
+            <!-- Column 3: Functions (Active AI Compilation) -->
             <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
               <div>
-                <h4 style="margin: 0 0 6px 0; font-size: 14.5px; color: var(--foreground);">Data Functions</h4>
-                <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.4;">Dynamic audits and definitions synchronizations (Blizzard API).</p>
+                <h4 style="margin: 0 0 6px 0; font-size: 14.5px; color: var(--foreground);">Data Functions (AI Auto-Compile)</h4>
+                <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.4;">Dynamic audits and AI encounter compilation utilizing the Blizzard Spell and Gemini APIs.</p>
               </div>
               <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-                <button id="btnActionUpdateEncounters" class="post-btn" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted); font-weight: 700; font-size: 12.5px; padding: 10px; cursor: not-allowed; border-radius: var(--radius); width: 100%;" disabled>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                  <input type="number" id="inputZoneId" value="46" placeholder="Zone ID (e.g. 46)" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: var(--radius); font-size: 13px; flex: 1; min-width: 0; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#ec4899'" onblur="this.style.borderColor='var(--border)'" />
+                </div>
+                <button id="btnActionUpdateEncounters" class="post-btn" style="background: #ec4899; font-weight: 700; font-size: 12.5px; padding: 10px; cursor: pointer; border-radius: var(--radius); width: 100%; color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s;">
                   ⚙️ Update Encounters
                 </button>
-                <button id="btnActionUpdateCooldowns" class="post-btn" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted); font-weight: 700; font-size: 12.5px; padding: 10px; cursor: not-allowed; border-radius: var(--radius); width: 100%;" disabled>
-                  ⚙️ Update Cooldowns
+                <button id="btnActionUpdateCooldowns" class="post-btn" style="background: #fbbf24; font-weight: 700; font-size: 12.5px; padding: 10px; cursor: pointer; border-radius: var(--radius); width: 100%; color: #1e293b; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s;">
+                  🔮 Update Cooldowns
                 </button>
               </div>
             </div>
