@@ -28,6 +28,20 @@
     </section>
     <!-- -->
 
+    <!-- Global Announcement Banner -->
+    <section id="globalAnnouncementBanner" class="announcement-banner hidden">
+      <div class="announcement-content">
+        <span class="announcement-icon">📢</span>
+        <span id="announcementMessageText" class="announcement-text"></span>
+      </div>
+      <button id="announcementDismissButton" class="announcement-close-btn" type="button" aria-label="Dismiss announcement">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </section>
+
     <header class="hero app-header">
       <div>
         <p class="eyebrow">Warcraft Logs Analysis</p>
@@ -638,6 +652,22 @@
           <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #f472b6; margin-bottom: 6px;">Mechanics Tracked</div>
           <div id="adminMetricTotalMechanics" style="font-size: 32px; font-weight: 800; color: #f8fafc; font-family: 'Outfit', sans-serif;">0</div>
           <div id="adminMetricZonesBosses" style="font-size: 12.5px; color: var(--muted); margin-top: 6px;">0 Raids • 0 Bosses</div>
+        </div>
+      </div>
+
+      <!-- Announcement Banner Control Card -->
+      <div class="sub-card" style="background: rgba(99, 102, 241, 0.02); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius); padding: 24px; box-sizing: border-box; width: 100%; margin-top: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 6px; margin-top: 0; display: flex; align-items: center; gap: 8px; color: #818cf8;">
+          📢 Public Announcement Banner Control
+        </h3>
+        <p style="color: var(--muted); font-size: 12.5px; margin: 0 0 16px 0; line-height: 1.4;">
+          Set a global notification message to display at the top of the homepage. Leave it blank or empty to hide the banner completely. Updating the message will immediately force the banner to reappear for all users (resetting any 24-hour dismissals).
+        </p>
+        <div style="display: flex; gap: 14px; align-items: stretch; width: 100%;">
+          <input type="text" id="inputBannerMessage" placeholder="Enter banner message (e.g. We know there's a bug with Mistweaver Monks...)" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 12px 16px; border-radius: var(--radius); font-size: 14px; flex: 1; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#818cf8'" onblur="this.style.borderColor='var(--border)'" />
+          <button id="btnSaveBannerMessage" class="post-btn" style="background: #6366f1; font-weight: 700; font-size: 13px; padding: 0 24px; cursor: pointer; border-radius: var(--radius); color: white; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s, background-color 0.2s;">
+            💾 Save Notification
+          </button>
         </div>
       </div>
 

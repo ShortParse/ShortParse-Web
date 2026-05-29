@@ -199,6 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleGuildHub(!isCurrentlyCollapsed);
     });
   }
+
+  checkAndDisplayBanner();
 });
 
 function getLogIcon(level) {
@@ -7966,6 +7968,42 @@ function initAdminDashboard() {
     });
   }
 
+  // Bind public announcement banner save button
+  const btnSaveBanner = document.getElementById("btnSaveBannerMessage");
+  if (btnSaveBanner) {
+    btnSaveBanner.replaceWith(btnSaveBanner.cloneNode(true));
+    document.getElementById("btnSaveBannerMessage").addEventListener("click", async () => {
+      const msg = document.getElementById("inputBannerMessage").value;
+      const btn = document.getElementById("btnSaveBannerMessage");
+      const originalText = btn.textContent;
+      btn.textContent = "⏳ Saving...";
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/banner", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Announcement banner updated successfully!");
+          if (data.banner_message !== undefined) {
+            document.getElementById("inputBannerMessage").value = data.banner_message || "";
+          }
+          checkAndDisplayBanner();
+        } else {
+          alert(`❌ Failed to update banner: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`❌ Network/Server Error: ${err.message}`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  }
+
+  fetchBannerAdmin();
   fetchAdminStats();
 }
 
@@ -8125,6 +8163,71 @@ async function fetchAdminStats() {
         <button onclick="fetchAdminStats()" class="post-btn" style="margin-top: 12px; background: var(--primary);">Retry Connection</button>
       </div>
     `;
+  }
+}
+
+async function checkAndDisplayBanner() {
+  const banner = document.getElementById("globalAnnouncementBanner");
+  const textEl = document.getElementById("announcementMessageText");
+  const dismissBtn = document.getElementById("announcementDismissButton");
+  
+  if (!banner || !textEl) return;
+  
+  try {
+    const res = await fetch("/api/banner");
+    if (!res.ok) {
+      banner.classList.add("hidden");
+      return;
+    }
+    
+    const data = await res.json();
+    const message = data.message;
+    const updatedAt = data.updated_at;
+    
+    if (!message || !message.trim()) {
+      banner.classList.add("hidden");
+      return;
+    }
+    
+    const now = Date.now();
+    const dismissedTime = parseInt(localStorage.getItem("dismissed_banner_time") || "0", 10);
+    const dismissedUpdatedAt = localStorage.getItem("dismissed_banner_updated_at");
+    
+    if (dismissedUpdatedAt === updatedAt && (now - dismissedTime) < 24 * 60 * 60 * 1000) {
+      banner.classList.add("hidden");
+      return;
+    }
+    
+    textEl.textContent = message;
+    banner.classList.remove("hidden");
+    
+    if (dismissBtn) {
+      dismissBtn.replaceWith(dismissBtn.cloneNode(true));
+      const newDismissBtn = document.getElementById("announcementDismissButton");
+      newDismissBtn.addEventListener("click", () => {
+        banner.classList.add("hidden");
+        localStorage.setItem("dismissed_banner_time", Date.now().toString());
+        localStorage.setItem("dismissed_banner_updated_at", updatedAt);
+      });
+    }
+    
+  } catch (err) {
+    console.error("Failed to check banner notification:", err);
+    banner.classList.add("hidden");
+  }
+}
+
+async function fetchBannerAdmin() {
+  const inputBanner = document.getElementById("inputBannerMessage");
+  if (!inputBanner) return;
+  try {
+    const res = await fetch("/api/banner");
+    if (res.ok) {
+      const data = await res.json();
+      inputBanner.value = data.message || "";
+    }
+  } catch (err) {
+    console.error("Failed to load current banner message:", err);
   }
 }
 

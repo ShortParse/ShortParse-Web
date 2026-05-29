@@ -1177,6 +1177,113 @@ body {
 }
 
 /* =========================
+   Announcement Banner
+========================= */
+
+.announcement-banner {
+	background: linear-gradient(
+		135deg,
+		rgba(99, 102, 241, 0.15),
+		rgba(139, 92, 246, 0.1)
+	);
+	border: 1px solid rgba(99, 102, 241, 0.3);
+	border-radius: 16px;
+	padding: 16px 24px;
+	margin-bottom: 20px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+	backdrop-filter: blur(12px);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 16px;
+	animation: slideDownAnnouncement 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s ease;
+}
+
+.announcement-banner::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	background: linear-gradient(180deg, #6366f1, #8b5cf6);
+}
+
+.announcement-content {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex: 1;
+}
+
+.announcement-icon {
+	font-size: 20px;
+	animation: wiggleAnnouncement 2.5s infinite;
+	display: inline-block;
+	flex-shrink: 0;
+}
+
+.announcement-text {
+	color: #e2e8f0;
+	font-size: 14.5px;
+	line-height: 1.5;
+	font-family: 'Inter', sans-serif;
+	font-weight: 500;
+}
+
+.announcement-close-btn {
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	color: var(--muted);
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+	padding: 0;
+}
+
+.announcement-close-btn:hover {
+	background: rgba(239, 68, 68, 0.1);
+	border-color: rgba(239, 68, 68, 0.25);
+	color: #ef4444;
+	transform: rotate(90deg);
+}
+
+.announcement-close-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+@keyframes slideDownAnnouncement {
+	from {
+		opacity: 0;
+		transform: translateY(-16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes wiggleAnnouncement {
+	0%, 100% { transform: rotate(0deg); }
+	15% { transform: rotate(-10deg); }
+	30% { transform: rotate(10deg); }
+	45% { transform: rotate(-4deg); }
+	60% { transform: rotate(4deg); }
+	75% { transform: rotate(-2deg); }
+	90% { transform: rotate(2deg); }
+}
+
+/* =========================
    User Authentication
    ========================= */
 .auth-container {
