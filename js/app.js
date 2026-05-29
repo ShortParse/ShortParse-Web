@@ -3775,9 +3775,15 @@ async function checkUserSession() {
       document.getElementById("logoutButton").addEventListener("click", logoutUser);
       
       const primaryNavbar = document.getElementById("primaryNavbar");
-      if (primaryNavbar) primaryNavbar.classList.remove("hidden");
+      const isSpecialPage = window.location.pathname === "/admin" || window.location.pathname === "/builder";
       
-      loadGuildDashboard();
+      if (primaryNavbar && !isSpecialPage) {
+        primaryNavbar.classList.remove("hidden");
+      }
+      
+      if (!isSpecialPage) {
+        loadGuildDashboard();
+      }
     } else {
       renderLoginButton();
       hideGuildDashboard();
@@ -7746,6 +7752,9 @@ function initAdminDashboard() {
   document.getElementById("analyzeCard").classList.add("hidden");
   document.getElementById("statusCard").classList.add("hidden");
   
+  const primaryNavbar = document.getElementById("primaryNavbar");
+  if (primaryNavbar) primaryNavbar.classList.add("hidden");
+
   const dashboard = document.getElementById("guildDashboardCard");
   if (dashboard) dashboard.classList.add("hidden");
   
