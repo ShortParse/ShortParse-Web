@@ -7796,6 +7796,96 @@ function initAdminDashboard() {
     });
   }
 
+  // Bind administrative action console buttons
+  const btnWebPull = document.getElementById("btnActionWebPull");
+  if (btnWebPull) {
+    btnWebPull.replaceWith(btnWebPull.cloneNode(true));
+    document.getElementById("btnActionWebPull").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to pull the latest changes for the Website (Frontend) repository?")) return;
+      const btn = document.getElementById("btnActionWebPull");
+      const originalText = btn.textContent;
+      btn.textContent = "⏳ Updating Website...";
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/actions/git-pull", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ repo: "web" })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Website Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+        } else {
+          alert(`❌ Web Git Pull Failed: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`❌ Network/Server Error: ${err.message}`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  }
+
+  const btnAPIPull = document.getElementById("btnActionAPIPull");
+  if (btnAPIPull) {
+    btnAPIPull.replaceWith(btnAPIPull.cloneNode(true));
+    document.getElementById("btnActionAPIPull").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to pull the latest changes for the API (Backend) repository?")) return;
+      const btn = document.getElementById("btnActionAPIPull");
+      const originalText = btn.textContent;
+      btn.textContent = "⏳ Updating API...";
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/actions/git-pull", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ repo: "backend" })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ API Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+        } else {
+          alert(`❌ API Git Pull Failed: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`❌ Network/Server Error: ${err.message}`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  }
+
+  const btnAPIRestart = document.getElementById("btnActionAPIRestart");
+  if (btnAPIRestart) {
+    btnAPIRestart.replaceWith(btnAPIRestart.cloneNode(true));
+    document.getElementById("btnActionAPIRestart").addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to restart the API service? The site will be temporarily offline for a few seconds.")) return;
+      const btn = document.getElementById("btnActionAPIRestart");
+      const originalText = btn.textContent;
+      btn.textContent = "⏳ Restarting API...";
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/admin/actions/restart-api", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ API Restart Dispatched!\n\n${data.message}`);
+        } else {
+          alert(`❌ API Restart Failed: ${data.detail || "Unknown Error"}`);
+        }
+      } catch (err) {
+        alert(`ℹ️ Restart Dispatched. The server is reloading. Please refresh the page in 5-10 seconds.`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  }
+
   fetchAdminStats();
 }
 

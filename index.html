@@ -733,6 +733,58 @@
           </div>
         </div>
 
+        <!-- Administrative Action Console -->
+        <div class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-top: 24px; width: 100%; box-sizing: border-box;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 18px; margin-top: 0; display: flex; align-items: center; gap: 8px; color: #818cf8;">
+            ⚡ System Control Console
+          </h3>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <!-- Column 1: Website -->
+            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
+              <div>
+                <h4 style="margin: 0 0 6px 0; font-size: 14.5px; color: var(--foreground);">Website (Frontend)</h4>
+                <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.4;">Manage static HTML5 canvas, styles, and client routing scripts.</p>
+              </div>
+              <button id="btnActionWebPull" class="post-btn" style="background: #6366f1; font-weight: 700; font-size: 12.5px; width: 100%; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: var(--radius); color: white;">
+                🔄 Update Website
+              </button>
+            </div>
+
+            <!-- Column 2: API Backend -->
+            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
+              <div>
+                <h4 style="margin: 0 0 6px 0; font-size: 14.5px; color: var(--foreground);">API (Backend)</h4>
+                <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.4;">Manage Python server engine, endpoints, and job runner configurations.</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <button id="btnActionAPIPull" class="post-btn" style="background: #34d399; font-weight: 700; font-size: 12.5px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: var(--radius); color: white; width: 100%;">
+                  🔄 Update API
+                </button>
+                <button id="btnActionAPIRestart" class="post-btn" style="background: #ef4444; font-weight: 700; font-size: 12.5px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; border-radius: var(--radius); color: white; width: 100%;">
+                  ⟳ Restart API Service
+                </button>
+              </div>
+            </div>
+
+            <!-- Column 3: Functions (Placeholders) -->
+            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box;">
+              <div>
+                <h4 style="margin: 0 0 6px 0; font-size: 14.5px; color: var(--foreground);">Data Functions</h4>
+                <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.4;">Dynamic audits and definitions synchronizations (Blizzard API).</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <button id="btnActionUpdateEncounters" class="post-btn" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted); font-weight: 700; font-size: 12.5px; padding: 10px; cursor: not-allowed; border-radius: var(--radius); width: 100%;" disabled>
+                  ⚙️ Update Encounters
+                </button>
+                <button id="btnActionUpdateCooldowns" class="post-btn" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted); font-weight: 700; font-size: 12.5px; padding: 10px; cursor: not-allowed; border-radius: var(--radius); width: 100%;" disabled>
+                  ⚙️ Update Cooldowns
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
