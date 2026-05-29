@@ -7814,7 +7814,11 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Website Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+          if (data.status === "skipped") {
+            alert(`ℹ️ Update Skipped:\n\n${data.message}`);
+          } else {
+            alert(`✅ Website Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+          }
         } else {
           alert(`❌ Web Git Pull Failed: ${data.detail || "Unknown Error"}`);
         }
