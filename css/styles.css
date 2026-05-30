@@ -27,7 +27,7 @@
 
 /* DEBUG BADGE: Confirm CSS is pulled and loaded */
 body::before {
-	content: "DEBUG: CSS v1.0.5 Loaded Successfully!";
+	content: "DEBUG: CSS v1.0.6 Loaded Successfully!";
 	position: fixed;
 	bottom: 12px;
 	left: 12px;
@@ -43,9 +43,11 @@ body::before {
 }
 
 /* Custom Scrollbars */
-* {
-	scrollbar-width: thin;
-	scrollbar-color: rgba(255, 255, 255, 0.08) rgba(0, 0, 0, 0.15);
+@supports not selector(::-webkit-scrollbar) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.08) rgba(0, 0, 0, 0.15);
+	}
 }
 
 ::-webkit-scrollbar {
@@ -3745,8 +3747,6 @@ body {
 	overflow-x: auto;
 	padding: 4px 4px 12px 4px;
 	margin-bottom: 24px;
-	scrollbar-width: thin;
-	scrollbar-color: var(--border) transparent;
 }
 
 .roster-nav-bar::-webkit-scrollbar {
