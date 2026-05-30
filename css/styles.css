@@ -5554,6 +5554,391 @@ body {
 	padding: 8px !important;
 }
 
+/* ==========================================================================
+   Phase 1 Redesign: 3-Hub Sub-Tabs & Persistent Sidecar Dock
+   ========================================================================== */
+
+/* Sub-Tab Bar Container */
+.sub-tab-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: -6px;
+	margin-bottom: 22px;
+	padding-bottom: 12px;
+	border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+/* Sub-Tab Buttons */
+.sub-tab-btn {
+	background: rgba(255, 255, 255, 0.015);
+	border: 1px solid rgba(255, 255, 255, 0.04);
+	color: var(--muted);
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.sub-tab-btn:hover {
+	color: var(--text);
+	background: rgba(255, 255, 255, 0.04);
+	border-color: rgba(255, 255, 255, 0.1);
+	transform: translateY(-0.5px);
+}
+
+.sub-tab-btn.active {
+	background: rgba(56, 189, 248, 0.08);
+	color: var(--blue);
+	border-color: rgba(56, 189, 248, 0.3);
+	box-shadow: 0 0 12px rgba(56, 189, 248, 0.05);
+}
+
+/* Three-column wide layout support for persistent AI sidebar */
+@media (min-width: 1450px) {
+	.container {
+		max-width: 1760px !important;
+	}
+
+	/* Modify the main dashboard layout to a 3-column split grid when AI sidebar is active */
+	.report-dashboard-layout.ai-chat-open {
+		display: grid;
+		grid-template-columns: 370px 1fr 400px !important;
+		gap: 22px !important;
+		align-items: start;
+	}
+
+	/* Reset fixed drawer styling to standard docked panel layout */
+	.report-dashboard-layout.ai-chat-open #raidCoachDrawer {
+		position: sticky !important;
+		top: 24px !important;
+		left: auto !important;
+		right: auto !important;
+		bottom: auto !important;
+		height: 800px !important; /* Fits active workspace card height perfectly */
+		width: 400px !important;
+		z-index: 99 !important;
+		display: flex !important;
+		justify-content: stretch !important;
+		visibility: visible !important;
+	}
+
+	.report-dashboard-layout.ai-chat-open #raidCoachDrawer .coach-drawer-overlay {
+		display: none !important;
+	}
+
+	.report-dashboard-layout.ai-chat-open #raidCoachDrawer .coach-drawer-content {
+		position: relative !important;
+		width: 100% !important;
+		max-width: none !important;
+		height: 100% !important;
+		transform: none !important;
+		border: 1px solid var(--border) !important;
+		border-radius: var(--radius) !important;
+		background: var(--panel) !important;
+		box-shadow: var(--shadow) !important;
+		backdrop-filter: blur(8px) !important;
+	}
+
+	/* Adjust footer alignment when 3-column layout is active */
+	.report-dashboard-layout.ai-chat-open ~ .site-footer {
+		max-width: 1760px;
+	}
+}
+
+/* ==========================================================================
+   Phase 2 Redesign: Unified Player Lounge Layout (Hub 2)
+   ========================================================================== */
+
+.player-lounge-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 20px;
+	margin-top: 14px;
+	align-items: start;
+}
+
+@media (min-width: 900px) {
+	.player-lounge-grid {
+		grid-template-columns: 280px 1fr;
+		gap: 24px;
+	}
+}
+
+/* Roster Sidebar Pane */
+.roster-sidebar {
+	background: rgba(255, 255, 255, 0.01);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 16px;
+	max-height: 800px;
+	overflow-y: auto;
+	box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.2);
+}
+
+.roster-role-group {
+	margin-bottom: 20px;
+}
+
+.roster-role-group:last-child {
+	margin-bottom: 0;
+}
+
+.roster-role-header {
+	font-size: 11px;
+	font-weight: 800;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	margin-bottom: 10px;
+	padding-left: 6px;
+	border-left: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Roster Item Row Button */
+.roster-item-btn {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 12px;
+	background: rgba(255, 255, 255, 0.015);
+	border: 1px solid rgba(255, 255, 255, 0.03);
+	border-radius: 10px;
+	color: var(--text);
+	font-size: 13.5px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-bottom: 6px;
+	transition: all 0.2s ease;
+	text-align: left;
+}
+
+.roster-item-btn:hover {
+	background: rgba(255, 255, 255, 0.04);
+	border-color: rgba(255, 255, 255, 0.08);
+	transform: translateX(2px);
+}
+
+.roster-item-btn.active {
+	background: rgba(56, 189, 248, 0.06);
+	border-color: rgba(56, 189, 248, 0.35);
+	box-shadow: 0 0 14px rgba(56, 189, 248, 0.06);
+}
+
+.roster-item-name-col {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.roster-item-spec-icon {
+	width: 18px;
+	height: 18px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.roster-item-grade-badge {
+	font-size: 11px;
+	font-weight: 800;
+	padding: 2px 6px;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Diagnostic Console Pane */
+.diagnostic-console-pane {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	min-width: 0; /* Prevents text overflow */
+}
+
+/* Premium Diag Hero Banner */
+.diag-hero-banner {
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.005) 100%);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+	box-shadow: var(--shadow);
+}
+
+.diag-hero-profile {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.diag-hero-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: 12px;
+	border: 2px solid rgba(255, 255, 255, 0.15);
+	box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+.diag-hero-name {
+	font-size: 24px;
+	font-weight: 800;
+	font-family: 'Outfit', sans-serif;
+	margin: 0 0 4px 0;
+	line-height: 1.1;
+}
+
+.diag-hero-meta {
+	font-size: 12.5px;
+	color: var(--muted);
+	font-weight: 600;
+}
+
+/* Integrated Section Grid (Recommendations | Timeline) */
+.diag-section-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 20px;
+}
+
+@media (min-width: 1200px) {
+	.diag-section-grid {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.diag-section-card {
+	background: rgba(255, 255, 255, 0.01);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.diag-section-title {
+	font-size: 16px;
+	font-weight: 800;
+	font-family: 'Outfit', sans-serif;
+	margin: 0;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	padding-bottom: 8px;
+}
+
+/* Compact Inline Death Timeline Card override */
+.inline-death-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	max-height: 450px;
+	overflow-y: auto;
+	padding-right: 6px;
+}
+
+.inline-death-select-bar {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 8px;
+	border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+	padding-bottom: 10px;
+}
+
+.inline-death-select-btn {
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	color: var(--muted);
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 11.5px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.inline-death-select-btn:hover {
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--text);
+}
+
+.inline-death-select-btn.active {
+	background: rgba(239, 68, 68, 0.1);
+	border-color: rgba(239, 68, 68, 0.4);
+	color: #f87171;
+	box-shadow: 0 0 10px rgba(239, 68, 68, 0.06);
+}
+
+/* ==========================================================================
+   Phase 3 Redesign: Vector SVG Charts Styles (Matrix & Trends)
+   ========================================================================== */
+
+.chart-grid-line {
+	stroke: rgba(255, 255, 255, 0.06);
+	stroke-width: 1;
+	stroke-dasharray: 4 4;
+}
+
+.chart-axis-line {
+	stroke: rgba(255, 255, 255, 0.15);
+	stroke-width: 1.5;
+}
+
+.chart-tick-text {
+	fill: var(--muted);
+	font-size: 10px;
+	font-family: 'Inter', sans-serif;
+	font-weight: 500;
+}
+
+.chart-label-text {
+	fill: var(--muted);
+	font-size: 11px;
+	font-family: 'Outfit', sans-serif;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.chart-legend-text {
+	font-size: 11.5px;
+	font-family: 'Outfit', sans-serif;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.chart-node-circle {
+	cursor: pointer;
+	transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.25s, filter 0.25s;
+}
+
+.chart-node-circle:hover {
+	r: 8.5px !important;
+	stroke-width: 3px !important;
+	filter: drop-shadow(0 0 8px currentColor);
+}
+
+.chart-trend-glow-line {
+	fill: none;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	transition: stroke-width 0.3s;
+}
+
+.chart-trend-glow-line:hover {
+	stroke-width: 4px;
+}
+
 
 
 

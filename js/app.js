@@ -4,6 +4,14 @@ let currentReportData = null;
 let selectedAnalysisIndex = 0;
 let activePullIndex = "all";
 let selectedTab = "scorecard";
+let currentHub = "hubRaid";
+const selectedSubTab = {
+  hubRaid: "scorecard",
+  hubPlayer: "playerMetrics",
+  hubStrategy: "cooldowns"
+};
+let loungeSelectedPlayer = null;
+let loungeSelectedDeathTimestamp = null;
 let currentShareUrl = "";
 let currentUserWebhook = "";
 let currentUserAutoPost = false;
@@ -55,7 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".tab-button").forEach((button) => {
     button.addEventListener("click", () => {
-      selectedTab = button.dataset.tab;
+      const tab = button.dataset.tab;
+      if (tab === "hubRaid" || tab === "hubPlayer" || tab === "hubStrategy") {
+        currentHub = tab;
+        selectedTab = selectedSubTab[currentHub];
+      } else {
+        selectedTab = tab;
+      }
       renderActiveTab();
       updateAddressBar();
     });
@@ -958,6 +972,55 @@ function renderSelectedAnalysis(index) {
   document.getElementById("detailsCard").classList.remove("hidden");
 }
 
+function getHubForTab(tab) {
+  if (["scorecard", "progression", "issues", "raw"].includes(tab)) return "hubRaid";
+  if (["playerMetrics", "benchmarks", "timeline"].includes(tab)) return "hubPlayer";
+  if (["cooldowns", "calibrator", "mechanics"].includes(tab)) return "hubStrategy";
+  return "hubRaid";
+}
+
+function renderSubTabBar() {
+  const subTabBar = document.getElementById("subTabBar");
+  if (!subTabBar) return;
+
+  let subTabs = [];
+  if (currentHub === "hubRaid") {
+    subTabs = [
+      { id: "scorecard", label: "📊 Overview & Scorecard" },
+      { id: "progression", label: "📈 Wipe Progression" },
+      { id: "issues", label: "⚠️ Top Issues" },
+      { id: "raw", label: "🔍 Raw JSON" }
+    ];
+  } else if (currentHub === "hubPlayer") {
+    subTabs = [
+      { id: "playerMetrics", label: "👤 Player Metrics" },
+      { id: "benchmarks", label: "🎯 Benchmarks" },
+      { id: "timeline", label: "☠ Avoidable Death Timeline" }
+    ];
+  } else if (currentHub === "hubStrategy") {
+    subTabs = [
+      { id: "cooldowns", label: "🔮 Cooldown Visualizer" },
+      { id: "calibrator", label: "🛡️ Defensive Calibrator" },
+      { id: "mechanics", label: "⚙️ Mechanics" }
+    ];
+  }
+
+  subTabBar.innerHTML = subTabs.map(tab => `
+    <button class="sub-tab-btn ${tab.id === selectedTab ? "active" : ""}" data-tab="${tab.id}" type="button">
+      ${tab.label}
+    </button>
+  `).join("");
+
+  subTabBar.querySelectorAll(".sub-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedTab = btn.dataset.tab;
+      selectedSubTab[currentHub] = selectedTab;
+      renderActiveTab();
+      updateAddressBar();
+    });
+  });
+}
+
 function renderActiveTab() {
   const analysis = getActiveAnalysis();
 
@@ -967,9 +1030,13 @@ function renderActiveTab() {
 
   const playerLookup = buildPlayerLookup(analysis);
 
+  // Sync Hub navigation state
+  currentHub = getHubForTab(selectedTab);
   document.querySelectorAll(".tab-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.tab === selectedTab);
+    button.classList.toggle("active", button.dataset.tab === currentHub);
   });
+
+  renderSubTabBar();
 
   try {
     if (selectedTab === "scorecard") {
@@ -993,7 +1060,7 @@ function renderActiveTab() {
     }
 
     if (selectedTab === "playerMetrics") {
-      renderPlayerMetricsTab(analysis.player_metrics || {}, playerLookup);
+      renderPlayerLoungeWorkspace(analysis, playerLookup);
       return;
     }
 
@@ -1951,6 +2018,579 @@ function renderBenchmarksTab(analysis, playerLookup) {
 
   // Draw the roster wide chart below
   drawRosterDistributionChart(benchmarks, playerLookup);
+}
+
+function renderPlayerLoungeWorkspace(analysis, playerLookup) {
+  const playerMetrics = analysis.player_metrics || {};
+  const entries = Object.entries(playerMetrics);
+
+  if (!entries.length) {
+    renderEmptyTab("Player Lounge", "No player data available.");
+    return;
+  }
+
+  // 1. Sort players: group by role, then sort by grade (S, A, B, C, D, F)
+  const scorecard = analysis.scorecard || [];
+  const playersByRole = { Tank: [], Healer: [], DPS: [] };
+
+  entries.forEach(([playerName, metricData]) => {
+    const identity = metricData.identity || {};
+    const role = identity.role || "DPS";
+    const scEntry = scorecard.find(row => row.player === playerName) || {};
+    const grade = scEntry.grade || "-";
+    const className = identity.class || "Unknown";
+
+    const playerData = {
+      name: playerName,
+      role: role,
+      class: className,
+      grade: grade,
+      metricData: metricData
+    };
+
+    if (playersByRole[role]) {
+      playersByRole[role].push(playerData);
+    } else {
+      playersByRole.DPS.push(playerData);
+    }
+  });
+
+  const gradeOrder = { "S": 0, "A": 1, "B": 2, "C": 3, "D": 4, "F": 5, "-": 6 };
+  const sortFunc = (a, b) => (gradeOrder[a.grade] ?? 6) - (gradeOrder[b.grade] ?? 6);
+  
+  playersByRole.Tank.sort(sortFunc);
+  playersByRole.Healer.sort(sortFunc);
+  playersByRole.DPS.sort(sortFunc);
+
+  // 2. Select default active player if not set
+  if (!loungeSelectedPlayer || !playerMetrics[loungeSelectedPlayer]) {
+    const defaultPlayer = playersByRole.Tank[0] || playersByRole.Healer[0] || playersByRole.DPS[0];
+    loungeSelectedPlayer = defaultPlayer ? defaultPlayer.name : null;
+  }
+
+  // 3. Render the split workspace HTML shell
+  document.getElementById("tabContent").innerHTML = `
+    <div class="player-lounge-grid">
+      <!-- Left Column: Roster Sidebar -->
+      <aside class="roster-sidebar">
+        <!-- Tanks Group -->
+        ${playersByRole.Tank.length > 0 ? `
+          <div class="roster-role-group">
+            <div class="roster-role-header">Tanks</div>
+            ${playersByRole.Tank.map(p => renderRosterItemRow(p)).join("")}
+          </div>
+        ` : ""}
+        
+        <!-- Healers Group -->
+        ${playersByRole.Healer.length > 0 ? `
+          <div class="roster-role-group">
+            <div class="roster-role-header">Healers</div>
+            ${playersByRole.Healer.map(p => renderRosterItemRow(p)).join("")}
+          </div>
+        ` : ""}
+
+        <!-- DPS Group -->
+        ${playersByRole.DPS.length > 0 ? `
+          <div class="roster-role-group">
+            <div class="roster-role-header">Damage Dealers</div>
+            ${playersByRole.DPS.map(p => renderRosterItemRow(p)).join("")}
+          </div>
+        ` : ""}
+      </aside>
+
+      <!-- Right Column: Diagnostic Portal Pane -->
+      <main class="diagnostic-console-pane" id="loungeDiagnosticConsole">
+        ${renderLoungeDiagnosticPane(loungeSelectedPlayer, analysis, playerLookup)}
+      </main>
+    </div>
+  `;
+
+  // Bind click handlers to roster items
+  document.querySelectorAll(".roster-item-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      loungeSelectedPlayer = btn.dataset.playerName;
+      loungeSelectedDeathTimestamp = null; // reset selected death recap timestamp
+      
+      document.querySelectorAll(".roster-item-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const consolePane = document.getElementById("loungeDiagnosticConsole");
+      if (consolePane) {
+        consolePane.innerHTML = renderLoungeDiagnosticPane(loungeSelectedPlayer, analysis, playerLookup);
+        bindLoungePaneEvents(analysis, playerLookup);
+      }
+    });
+  });
+
+  bindLoungePaneEvents(analysis, playerLookup);
+}
+
+function renderRosterItemRow(p) {
+  const nameColor = getClassColor(p.class);
+  const isActive = p.name === loungeSelectedPlayer;
+  const specLabel = p.metricData.identity?.spec || "";
+
+  let gradeBadgeColor = "rgba(255,255,255,0.06)";
+  let gradeTextColor = "#FFFFFF";
+  if (p.grade === "S") { gradeBadgeColor = "rgba(255,215,0,0.1)"; gradeTextColor = "#ffd700"; }
+  else if (p.grade === "A") { gradeBadgeColor = "rgba(74,222,128,0.1)"; gradeTextColor = "#4ade80"; }
+  else if (p.grade === "B") { gradeBadgeColor = "rgba(190,242,100,0.1)"; gradeTextColor = "#bef264"; }
+  else if (p.grade === "C") { gradeBadgeColor = "rgba(250,204,21,0.1)"; gradeTextColor = "#facc15"; }
+  else if (p.grade === "D") { gradeBadgeColor = "rgba(251,146,60,0.1)"; gradeTextColor = "#fb923c"; }
+  else if (p.grade === "F") { gradeBadgeColor = "rgba(251,113,133,0.1)"; gradeTextColor = "#fb7185"; }
+
+  return `
+    <button class="roster-item-btn ${isActive ? "active" : ""}" data-player-name="${escapeHtml(p.name)}" type="button">
+      <div class="roster-item-name-col">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${nameColor}; display: inline-block;"></span>
+        <span style="color: ${nameColor}; font-weight: 700;">${escapeHtml(p.name)}</span>
+        <span style="font-size: 10px; color: var(--muted); font-weight: 500;">(${escapeHtml(specLabel)})</span>
+      </div>
+      <span class="roster-item-grade-badge" style="background: ${gradeBadgeColor}; color: ${gradeTextColor}; border-color: ${gradeTextColor}20;">
+        Grade ${p.grade}
+      </span>
+    </button>
+  `;
+}
+
+function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
+  if (!playerName || !playerLookup[playerName]) {
+    return `<div style="text-align: center; color: var(--muted); padding: 48px;">Select a player to view diagnostics.</div>`;
+  }
+
+  const player = playerLookup[playerName] || {};
+  const data = (analysis.player_metrics || {})[playerName] || {};
+  const performance = data.performance || {};
+  const identity = data.identity || {};
+  const activity = data.activity || {};
+  const consumables = data.consumables || {};
+
+  const rsi = calculateRsi(analysis);
+  const isProgression = rsi >= 50;
+
+  // 1. Grade mapping
+  const scorecardEntry = (analysis.scorecard || []).find(row => row.player === playerName) || {};
+  const grade = scorecardEntry.grade || "-";
+  const gradeMap = {
+    "S": "Elite", "A": "Master", "B": "Expert", "C": "Adequate", "D": "Fair", "F": "Needs Focus", "-": "Needs Focus"
+  };
+  const displayGrade = gradeMap[grade] || grade;
+  let gradeColor = "#FFFFFF";
+  if (grade === "S") gradeColor = "#ffd700";
+  else if (grade === "A") gradeColor = "#4ade80";
+  else if (grade === "B") gradeColor = "#bef264";
+  else if (grade === "C") gradeColor = "#facc15";
+  else if (grade === "D") gradeColor = "#fb923c";
+  else if (grade === "F") gradeColor = "#fb7185";
+
+  let gradeTitle = "Coaching Session Initialized";
+  let gradeDesc = "Review priority targets and rotational uptime to optimize performance.";
+  if (grade === "S" || grade === "A") {
+    gradeTitle = "Outstanding Execution";
+    gradeDesc = isProgression 
+      ? "Performing at an elite level. Demonstrates optimal rotational uptime and superb mechanic handling under progression pressure."
+      : "Outstanding Farm Run! Demolishing output targets with highly optimized rotational execution.";
+  } else if (grade === "B" || grade === "C") {
+    gradeTitle = "Solid Efficiency";
+    gradeDesc = isProgression
+      ? "Executing core rotational priorities correctly. Reliable survival habits and stable outputs during progression."
+      : "Stable farm performance. Good rotation throughput, with minor optimization opportunities.";
+  } else if (grade === "D" || grade === "F") {
+    gradeTitle = "Rotational Gaps Detected";
+    gradeDesc = isProgression
+      ? "Mechanical stress or rotational gaps are lowering your uptime. Review defensive usage and priority actions to stabilize progression pulls."
+      : "Rotational uptime or execution gaps detected. Focus on limit-testing your rotation uptime to optimize farm speed.";
+  }
+
+  // 2. Action Items extraction
+  const timeline = analysis.timeline || [];
+  const deathsCount = timeline.filter(e => e.type === "death").length;
+  let playerIssues = (analysis.issues || []).filter(issue => issue.player === playerName);
+
+  // Healer CD Zero-Sum checks
+  if (identity.role === "Healer" && deathsCount === 0) {
+    const cooldownKeywords = ["unused", "cooldown", "life cocoon", "guardian spirit", "pain suppression", "lay on hands", "ironbark", "blessing of protection", "tranquility", "divine hymn", "revival", "healing tide"];
+    playerIssues = playerIssues.filter(issue => {
+      const msgLower = (issue.message || "").toLowerCase();
+      const isCdIssue = cooldownKeywords.some(keyword => msgLower.includes(keyword));
+      return !isCdIssue;
+    });
+  }
+
+  const hideWarnings = document.getElementById("coachHideWarningsToggle")?.checked || false;
+  if (hideWarnings) {
+    playerIssues = playerIssues.filter(issue => issue.severity === "Critical" || issue.severity === "Major");
+  }
+
+  // Generate Issues List Markup
+  let issuesListHtml = "";
+  if (playerIssues.length === 0) {
+    issuesListHtml = `
+      <div class="coach-perfect-play" style="text-align: center; padding: 16px; background: rgba(74,222,128,0.02); border: 1px dashed rgba(74,222,128,0.2); border-radius: 12px; margin-bottom: 10px;">
+        <div class="coach-perfect-icon" style="font-size: 24px; margin-bottom: 4px;">🛡️</div>
+        <div class="coach-perfect-title" style="font-weight: 700; color: var(--green); font-size: 14px;">Perfect Mechanical Run</div>
+        <div class="coach-perfect-desc" style="color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.4;">Flawless performance! Zero rotational or mechanical issues detected in this fight.</div>
+      </div>
+    `;
+  } else {
+    const displayWeights = { "Critical": 4, "Major": 3, "Warning": 2, "Info": 1 };
+    const sortedIssues = [...playerIssues].sort((a, b) => (displayWeights[b.severity] || 0) - (displayWeights[a.severity] || 0));
+    issuesListHtml = sortedIssues.map(issue => renderIssueActionItemMarkup(issue)).join("");
+  }
+
+  // Score ledger
+  const severityWeights = isProgression ? { "Critical": 80, "Major": 45, "Warning": 25, "Info": 5 } 
+                                        : { "Critical": 80, "Major": 45, "Warning": 10, "Info": 0 };
+  const totalPenalty = playerIssues.reduce((sum, issue) => sum + (severityWeights[issue.severity] || 0), 0);
+
+  const ledgerHtml = `
+    <div class="coach-ledger-card" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-top: 10px;">
+      <div class="coach-ledger-title" style="font-weight: 700; font-size: 13.5px; margin-bottom: 8px; color: var(--text);">Score Penalty Ledger ${!isProgression ? `<span style="color: var(--blue); font-size: 10px; margin-left: 6px; text-transform: none; font-weight: 500;">(Farm Mode: Relaxed)</span>` : ""}</div>
+      <div class="coach-ledger-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto;">
+        ${playerIssues.length === 0 ? `
+          <div class="coach-ledger-item" style="color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 0;">
+            🟢 No active mechanical or rotational penalties.
+          </div>
+        ` : playerIssues.map(issue => {
+          const score = severityWeights[issue.severity] || 0;
+          let sevClass = (issue.severity || "info").toLowerCase();
+          let icon = "✦";
+          if (issue.severity === "Critical") icon = "☠";
+          else if (issue.severity === "Major") icon = "⚠";
+          else if (issue.severity === "Info") icon = "ℹ";
+
+          let mathText = `${issue.severity} × ${score}`;
+          if (!isProgression && issue.severity === "Warning") mathText = `Warning × 10 (Relaxed)`;
+          else if (!isProgression && issue.severity === "Info") mathText = `Info × 0 (Ignored)`;
+
+          return `
+            <div class="coach-ledger-item" style="display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <div class="coach-ledger-item-label" style="display: flex; gap: 6px; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span class="item-icon ${sevClass}" style="font-weight: bold; flex-shrink: 0;">${icon}</span>
+                <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 220px;" title="${escapeHtml(issue.message)}">${escapeHtml(issue.message)}</span>
+                <span class="coach-ledger-item-math" style="color: var(--muted); font-size: 10px;">(${mathText})</span>
+              </div>
+              <span class="coach-ledger-item-value ${sevClass}" style="flex-shrink: 0; font-weight: bold;">${score > 0 ? `+${score}` : "0"}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <div class="coach-ledger-total-row" style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; margin-top: 8px; font-weight: 700; font-size: 13px;">
+        <span class="coach-ledger-total-label">Total Issue Penalty</span>
+        <span class="coach-ledger-total-value" style="color: ${totalPenalty > 0 ? "var(--red)" : "var(--green)"}">${totalPenalty} pts</span>
+      </div>
+    </div>
+  `;
+
+  // 3. Benchmarks Card
+  const benchmarkComparison = (analysis.benchmarks || {})[playerName] || {};
+  const benchmark = benchmarkComparison.benchmark || {};
+  const playerVal = benchmarkComparison.player_value || 0;
+  const top10Val = benchmark.top_10 ? benchmark.top_10.value : 0;
+  const avgVal = benchmark.average_baseline || 0;
+  const rawMetric = benchmarkComparison.metric || "DPS";
+  const metric = rawMetric.toUpperCase();
+
+  let benchmarkHtml = "";
+  if (!playerVal && !top10Val) {
+    benchmarkHtml = `<div style="text-align: center; color: var(--muted); padding: 12px; font-size: 13px;">No benchmarks available for this spec.</div>`;
+  } else if (playerVal >= top10Val) {
+    benchmarkHtml = `
+      <div class="coach-progression-row" style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 8px; font-size: 13px;">
+        <span class="coach-progression-label">Current Performance</span>
+        <span class="coach-progression-value" style="color: var(--yellow);">${formatNumber(playerVal)} ${metric}</span>
+      </div>
+      <div style="text-align: center; padding: 12px; background: rgba(254, 240, 138, 0.03); border: 1px solid rgba(254, 240, 138, 0.15); border-radius: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center;">
+        <span style="font-size: 20px;">👑</span>
+        <strong style="color: var(--yellow); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Peak Performance Level</strong>
+        <p style="margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">Matching or exceeding the high-performing Top 10% benchmark of active players globally.</p>
+      </div>
+    `;
+  } else {
+    const diffToTop10 = top10Val - playerVal;
+    let progressPct = 0;
+    if (top10Val > avgVal) {
+      progressPct = Math.max(0, Math.min(100, ((playerVal - avgVal) / (top10Val - avgVal)) * 100));
+    }
+    benchmarkHtml = `
+      <div class="coach-progression-row" style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px;">
+        <span class="coach-progression-label" style="color: var(--muted);">Current Performance</span>
+        <span class="coach-progression-value" style="font-weight: 700;">${formatNumber(playerVal)} ${metric}</span>
+      </div>
+      <div class="coach-progression-row" style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+        <span class="coach-progression-label" style="color: var(--muted);">Top 10% High Performer Target</span>
+        <span class="coach-progression-value" style="font-weight: 700; color: var(--blue);">${formatNumber(top10Val)} ${metric}</span>
+      </div>
+      <div class="coach-progression-progress-bar" style="background: rgba(255,255,255,0.06); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+        <div class="coach-progression-progress-fill" style="background: var(--blue); height: 100%; width: ${progressPct}%;"></div>
+      </div>
+      <p style="font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.4;">
+        You are currently <strong>${formatNumber(diffToTop10)} ${metric}</strong> away from the **Top 10%** benchmark. Focus on reducing rotational gaps to bridge the gap.
+      </p>
+    `;
+  }
+
+  // 4. Casting Uptime & Gaps
+  const uptimePct = activity.active_time_pct || 0.0;
+  const gaps = activity.gaps || [];
+  const fightName = analysis.fight?.name || "";
+  const transitions = ENCOUNTER_TRANSITIONS[fightName] || [];
+
+  const filteredGaps = gaps.filter(gap => {
+    const gapStart = gap.start_seconds;
+    const gapEnd = gapStart + gap.duration_seconds;
+    return !transitions.some(t => gapStart <= t.end && gapEnd >= t.start);
+  });
+
+  let adjustedUptimePct = uptimePct;
+  if (transitions.length > 0 && analysis.fight?.duration_seconds > 0) {
+    let overlapSeconds = 0;
+    gaps.forEach(gap => {
+      const gapStart = gap.start_seconds;
+      const gapEnd = gapStart + gap.duration_seconds;
+      transitions.some(t => {
+        if (gapStart <= t.end && gapEnd >= t.start) {
+          const oStart = Math.max(gapStart, t.start);
+          const oEnd = Math.min(gapEnd, t.end);
+          overlapSeconds += Math.max(0, oEnd - oStart);
+          return true;
+        }
+        return false;
+      });
+    });
+    
+    if (overlapSeconds > 0) {
+      const currentActiveSeconds = (uptimePct / 100) * analysis.fight.duration_seconds;
+      const adjustedActiveSeconds = Math.min(analysis.fight.duration_seconds, currentActiveSeconds + overlapSeconds);
+      adjustedUptimePct = (adjustedActiveSeconds / analysis.fight.duration_seconds) * 100;
+    }
+  }
+
+  let uptimeClass = "uptime-low";
+  let uptimeColor = "var(--red)";
+  if (adjustedUptimePct >= 90) { uptimeClass = "uptime-high"; uptimeColor = "var(--green)"; }
+  else if (adjustedUptimePct >= 80) { uptimeClass = "uptime-medium"; uptimeColor = "var(--yellow)"; }
+
+  let gapsHtml = "";
+  if (filteredGaps.length === 0) {
+    gapsHtml = `<li style="list-style: none; color: var(--green); font-size: 12.5px; font-weight: 600;">🟢 Flawless casting rotation! No inactivity gaps recorded.</li>`;
+  } else {
+    gapsHtml = filteredGaps.slice(0, 3).map(gap => {
+      const mins = Math.floor(gap.start_seconds / 60);
+      const secs = Math.floor(gap.start_seconds % 60);
+      const timeStr = `${mins}:${String(secs).padStart(2, "0")}`;
+      return `
+        <li style="margin-bottom: 6px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--muted); display: inline-block; flex-shrink: 0;"></span>
+          <span><strong>${gap.duration_seconds}s</strong> inactivity gap at <strong>${timeStr}</strong></span>
+        </li>
+      `;
+    }).join("");
+
+    if (filteredGaps.length > 3) {
+      gapsHtml += `<li style="list-style: none; color: var(--muted); font-size: 11px; margin-top: 4px;">... and ${filteredGaps.length - 3} more rotational gaps detected.</li>`;
+    }
+  }
+
+  // 5. Avoidable Death Events / Recaps (INLINE RECAP!)
+  const deathEvents = performance.death_events || [];
+  let deathRecapHtml = "";
+
+  if (!deathEvents.length) {
+    deathRecapHtml = `<div style="text-align: center; color: var(--muted); padding: 32px; font-size: 13px;">🏆 Zero deaths logged! Perfect survival run.</div>`;
+  } else {
+    if (!loungeSelectedDeathTimestamp) {
+      loungeSelectedDeathTimestamp = deathEvents[0].timestamp;
+    }
+    const activeDeath = deathEvents.find(d => Math.abs(d.timestamp - loungeSelectedDeathTimestamp) < 1000) || deathEvents[0];
+    const recapEvents = activeDeath.recap || [];
+
+    let selectorBarHtml = "";
+    if (deathEvents.length > 1) {
+      selectorBarHtml = `
+        <div class="inline-death-select-bar">
+          <span style="font-size: 11px; color: var(--muted); font-weight: bold; text-transform: uppercase; align-self: center; margin-right: 6px;">Select Death:</span>
+          ${deathEvents.map((d, index) => {
+            const isActive = Math.abs(d.timestamp - loungeSelectedDeathTimestamp) < 1000;
+            const mins = Math.floor(d.seconds_into_fight / 60);
+            const secs = Math.floor(d.seconds_into_fight % 60);
+            return `
+              <button class="inline-death-select-btn ${isActive ? "active" : ""}" data-timestamp="${d.timestamp}" type="button">
+                Death #${index + 1} (${mins}:${secs.toString().padStart(2, "0")})
+              </button>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    let recapListHtml = "";
+    if (recapEvents.length === 0) {
+      recapListHtml = `<div style="text-align: center; color: var(--muted); padding: 18px;">No events recorded in final 8 seconds.</div>`;
+    } else {
+      recapListHtml = `
+        <div class="inline-death-card-list">
+          ${recapEvents.map(e => {
+            let cardClass = "";
+            let eventTitle = "";
+            let amountText = "";
+            let sourceText = "";
+
+            if (e.type === "damage") {
+              cardClass = "damage";
+              eventTitle = e.ability_name;
+              amountText = `<span class="death-event-amount damage-text" style="color: var(--red); font-weight: 700;">-${formatNumber(e.amount)}</span>`;
+              if (e.avoidable) {
+                amountText += `<span class="death-event-amount avoidable-flag" style="color: var(--yellow); margin-left: 6px; font-size: 10px; font-weight: bold; background: rgba(250,204,21,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(250,204,21,0.2);">Avoidable ⚠️</span>`;
+              }
+              if (e.overkill > 0) {
+                amountText += `<span class="death-event-amount overkill-text" style="color: var(--red); font-size: 10px; margin-left: 6px;">Overkill</span>`;
+              }
+              sourceText = `from ${escapeHtml(e.source_name)}`;
+            } else if (e.type === "heal") {
+              cardClass = "heal";
+              eventTitle = e.ability_name;
+              amountText = `<span class="death-event-amount heal-text" style="color: var(--green); font-weight: 700;">+${formatNumber(e.amount)}</span>`;
+              if (e.overheal > 0) {
+                amountText += `<span style="font-size: 10px; color: var(--muted); margin-left: 4px;">(${formatNumber(e.overheal)} overheal)</span>`;
+              }
+              sourceText = `from ${escapeHtml(e.source_name)}`;
+            } else if (e.type === "applybuff") {
+              cardClass = "defensive-apply";
+              eventTitle = `Gained ${e.ability_name}`;
+              amountText = `<span style="font-size: 10.5px; color: var(--blue); font-weight: 700; text-transform: uppercase;">Active</span>`;
+              sourceText = `applied by ${escapeHtml(e.source_name)}`;
+            } else if (e.type === "removebuff") {
+              cardClass = "defensive-remove";
+              eventTitle = `Lost ${e.ability_name}`;
+              amountText = `<span style="font-size: 10.5px; color: #a855f7; font-weight: 700; text-transform: uppercase;">Expired</span>`;
+              sourceText = `removed`;
+            }
+
+            const offsetText = e.seconds_offset === 0.0 ? "0.0s (Death)" : `${e.seconds_offset.toFixed(2)}s`;
+
+            return `
+              <div class="death-event-card ${cardClass}" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <strong style="font-size: 13px; color: var(--text);">${escapeHtml(eventTitle)}</strong>
+                  <span style="font-size: 11px; color: var(--muted); font-family: monospace;">${offsetText}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                  <span style="color: var(--muted);">${sourceText}</span>
+                  ${amountText}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    const mins = Math.floor(activeDeath.seconds_into_fight / 60);
+    const secs = Math.floor(activeDeath.seconds_into_fight % 60);
+    const formattedTime = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
+    deathRecapHtml = `
+      ${selectorBarHtml}
+      <div style="font-size: 12.5px; font-weight: 700; color: var(--red); display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+        <span>☠ Died at ${formattedTime} into the fight</span>
+      </div>
+      ${activeDeath.recap_analysis && activeDeath.recap_analysis.summary ? `
+        <div class="death-recap-summary-card" style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 8px; padding: 10px; font-size: 12px; margin-bottom: 12px; line-height: 1.4; color: var(--text);">
+          <span style="font-weight: 700; color: var(--red); margin-right: 4px;">⚠️ Catalyst:</span>
+          <span>${escapeHtml(activeDeath.recap_analysis.summary)}</span>
+        </div>
+      ` : ""}
+      ${recapListHtml}
+    `;
+  }
+
+  // 6. Return layout HTML block
+  const spec = identity.spec || "Unknown Spec";
+  const className = identity.class || "Player";
+  const roleLabel = identity.role || "Role";
+
+  return `
+    <!-- Hero Profile card -->
+    <div class="diag-hero-banner">
+      <div class="diag-hero-profile">
+        <div style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid ${gradeColor}40; background: ${gradeColor}10; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 12px ${gradeColor}18;">
+          ${identity.role === "Healer" ? "🛡️" : identity.role === "Tank" ? "🛡️" : "⚔️"}
+        </div>
+        <div>
+          <h2 class="diag-hero-name" style="color: ${getClassColor(className)};">${escapeHtml(playerName)}</h2>
+          <div class="diag-hero-meta">${spec} ${className} · ${roleLabel}</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        <span class="roster-item-grade-badge" style="background: ${gradeColor}15; color: ${gradeColor}; border-color: ${gradeColor}30; font-size: 16px; padding: 6px 16px; font-weight: 800; border-radius: 12px; box-shadow: 0 0 16px ${gradeColor}08;">
+          Grade ${grade}
+        </span>
+        <span style="font-size: 11px; color: var(--muted); font-weight: 600;">${gradeTitle}</span>
+      </div>
+    </div>
+
+    <!-- Details split grids -->
+    <div class="diag-section-grid">
+      <!-- Left Panel: Coaching advice & Benchmarks -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- AI Core Recommendations -->
+        <div class="diag-section-card">
+          <h3 class="diag-section-title" style="color: var(--blue);">📋 Core Action Items & Coaching</h3>
+          <div class="coach-action-items-list" style="display: flex; flex-direction: column; gap: 10px;">
+            ${issuesListHtml}
+          </div>
+          ${ledgerHtml}
+        </div>
+
+        <!-- Comparative Benchmarks -->
+        <div class="diag-section-card">
+          <h3 class="diag-section-title" style="color: var(--yellow);">🎯 Percentile Benchmarks</h3>
+          ${benchmarkHtml}
+        </div>
+      </div>
+
+      <!-- Right Panel: Inactivity uptime & Deaths Recap -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Rotational Gaps & Uptime -->
+        <div class="diag-section-card">
+          <h3 class="diag-section-title" style="color: ${uptimeColor};">📈 Casting Activity & Rotational Gaps</h3>
+          <div class="coach-inactivity-wrapper">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px;">
+              <span style="color: var(--muted);">Casting Uptime</span>
+              <span style="font-family: monospace; color: ${uptimeColor};">${adjustedUptimePct.toFixed(1)}%</span>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+              <div style="background: ${uptimeColor}; height: 100%; width: ${adjustedUptimePct}%;"></div>
+            </div>
+            <ul style="padding-left: 0; list-style: none; margin: 0;">
+              ${gapsHtml}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Avoidable Deaths Timeline Recap -->
+        <div class="diag-section-card">
+          <h3 class="diag-section-title" style="color: var(--red);">☠ Death Recap Breakdown (Final 8s)</h3>
+          ${deathRecapHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function bindLoungePaneEvents(analysis, playerLookup) {
+  document.querySelectorAll(".inline-death-select-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      loungeSelectedDeathTimestamp = parseInt(btn.dataset.timestamp, 10);
+      
+      const consolePane = document.getElementById("loungeDiagnosticConsole");
+      if (consolePane) {
+        consolePane.innerHTML = renderLoungeDiagnosticPane(loungeSelectedPlayer, analysis, playerLookup);
+        bindLoungePaneEvents(analysis, playerLookup);
+      }
+    });
+  });
 }
 
 function renderPlayerMetricsTab(playerMetrics, playerLookup) {
@@ -3150,6 +3790,24 @@ function showPlayerCoachCard(playerName) {
   if (!currentReportData) return;
   const analysis = getActiveAnalysis();
   if (!analysis) return;
+
+  // Intercept and render inline if in Hub 2 (Player Lounge)
+  if (currentHub === "hubPlayer" && selectedTab === "playerMetrics") {
+    loungeSelectedPlayer = playerName;
+    loungeSelectedDeathTimestamp = null;
+    
+    document.querySelectorAll(".roster-item-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.playerName === playerName);
+    });
+
+    const consolePane = document.getElementById("loungeDiagnosticConsole");
+    if (consolePane) {
+      const playerLookup = buildPlayerLookup(analysis);
+      consolePane.innerHTML = renderLoungeDiagnosticPane(loungeSelectedPlayer, analysis, playerLookup);
+      bindLoungePaneEvents(analysis, playerLookup);
+    }
+    return;
+  }
 
   currentCoachPlayerName = playerName;
 
@@ -5076,9 +5734,26 @@ function showDeathRecap(playerName, timestamp) {
   if (!data || !data.performance) return;
 
   const deathEvents = data.performance.death_events || [];
-  // Find the exact death event by timestamp or closest match
   const deathEvent = deathEvents.find(d => Math.abs(d.timestamp - timestamp) < 1000) || deathEvents[0];
   if (!deathEvent) return;
+
+  // Intercept and render inline if in Hub 2 (Player Lounge)
+  if (currentHub === "hubPlayer" && selectedTab === "playerMetrics") {
+    loungeSelectedPlayer = playerName;
+    loungeSelectedDeathTimestamp = deathEvent.timestamp;
+    
+    document.querySelectorAll(".roster-item-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.playerName === playerName);
+    });
+
+    const consolePane = document.getElementById("loungeDiagnosticConsole");
+    if (consolePane) {
+      const playerLookup = buildPlayerLookup(analysis);
+      consolePane.innerHTML = renderLoungeDiagnosticPane(loungeSelectedPlayer, analysis, playerLookup);
+      bindLoungePaneEvents(analysis, playerLookup);
+    }
+    return;
+  }
 
   const recap = deathEvent.recap || [];
   const drawer = document.getElementById("deathRecapDrawer");
@@ -5179,6 +5854,24 @@ function showPlayerDeathsRecap(playerName) {
 
   const deathEvents = data.performance.death_events || [];
   if (!deathEvents.length) return;
+
+  // Intercept and render inline if in Hub 2 (Player Lounge)
+  if (currentHub === "hubPlayer" && selectedTab === "playerMetrics") {
+    loungeSelectedPlayer = playerName;
+    loungeSelectedDeathTimestamp = deathEvents[0].timestamp;
+    
+    document.querySelectorAll(".roster-item-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.playerName === playerName);
+    });
+
+    const consolePane = document.getElementById("loungeDiagnosticConsole");
+    if (consolePane) {
+      const playerLookup = buildPlayerLookup(tennis);
+      consolePane.innerHTML = renderLoungeDiagnosticPane(loungeSelectedPlayer, tennis, playerLookup);
+      bindLoungePaneEvents(tennis, playerLookup);
+    }
+    return;
+  }
 
   // Open the first death event (most common)
   showDeathRecap(playerName, deathEvents[0].timestamp);
@@ -6007,106 +6700,22 @@ async function loadGuildSuiteOverview() {
 }
 
 function drawRosterMatrix(players) {
-  const canvas = document.getElementById("matrixCanvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 400 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const width = rect.width;
+  const svg = document.getElementById("matrixCanvas");
+  if (!svg) return;
+
+  const width = 600;
   const height = 400;
-  
-  ctx.clearRect(0, 0, width, height);
-  
   const margin = { top: 40, right: 40, bottom: 50, left: 60 };
   const graphWidth = width - margin.left - margin.right;
   const graphHeight = height - margin.top - margin.bottom;
-  
-  ctx.fillStyle = "rgba(59, 130, 246, 0.02)";
-  ctx.fillRect(margin.left, margin.top, graphWidth / 2, graphHeight / 2);
-  
-  ctx.fillStyle = "rgba(52, 211, 153, 0.02)";
-  ctx.fillRect(margin.left + graphWidth / 2, margin.top, graphWidth / 2, graphHeight / 2);
-  
-  ctx.fillStyle = "rgba(248, 113, 113, 0.02)";
-  ctx.fillRect(margin.left, margin.top + graphHeight / 2, graphWidth / 2, graphHeight / 2);
-  
-  ctx.fillStyle = "rgba(251, 191, 36, 0.02)";
-  ctx.fillRect(margin.left + graphWidth / 2, margin.top + graphHeight / 2, graphWidth / 2, graphHeight / 2);
-  
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.12)";
-  ctx.lineWidth = 1;
-  
-  for (let i = 0; i <= 4; i++) {
-    const yVal = i * 25;
-    const yPix = margin.top + graphHeight - (yVal / 100) * graphHeight;
-    ctx.beginPath();
-    ctx.moveTo(margin.left, yPix);
-    ctx.lineTo(margin.left + graphWidth, yPix);
-    ctx.stroke();
-    
-    ctx.fillStyle = "var(--muted)";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(yVal + "%", margin.left - 10, yPix + 3);
-  }
-  
-  for (let i = 0; i <= 4; i++) {
-    const xVal = i * 25;
-    const xPix = margin.left + (xVal / 100) * graphWidth;
-    ctx.beginPath();
-    ctx.moveTo(xPix, margin.top);
-    ctx.lineTo(xPix, margin.top + graphHeight);
-    ctx.stroke();
-    
-    ctx.fillStyle = "var(--muted)";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(xVal + "%", xPix, margin.top + graphHeight + 16);
-  }
-  
-  ctx.fillStyle = "var(--muted)";
-  ctx.font = "bold 11px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("Active Output Rate (Relative DPS/HPS)", margin.left + graphWidth / 2, margin.top + graphHeight + 36);
-  
-  ctx.save();
-  ctx.translate(16, margin.top + graphHeight / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText("Mechanics Dodged (Survival Score)", 0, 0);
-  ctx.restore();
-  
-  ctx.font = "bold 10px sans-serif";
-  ctx.textBaseline = "top";
-  
-  ctx.fillStyle = "#60a5fa";
-  ctx.textAlign = "left";
-  ctx.fillText("Progression Heroes", margin.left + 10, margin.top + 10);
-  
-  ctx.fillStyle = "#34d399";
-  ctx.textAlign = "right";
-  ctx.fillText("Elite Carries", margin.left + graphWidth - 10, margin.top + 10);
-  
-  ctx.fillStyle = "#f87171";
-  ctx.textAlign = "left";
-  ctx.fillText("Liabilities", margin.left + 10, margin.top + graphHeight - 20);
-  
-  ctx.fillStyle = "#fbbf24";
-  ctx.textAlign = "right";
-  ctx.fillText("Glass Cannons", margin.left + graphWidth - 10, margin.top + graphHeight - 20);
-  
+
   let maxOutput = 1;
   Object.values(players).forEach(p => {
     const val = Math.max(p.avg_dps || 0, p.avg_hps || 0);
     if (val > maxOutput) maxOutput = val;
   });
-  
+
   plottedPlayers = [];
-  
   Object.entries(players).forEach(([name, p]) => {
     const output = Math.max(p.avg_dps || 0, p.avg_hps || 0);
     const xPct = maxOutput > 0 ? (output / maxOutput) * 100 : 0;
@@ -6129,66 +6738,97 @@ function drawRosterMatrix(players) {
       output_pct: Math.round(xPct)
     });
   });
-  
-  plottedPlayers.forEach(p => {
-    let color = "var(--text)";
+
+  const quadHtml = `
+    <rect x="${margin.left}" y="${margin.top}" width="${graphWidth / 2}" height="${graphHeight / 2}" fill="rgba(59, 130, 246, 0.015)" />
+    <rect x="${margin.left + graphWidth / 2}" y="${margin.top}" width="${graphWidth / 2}" height="${graphHeight / 2}" fill="rgba(52, 211, 153, 0.015)" />
+    <rect x="${margin.left}" y="${margin.top + graphHeight / 2}" width="${graphWidth / 2}" height="${graphHeight / 2}" fill="rgba(248, 113, 113, 0.015)" />
+    <rect x="${margin.left + graphWidth / 2}" y="${margin.top + graphHeight / 2}" width="${graphWidth / 2}" height="${graphHeight / 2}" fill="rgba(251, 191, 36, 0.015)" />
+  `;
+
+  let gridlinesHtml = "";
+  for (let i = 0; i <= 4; i++) {
+    const yVal = i * 25;
+    const yPix = margin.top + graphHeight - (yVal / 100) * graphHeight;
+    gridlinesHtml += `
+      <line x1="${margin.left}" y1="${yPix}" x2="${margin.left + graphWidth}" y2="${yPix}" class="chart-grid-line" />
+      <text x="${margin.left - 10}" y="${yPix + 3}" class="chart-tick-text" text-anchor="end">${yVal}%</text>
+    `;
+  }
+  for (let i = 0; i <= 4; i++) {
+    const xVal = i * 25;
+    const xPix = margin.left + (xVal / 100) * graphWidth;
+    gridlinesHtml += `
+      <line x1="${xPix}" y1="${margin.top}" x2="${xPix}" y2="${margin.top + graphHeight}" class="chart-grid-line" />
+      <text x="${xPix}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle">${xVal}%</text>
+    `;
+  }
+
+  const labelsHtml = `
+    <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + graphHeight}" class="chart-axis-line" />
+    <line x1="${margin.left}" y1="${margin.top + graphHeight}" x2="${margin.left + graphWidth}" y2="${margin.top + graphHeight}" class="chart-axis-line" />
+    <text x="${margin.left + graphWidth / 2}" y="${margin.top + graphHeight + 36}" class="chart-label-text" text-anchor="middle">Active Output Rate (Relative DPS/HPS)</text>
+    <text x="16" y="${margin.top + graphHeight / 2}" class="chart-label-text" text-anchor="middle" transform="rotate(-90, 16, ${margin.top + graphHeight / 2})">Mechanics Dodged (Survival Score)</text>
+  `;
+
+  const legendsHtml = `
+    <text x="${margin.left + 10}" y="${margin.top + 18}" class="chart-legend-text" fill="#60a5fa" text-anchor="start">Progression Heroes</text>
+    <text x="${margin.left + graphWidth - 10}" y="${margin.top + 18}" class="chart-legend-text" fill="#34d399" text-anchor="end">Elite Carries</text>
+    <text x="${margin.left + 10}" y="${margin.top + graphHeight - 10}" class="chart-legend-text" fill="#f87171" text-anchor="start">Liabilities</text>
+    <text x="${margin.left + graphWidth - 10}" y="${margin.top + graphHeight - 10}" class="chart-legend-text" fill="#fbbf24" text-anchor="end">Glass Cannons</text>
+  `;
+
+  const dotsHtml = plottedPlayers.map((p, idx) => {
+    let color = "#ffffff";
     const cleanClass = p.class.replace(/\s+/g, "");
     if (CLASS_COLORS[p.class]) color = CLASS_COLORS[p.class];
     else if (CLASS_COLORS[cleanClass]) color = CLASS_COLORS[cleanClass];
+
+    return `
+      <g
+        onmouseenter="showMatrixTooltip(event, ${idx})"
+        onmousemove="moveMatrixTooltip(event)"
+        onmouseleave="showMatrixTooltip(null, null)"
+        style="color: ${color};"
+      >
+        <circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#ffffff" opacity="0.9" style="filter: drop-shadow(0 0 4px ${color}60);" />
+        <circle cx="${p.x}" cy="${p.y}" r="5" fill="${color}" stroke="${color}" stroke-width="1.5" class="chart-node-circle" />
+      </g>
+    `;
+  }).join("");
+
+  svg.innerHTML = `
+    ${quadHtml}
+    ${gridlinesHtml}
+    ${labelsHtml}
+    ${legendsHtml}
+    ${dotsHtml}
+  `;
+
+  window.moveMatrixTooltip = (e) => {
+    const tooltip = document.getElementById("matrixTooltip");
+    if (!tooltip || tooltip.classList.contains("hidden")) return;
     
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 4;
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
     
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  
-  if (!canvas.dataset.hoverBound) {
-    canvas.dataset.hoverBound = "true";
-    
-    canvas.addEventListener("mousemove", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      let hoverTarget = null;
-      let minDistance = 12;
-      
-      plottedPlayers.forEach(p => {
-        const dx = mouseX - p.x;
-        const dy = mouseY - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minDistance) {
-          minDistance = dist;
-          hoverTarget = p;
-        }
-      });
-      
-      showMatrixTooltip(e, hoverTarget, canvas);
-    });
-    
-    canvas.addEventListener("mouseleave", () => {
-      showMatrixTooltip(null, null);
-    });
-  }
+    tooltip.style.left = (mouseX + 15) + "px";
+    tooltip.style.top = (mouseY - 20) + "px";
+  };
 }
 
-function showMatrixTooltip(e, p, canvas) {
+function showMatrixTooltip(e, index) {
   const tooltip = document.getElementById("matrixTooltip");
   if (!tooltip) return;
   
-  if (!p) {
+  if (index === null || index === undefined) {
     tooltip.classList.add("hidden");
     return;
   }
+  
+  const p = plottedPlayers[index];
+  if (!p) return;
   
   let quadrant = "Liability";
   let quadClass = "liability";
@@ -6225,38 +6865,33 @@ function showMatrixTooltip(e, p, canvas) {
     </div>
   `;
   
-  const canvasRect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - canvasRect.left;
-  const mouseY = e.clientY - canvasRect.top;
-  
-  tooltip.style.left = (mouseX + 15) + "px";
-  tooltip.style.top = (mouseY - 20) + "px";
+  const svg = document.getElementById("matrixCanvas");
+  if (e && svg) {
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
+    
+    tooltip.style.left = (mouseX + 15) + "px";
+    tooltip.style.top = (mouseY - 20) + "px";
+  }
   tooltip.classList.remove("hidden");
 }
 
 let plottedFights = [];
 
 function drawTrendsChart(fights) {
-  const canvas = document.getElementById("trendsCanvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  const svg = document.getElementById("trendsCanvas");
+  if (!svg) return;
 
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = 280 * dpr;
-  ctx.scale(dpr, dpr);
-
-  const width = rect.width;
+  const width = 800;
   const height = 280;
 
-  ctx.clearRect(0, 0, width, height);
-
   if (!fights || fights.length === 0) {
-    ctx.fillStyle = "var(--muted)";
-    ctx.font = "14px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("No historical fights available yet.", width / 2, height / 2);
+    svg.innerHTML = `
+      <text x="${width / 2}" y="${height / 2}" fill="var(--muted)" font-size="14" text-anchor="middle">
+        No historical fights available yet.
+      </text>
+    `;
     return;
   }
 
@@ -6264,31 +6899,21 @@ function drawTrendsChart(fights) {
   const graphWidth = width - margin.left - margin.right;
   const graphHeight = height - margin.top - margin.bottom;
 
-  // Find max avoidable damage to scale Y axis (baseline is always 0)
-  let maxAvoidable = 100000; // minimum scale of 100k
+  let maxAvoidable = 100000;
   fights.forEach(f => {
     if (f.avoidable_damage > maxAvoidable) maxAvoidable = f.avoidable_damage;
   });
 
-  // Round maxAvoidable to a clean number
   const magnitude = Math.pow(10, Math.floor(Math.log10(maxAvoidable)));
   const roundedMax = Math.ceil(maxAvoidable / (magnitude / 2)) * (magnitude / 2);
 
-  // Draw Y-axis gridlines and labels
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
-  ctx.lineWidth = 1;
+  let gridlinesHtml = "";
   const divisions = 4;
   for (let i = 0; i <= divisions; i++) {
     const ratio = i / divisions;
     const yVal = ratio * roundedMax;
     const yPix = margin.top + graphHeight - ratio * graphHeight;
 
-    ctx.beginPath();
-    ctx.moveTo(margin.left, yPix);
-    ctx.lineTo(margin.left + graphWidth, yPix);
-    ctx.stroke();
-
-    // Format label in thousands or millions
     let label = "0";
     if (yVal >= 1000000) {
       label = (yVal / 1000000).toFixed(1) + "M";
@@ -6298,13 +6923,12 @@ function drawTrendsChart(fights) {
       label = Math.round(yVal).toString();
     }
 
-    ctx.fillStyle = "var(--muted)";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(label, margin.left - 10, yPix + 3.5);
+    gridlinesHtml += `
+      <line x1="${margin.left}" y1="${yPix}" x2="${margin.left + graphWidth}" y2="${yPix}" class="chart-grid-line" />
+      <text x="${margin.left - 10}" y="${yPix + 3.5}" class="chart-tick-text" text-anchor="end">${label}</text>
+    `;
   }
 
-  // Calculate coordinates for each fight point
   plottedFights = [];
   const pointCount = fights.length;
   fights.forEach((f, idx) => {
@@ -6321,121 +6945,96 @@ function drawTrendsChart(fights) {
     });
   });
 
-  // 1. Draw glowing gradient line
+  const defsHtml = `
+    <defs>
+      <filter id="trendsLineGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <linearGradient id="trendsFillGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.18" />
+        <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.0" />
+      </linearGradient>
+    </defs>
+  `;
+
+  let linePathsHtml = "";
   if (plottedFights.length > 0) {
-    ctx.save();
-    
-    // Draw fill area under the line
-    ctx.beginPath();
-    ctx.moveTo(plottedFights[0].x, margin.top + graphHeight);
-    plottedFights.forEach(p => {
-      ctx.lineTo(p.x, p.y);
-    });
-    ctx.lineTo(plottedFights[plottedFights.length - 1].x, margin.top + graphHeight);
-    ctx.closePath();
-    
-    const fillGrad = ctx.createLinearGradient(0, margin.top, 0, margin.top + graphHeight);
-    fillGrad.addColorStop(0, "rgba(96, 165, 250, 0.15)");
-    fillGrad.addColorStop(1, "rgba(96, 165, 250, 0.0)");
-    ctx.fillStyle = fillGrad;
-    ctx.fill();
+    const linePointsD = plottedFights.map(p => `${p.x},${p.y}`).join(" L ");
+    const areaD = `M ${plottedFights[0].x},${margin.top + graphHeight} L ${linePointsD} L ${plottedFights[plottedFights.length - 1].x},${margin.top + graphHeight} Z`;
 
-    // Draw the main line with neon glow
-    ctx.beginPath();
-    ctx.moveTo(plottedFights[0].x, plottedFights[0].y);
-    for (let i = 1; i < plottedFights.length; i++) {
-      ctx.lineTo(plottedFights[i].x, plottedFights[i].y);
-    }
-    
-    ctx.strokeStyle = "#60a5fa";
-    ctx.lineWidth = 3;
-    ctx.shadowColor = "#3b82f6";
-    ctx.shadowBlur = 8;
-    ctx.stroke();
-    
-    ctx.restore();
+    linePathsHtml = `
+      <path d="${areaD}" fill="url(#trendsFillGrad)" />
+      <path d="M ${linePointsD}" class="chart-trend-glow-line" stroke="#60a5fa" stroke-width="3" filter="url(#trendsLineGlow)" />
+    `;
   }
 
-  // 2. Draw fight points (Green for Kills, Red for Wipes)
-  plottedFights.forEach((p, idx) => {
+  const nodesHtml = plottedFights.map((p, idx) => {
     const dotColor = p.is_kill ? "#34d399" : "#f87171";
-    
-    // Outer glow halo
-    ctx.save();
-    ctx.shadowColor = dotColor;
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    const resultLabel = p.is_kill ? "Kill" : "Wipe";
 
-    // Inner solid core
-    ctx.fillStyle = dotColor;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // X-axis label for major milestones (e.g. Kills or labels at intervals)
+    let labelHtml = "";
     if (pointCount <= 12 || idx === 0 || idx === pointCount - 1 || p.is_kill || idx % Math.ceil(pointCount / 6) === 0) {
-      ctx.save();
-      ctx.fillStyle = "var(--muted)";
-      ctx.font = "9px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(p.boss_name, p.x, margin.top + graphHeight + 16);
-      
-      const resultLabel = p.is_kill ? "Kill" : "Wipe";
-      ctx.fillStyle = p.is_kill ? "#34d399" : "#f87171";
-      ctx.font = "bold 8px sans-serif";
-      ctx.fillText(resultLabel, p.x, margin.top + graphHeight + 28);
-      ctx.restore();
+      labelHtml = `
+        <text x="${p.x}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle" font-size="9">${escapeHtml(p.boss_name)}</text>
+        <text x="${p.x}" y="${margin.top + graphHeight + 28}" class="chart-tick-text" text-anchor="middle" font-size="8" font-weight="bold" fill="${dotColor}">${resultLabel}</text>
+      `;
     }
-  });
 
-  // Bind mouse interaction listeners if not already bound
-  if (!canvas.dataset.hoverBound) {
-    canvas.dataset.hoverBound = "true";
+    return `
+      <g
+        onmouseenter="showTrendsTooltip(event, ${idx})"
+        onmousemove="moveTrendsTooltip(event)"
+        onmouseleave="showTrendsTooltip(null, null)"
+        style="color: ${dotColor};"
+      >
+        <circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#ffffff" opacity="0.9" style="filter: drop-shadow(0 0 4px ${dotColor});" />
+        <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="${dotColor}" stroke="${dotColor}" stroke-width="1.5" class="chart-node-circle" />
+      </g>
+      ${labelHtml}
+    `;
+  }).join("");
 
-    canvas.addEventListener("mousemove", (e) => {
-      const canvasRect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - canvasRect.left;
-      const mouseY = e.clientY - canvasRect.top;
+  svg.innerHTML = `
+    ${defsHtml}
+    ${gridlinesHtml}
+    <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + graphHeight}" class="chart-axis-line" />
+    <line x1="${margin.left}" y1="${margin.top + graphHeight}" x2="${margin.left + graphWidth}" y2="${margin.top + graphHeight}" class="chart-axis-line" />
+    ${linePathsHtml}
+    ${nodesHtml}
+  `;
 
-      let hoverTarget = null;
-      let minDistance = 10;
-
-      plottedFights.forEach(p => {
-        const dx = mouseX - p.x;
-        const dy = mouseY - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minDistance) {
-          minDistance = dist;
-          hoverTarget = p;
-        }
-      });
-
-      showTrendsTooltip(e, hoverTarget, canvas);
-    });
-
-    canvas.addEventListener("mouseleave", () => {
-      showTrendsTooltip(null, null);
-    });
-  }
+  window.moveTrendsTooltip = (e) => {
+    const tooltip = document.getElementById("trendsTooltip");
+    if (!tooltip || tooltip.classList.contains("hidden")) return;
+    
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
+    
+    tooltip.style.left = (mouseX + 15) + "px";
+    tooltip.style.top = (mouseY - 20) + "px";
+  };
 }
 
-function showTrendsTooltip(e, f, canvas) {
+function showTrendsTooltip(e, index) {
   const tooltip = document.getElementById("trendsTooltip");
   if (!tooltip) return;
 
-  if (!f) {
+  if (index === null || index === undefined) {
     tooltip.classList.add("hidden");
     return;
   }
 
+  const f = plottedFights[index];
+  if (!f) return;
+
   const resultColor = f.is_kill ? "#34d399" : "#f87171";
   const resultText = f.is_kill ? "Kill Pull" : "Wipe Pull";
   
-  // Format date elegantly if created_at timestamp is present
   let dateText = "";
   if (f.created_at) {
     try {
@@ -6456,13 +7055,16 @@ function showTrendsTooltip(e, f, canvas) {
       ${dateText}
     </div>
   `;
-
-  const canvasRect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - canvasRect.left;
-  const mouseY = e.clientY - canvasRect.top;
-
-  tooltip.style.left = (mouseX + 15) + "px";
-  tooltip.style.top = (mouseY - 20) + "px";
+  
+  const svg = document.getElementById("trendsCanvas");
+  if (e && svg) {
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
+    
+    tooltip.style.left = (mouseX + 15) + "px";
+    tooltip.style.top = (mouseY - 20) + "px";
+  }
   tooltip.classList.remove("hidden");
 }
 
@@ -7602,6 +8204,11 @@ function openRaidCoachDrawer() {
   drawer.offsetHeight; // trigger reflow
   drawer.classList.add("active");
   
+  const layout = document.querySelector(".report-dashboard-layout");
+  if (layout) {
+    layout.classList.add("ai-chat-open");
+  }
+  
   // Identify active fight boss
   if (currentReportData && getActiveAnalysis()) {
     const analysis = getActiveAnalysis();
@@ -7618,6 +8225,12 @@ function closeRaidCoachDrawer() {
   if (!drawer) return;
   
   drawer.classList.remove("active");
+  
+  const layout = document.querySelector(".report-dashboard-layout");
+  if (layout) {
+    layout.classList.remove("ai-chat-open");
+  }
+  
   setTimeout(() => {
     if (!drawer.classList.contains("active")) {
       drawer.classList.add("hidden");

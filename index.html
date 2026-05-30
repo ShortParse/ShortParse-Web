@@ -158,7 +158,7 @@
                 <p class="card-desc" style="margin-bottom: 12px;">Plots players based on performance (DPS/HPS) vs. mechanical survival score.</p>
             </div>
             <div class="matrix-canvas-container" style="position: relative;">
-              <canvas id="matrixCanvas" width="600" height="400" style="display: block; width: 100%; max-width: 600px; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></canvas>
+              <svg id="matrixCanvas" viewBox="0 0 600 400" style="display: block; width: 100%; max-width: 600px; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></svg>
               <!-- Hovercard Tooltip -->
               <div id="matrixTooltip" class="matrix-tooltip hidden"></div>
             </div>
@@ -252,7 +252,7 @@
             <p class="card-desc">Tracks historical avoidable damage averages and pull progressions over the last 50 fights.</p>
           </div>
           <div class="trends-canvas-container" style="position: relative;">
-            <canvas id="trendsCanvas" width="800" height="280" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></canvas>
+            <svg id="trendsCanvas" viewBox="0 0 800 280" style="display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.6);"></svg>
             <!-- Hovercard Tooltip -->
             <div id="trendsTooltip" class="matrix-tooltip hidden" style="position: absolute; pointer-events: none; z-index: 1000;"></div>
           </div>
@@ -879,19 +879,12 @@
       <div class="report-right-col">
         <section id="detailsCard" class="card hidden">
           <div class="tab-bar">
-            <button class="tab-button active" type="button" data-tab="scorecard">Coaching & Scorecard</button>
-            <button class="tab-button" type="button" data-tab="progression">Wipe Progression</button>
-            <div style="width: 1px; height: 26px; background: var(--border); margin: 0 4px; align-self: center;"></div>
-            <button class="tab-button" type="button" data-tab="benchmarks">Benchmarks</button>
-            <button class="tab-button" type="button" data-tab="playerMetrics">Player Metrics</button>
-            <button class="tab-button" type="button" data-tab="mechanics">Mechanics</button>
-            <button class="tab-button" type="button" data-tab="cooldowns">Cooldowns</button>
-            <button class="tab-button" type="button" data-tab="calibrator">Defensive Calibrator</button>
-            <button class="tab-button" type="button" data-tab="timeline">Timeline</button>
-            <button class="tab-button" type="button" data-tab="issues">Top Issues</button>
-            <button class="tab-button" type="button" data-tab="raw">Raw JSON</button>
-            <button class="tab-coach-button" type="button" id="tabRaidCoachBtn" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; margin-left: auto; padding: 10px 14px; font-size: 13px; cursor: pointer; border-radius: 8px; transition: all 0.2s;">💬 Ask AI Coach</button>
+            <button class="tab-button active" type="button" data-tab="hubRaid">📊 Raid Overview</button>
+            <button class="tab-button" type="button" data-tab="hubPlayer">👤 Player Lounge</button>
+            <button class="tab-button" type="button" data-tab="hubStrategy">📋 Strategy Command</button>
+            <button class="tab-coach-button" type="button" id="tabRaidCoachBtn" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 700; margin-left: auto; padding: 10px 14px; font-size: 13px; cursor: pointer; border-radius: 8px; transition: all 0.2s;">💬 AI Companion</button>
           </div>
+          <div id="subTabBar" class="sub-tab-bar"></div>
           <div id="tabContent"></div>
         </section>
       </div>
