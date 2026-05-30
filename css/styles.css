@@ -558,8 +558,43 @@ button:disabled {
    Tables
 ========================= */
 
-.table-wrapper {
+.table-wrapper,
+.ledger-table-wrapper {
 	overflow-x: auto;
+	background: rgba(15, 23, 42, 0.35);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	margin-bottom: 24px;
+	box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
+	backdrop-filter: blur(4px);
+}
+
+.table-wrapper table,
+.ledger-table-wrapper table {
+	border-collapse: separate;
+	border-spacing: 0;
+	width: 100%;
+}
+
+.table-wrapper th:first-child,
+.ledger-table-wrapper th:first-child {
+	border-top-left-radius: calc(var(--radius) - 1px);
+}
+.table-wrapper th:last-child,
+.ledger-table-wrapper th:last-child {
+	border-top-right-radius: calc(var(--radius) - 1px);
+}
+.table-wrapper tr:last-child td:first-child,
+.ledger-table-wrapper tr:last-child td:first-child {
+	border-bottom-left-radius: calc(var(--radius) - 1px);
+}
+.table-wrapper tr:last-child td:last-child,
+.ledger-table-wrapper tr:last-child td:last-child {
+	border-bottom-right-radius: calc(var(--radius) - 1px);
+}
+.table-wrapper tr:last-child td,
+.ledger-table-wrapper tr:last-child td {
+	border-bottom: none;
 }
 
 table {
@@ -5711,6 +5746,7 @@ body {
 	padding: 16px;
 	max-height: 800px;
 	overflow-y: auto;
+	overflow-x: hidden;
 	box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.2);
 }
 
