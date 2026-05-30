@@ -195,55 +195,7 @@
           </div>
         </div>
 
-        <!-- Accountability Repair Ledger -->
-        <div class="guild-suite-ledger-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div>
-              <h3 style="font-size: 16px; margin-bottom: 4px;">Avoidable Gold Repair Debt Ledger</h3>
-              <p class="card-desc">Computes roster repair billing based on total avoidable mechanic damage taken.</p>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <button id="deleteLedgerPlayersButton" class="logout-button hidden" type="button" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 12.5px; border-color: rgba(239, 68, 68, 0.4); color: #f87171; font-weight: bold; background: rgba(239, 68, 68, 0.1); margin: 0; height: 38px;">
-                🗑️ Exclude Selected
-              </button>
-              <button id="postGuildLedgerButton" class="discord-post-btn" type="button" style="display: inline-flex; align-items: center; gap: 6px; margin: 0; height: 38px;">
-                <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                </svg>
-                Post Ledger to Discord
-              </button>
-            </div>
-          </div>
-          
-          <div class="ledger-table-wrapper" style="overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.3);">
-            <table class="ledger-table" style="width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 600px;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
-                  <th style="padding: 12px 16px; text-align: left; font-weight: bold; color: var(--muted); width: 40px;">
-                    <input type="checkbox" id="selectAllLedgerPlayers" style="cursor: pointer; transform: scale(1.15);" />
-                  </th>
-                  <th style="padding: 12px 16px; text-align: left; font-weight: bold; color: var(--muted);">Player Name</th>
-                  <th style="padding: 12px 16px; text-align: left; font-weight: bold; color: var(--muted);">Role</th>
-                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Fights</th>
-                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Avg Avoidable Taken</th>
-                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Average Grade</th>
-                  <th style="padding: 12px 16px; text-align: right; font-weight: bold; color: var(--muted);">Projected Repair Debt</th>
-                </tr>
-              </thead>
-              <tbody id="guildLedgerBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
 
-          <!-- Excluded Players management section -->
-          <div id="excludedPlayersSection" class="hidden" style="margin-top: 16px; padding: 12px 16px; border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(255, 255, 255, 0.01); font-size: 12.5px;">
-            <span style="color: var(--muted); font-weight: 600; margin-right: 8px;">Excluded Players:</span>
-            <div id="excludedPlayersList" style="display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-              <!-- Excluded player chips go here -->
-            </div>
-          </div>
-        </div>
 
         <!-- Roster Evolution & Progression Trends -->
         <div class="guild-suite-trends-card" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">

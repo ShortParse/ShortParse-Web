@@ -161,16 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (navPersonal) navPersonal.addEventListener("click", switchToPersonalAnalyzer);
   if (navGuildSuite) navGuildSuite.addEventListener("click", switchToGuildSuite);
 
-  // Guild Suite Post Ledger to Discord trigger
-  const postLedgerBtn = document.getElementById("postGuildLedgerButton");
-  if (postLedgerBtn) postLedgerBtn.addEventListener("click", postGuildLedgerToDiscord);
-
-  // Bulk Exclude/Restore Ledger player events
-  const selectAllCheckbox = document.getElementById("selectAllLedgerPlayers");
-  if (selectAllCheckbox) selectAllCheckbox.addEventListener("change", handleSelectAllLedgerPlayers);
-
-  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
-  if (deleteBtn) deleteBtn.addEventListener("click", excludeSelectedLedgerPlayers);
 
   // Focus Pull drilldown selector trigger
   const pullSelect = document.getElementById("pullDrilldownSelect");
@@ -6758,7 +6748,6 @@ async function loadGuildSuiteOverview() {
       drawTrendsChart(mockFights);
       renderBuffSynergy(mockBuffs);
       renderPanicAudit(mockPlayers);
-      renderGoldLedger(mockPlayers);
       renderWipeDiagnoser(mockWipeAnalytics);
       return;
     }
@@ -6780,9 +6769,7 @@ async function loadGuildSuiteOverview() {
     drawTrendsChart(data.fights_history || []);
     renderBuffSynergy(data.synergy_buffs || { active: [], missing: [], suggestions: [] });
     renderPanicAudit(data.players_history || {});
-    renderGoldLedger(data.players_history || {});
     renderWipeDiagnoser(data.wipe_analytics || {});
-    renderExcludedPlayers(data.excluded_players || []);
     
   } catch (error) {
     console.error("Failed to load premium Guild Suite overview:", error);
@@ -7252,178 +7239,7 @@ function renderPanicAudit(players) {
   container.innerHTML = html || `<div style="text-align: center; color: var(--green); padding: 10px;">🛡️ Clean Raid Survival! Zero roster deaths recorded in these fights.</div>`;
 }
 
-function renderGoldLedger(players) {
-  const body = document.getElementById("guildLedgerBody");
-  if (!body) return;
-  
-  const selectAllCheckbox = document.getElementById("selectAllLedgerPlayers");
-  if (selectAllCheckbox) selectAllCheckbox.checked = false;
-  
-  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
-  if (deleteBtn) deleteBtn.classList.add("hidden");
 
-  const sorted = Object.entries(players)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.gold_debt - a.gold_debt);
-    
-  let html = "";
-  
-  if (sorted.length === 0) {
-    body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 20px;">No ledger entries found.</td></tr>`;
-    return;
-  }
-  
-  sorted.forEach(p => {
-    let classColor = "var(--text)";
-    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : p.spec.replace(/\s+/g, "");
-    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
-    else if (CLASS_COLORS[p.spec]) classColor = CLASS_COLORS[p.spec];
-    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
-    
-    let coinHtml = "0g";
-    if (p.gold_debt > 0) {
-      coinHtml = `
-        <span class="coin-token">
-          <span>${formatNumber(p.gold_debt)}</span>
-          <span class="coin-icon gold"></span>
-        </span>
-      `;
-    } else {
-      coinHtml = `<span style="color: var(--green); font-weight: 700;">Clean (0g)</span>`;
-    }
-    
-    html += `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
-        <td style="padding: 12px 16px; text-align: left;">
-          <input type="checkbox" class="ledger-player-checkbox" data-player="${p.name}" style="cursor: pointer; transform: scale(1.15);" />
-        </td>
-        <td style="padding: 12px 16px; font-weight: bold; color: ${classColor};">${escapeHtml(p.name)}</td>
-        <td style="padding: 12px 16px; color: var(--muted);">${escapeHtml(p.role)}</td>
-        <td style="padding: 12px 16px; text-align: right; font-weight: 600;">${p.fights_count}</td>
-        <td style="padding: 12px 16px; text-align: right; color: var(--red); font-weight: 600;">${formatNumber(p.avg_avoidable_damage)}</td>
-        <td style="padding: 12px 16px; text-align: right;"><span class="badge badge-grade grade-${p.avg_grade || "C"}" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${p.avg_grade}</span></td>
-        <td style="padding: 12px 16px; text-align: right;">${coinHtml}</td>
-      </tr>
-    `;
-  });
-  
-  body.innerHTML = html;
-
-  // Bind change listeners to checkboxes to toggle bulk delete button
-  const rowCheckboxes = body.querySelectorAll(".ledger-player-checkbox");
-  rowCheckboxes.forEach(cb => {
-    cb.addEventListener("change", updateLedgerBulkDeleteButtonVisibility);
-  });
-}
-
-function updateLedgerBulkDeleteButtonVisibility() {
-  const body = document.getElementById("guildLedgerBody");
-  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
-  if (!body || !deleteBtn) return;
-  
-  const checked = body.querySelectorAll(".ledger-player-checkbox:checked");
-  if (checked.length > 0) {
-    deleteBtn.classList.remove("hidden");
-  } else {
-    deleteBtn.classList.add("hidden");
-  }
-}
-
-function handleSelectAllLedgerPlayers(e) {
-  const body = document.getElementById("guildLedgerBody");
-  if (!body) return;
-  
-  const rowCheckboxes = body.querySelectorAll(".ledger-player-checkbox");
-  rowCheckboxes.forEach(cb => {
-    cb.checked = e.target.checked;
-  });
-  
-  updateLedgerBulkDeleteButtonVisibility();
-}
-
-async function excludeSelectedLedgerPlayers() {
-  const body = document.getElementById("guildLedgerBody");
-  if (!body) return;
-  
-  const checked = body.querySelectorAll(".ledger-player-checkbox:checked");
-  if (checked.length === 0) return;
-  
-  const playerNames = Array.from(checked).map(cb => cb.getAttribute("data-player"));
-  
-  const deleteBtn = document.getElementById("deleteLedgerPlayersButton");
-  if (deleteBtn) {
-    deleteBtn.disabled = true;
-    deleteBtn.textContent = "Excluding...";
-  }
-  
-  try {
-    const response = await fetch("/api/guild/exclude-players", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ players: playerNames })
-    });
-    
-    if (response.ok) {
-      await loadGuildSuiteOverview(); // Re-fetch history which dynamically updates matrix, ledger, trend charts, etc.!
-    } else {
-      alert("Failed to exclude players.");
-    }
-  } catch (error) {
-    console.error("Error excluding players:", error);
-    alert("Error excluding players.");
-  } finally {
-    if (deleteBtn) {
-      deleteBtn.disabled = false;
-      deleteBtn.textContent = "🗑 Exclude Selected";
-    }
-  }
-}
-
-async function restoreLedgerPlayer(playerName) {
-  try {
-    const response = await fetch("/api/guild/restore-players", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ players: [playerName] })
-    });
-    
-    if (response.ok) {
-      await loadGuildSuiteOverview(); // Re-fetch and update UI!
-    } else {
-      alert("Failed to restore player.");
-    }
-  } catch (error) {
-    console.error("Error restoring player:", error);
-    alert("Error restoring player.");
-  }
-}
-
-function renderExcludedPlayers(excludedList) {
-  const section = document.getElementById("excludedPlayersSection");
-  const listContainer = document.getElementById("excludedPlayersList");
-  if (!section || !listContainer) return;
-
-  if (!excludedList || excludedList.length === 0) {
-    section.classList.add("hidden");
-    listContainer.innerHTML = "";
-    return;
-  }
-
-  section.classList.remove("hidden");
-  let html = "";
-  excludedList.forEach(name => {
-    html += `
-      <span class="preset-chip" style="padding: 4px 10px; border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.05); color: #f87171; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; font-weight: 500;" onclick="restoreLedgerPlayer('${escapeHtml(name)}')">
-        ${escapeHtml(name)} <strong style="font-size: 11px; opacity: 0.7;">&times;</strong>
-      </span>
-    `;
-  });
-  listContainer.innerHTML = html;
-}
 
 let activeWipeBoss = null;
 
@@ -7664,91 +7480,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
   `;
 }
 
-async function postGuildLedgerToDiscord() {
-  const postBtn = document.getElementById("postGuildLedgerButton");
-  if (!postBtn || !currentGuildOverviewData) return;
-  
-  if (!isPremium) {
-    alert("⭐ The Guild Suite is a Patreon Premium feature. Support us on Patreon to unlock the Guild Command Center!");
-    return;
-  }
-  
-  if (!currentUserWebhook) {
-    alert("Please configure and save your Discord Webhook URL in your Settings drawer first.");
-    openSettingsDrawer();
-    return;
-  }
-  
-  postBtn.disabled = true;
-  postBtn.textContent = "Posting...";
-  
-  const players = currentGuildOverviewData.players_history || {};
-  const sorted = Object.entries(players)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.gold_debt - a.gold_debt);
-    
-  let leaderboardText = "";
-  sorted.slice(0, 10).forEach((p, idx) => {
-    leaderboardText += `${idx + 1}. **${p.name}** (${p.role}) — **${p.gold_debt} gold** debt (${formatNumber(p.avg_avoidable_damage)} avg avoidable)\n`;
-  });
-  
-  if (!leaderboardText) leaderboardText = "Zero repair debt recorded!";
-  
-  const discordPayload = {
-    username: "ShortParse",
-    avatar_url: "https://raw.githubusercontent.com/ShortParse/ShortParse-Web/main/images/apple-touch-icon.png",
-    embeds: [
-      {
-        title: "🛡️ ShortParse Roster Repair Debt Ledger",
-        description: "Weekly projected gold repair bills computed based on avoidable mechanic damage taken.",
-        color: 16478597,
-        fields: [
-          {
-            name: "💰 Roster Repair Leaderboard (Top Avoidable Damage)",
-            value: leaderboardText
-          },
-          {
-            name: "📊 Guild Raid Averages",
-            value: `• **Total Fights Audited:** ${currentGuildOverviewData.guild_averages.total_fights_analyzed}\n• **Average Avoidable Damage:** ${formatNumber(currentGuildOverviewData.guild_averages.average_avoidable_damage)} taken per fight`
-          }
-        ],
-        footer: {
-          text: "ShortParse Guild Suite - Gamified Accountability & Banter"
-        },
-        timestamp: new Date().toISOString()
-      }
-    ]
-  };
-  
-  try {
-    const response = await fetch(currentUserWebhook, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(discordPayload)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Discord API returned status ${response.status}`);
-    }
-    
-    postBtn.textContent = "Posted! 🚀";
-    postBtn.style.background = "var(--green)";
-    postBtn.style.color = "#0f1218";
-    
-    setTimeout(() => {
-      postBtn.disabled = false;
-      postBtn.textContent = "Post Ledger to Discord";
-      postBtn.style.background = "";
-      postBtn.style.color = "";
-    }, 2500);
-  } catch (error) {
-    alert(`Failed to share ledger to Discord: ${error.message}`);
-    postBtn.disabled = false;
-    postBtn.textContent = "Post Ledger to Discord";
-  }
-}
+
 
 
 // ==============================================================================
