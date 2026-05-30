@@ -7946,30 +7946,34 @@ function initializeCooldownNotesTab() {
 
   if (!mrtBossSelect || !mrtNotesOutput || !mrtRosterDefensives) return;
 
-  // Clear and populate Boss Selector based on history
+  // Clear and populate Boss Selector based on active report analyses
   mrtBossSelect.innerHTML = "";
   
   let bosses = [];
-  if (currentGuildOverviewData && currentGuildOverviewData.wipe_analytics) {
-    bosses = Object.keys(currentGuildOverviewData.wipe_analytics);
-  }
-
-  if (bosses.length === 0) {
+  if (currentReportData && currentReportData.analyses) {
+    currentReportData.analyses.forEach((analysis, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.innerText = analysis.fight?.name || `Encounter ${index + 1}`;
+      mrtBossSelect.appendChild(opt);
+      bosses.push(analysis.fight?.name || `Encounter ${index + 1}`);
+    });
+  } else {
     // Fallback Mock selection
-    bosses = ["Midnight Falls", "The Voidspire"];
+    const mockBosses = ["Midnight Falls", "The Voidspire"];
+    mockBosses.forEach((bossName, index) => {
+      const opt = document.createElement("option");
+      opt.value = index;
+      opt.innerText = bossName;
+      mrtBossSelect.appendChild(opt);
+      bosses.push(bossName);
+    });
   }
-
-  bosses.forEach((bossName) => {
-    const opt = document.createElement("option");
-    opt.value = bossName;
-    opt.innerText = bossName;
-    mrtBossSelect.appendChild(opt);
-  });
 
   // Handle boss change
   mrtBossSelect.onchange = async () => {
-    const selectedBoss = mrtBossSelect.value;
-    await loadMrtNotesForBoss(selectedBoss);
+    const selectedIdx = parseInt(mrtBossSelect.value, 10);
+    await loadMrtNotesForBoss(selectedIdx);
   };
 
   // Populate Roster Defensives mapping
@@ -8024,9 +8028,17 @@ function initializeCooldownNotesTab() {
     mrtRosterDefensives.innerHTML = `<div style="color: var(--muted); font-style: italic; padding: 10px;">No major healer/utility CD holders found in active roster.</div>`;
   }
 
-  // Load notes for first boss
+  // Load notes for active or first boss
+  let defaultIdx = 0;
+  if (currentReportData && currentReportData.analyses) {
+    if (selectedAnalysisIndex >= 0 && selectedAnalysisIndex < currentReportData.analyses.length) {
+      defaultIdx = selectedAnalysisIndex;
+    }
+  }
+
   if (bosses.length > 0) {
-    loadMrtNotesForBoss(bosses[0]);
+    mrtBossSelect.value = defaultIdx;
+    loadMrtNotesForBoss(defaultIdx);
   }
 
   // Copy notes event
@@ -8049,11 +8061,34 @@ function initializeCooldownNotesTab() {
   }
 }
 
-async function loadMrtNotesForBoss(bossName) {
+async function loadMrtNotesForBoss(analysisIndexOrName) {
   const outputEl = document.getElementById("mrtNotesOutput");
   if (!outputEl) return;
 
   outputEl.innerText = "// Compiling cooldown notes timeline...";
+
+  // Check if argument is index or name (for robustness/legacy mock fallback)
+  let analysisIndex = 0;
+  let bossName = "Unknown Encounter";
+
+  if (typeof analysisIndexOrName === "number") {
+    analysisIndex = analysisIndexOrName;
+    if (currentReportData && currentReportData.analyses && currentReportData.analyses[analysisIndex]) {
+      bossName = currentReportData.analyses[analysisIndex].fight?.name || bossName;
+    } else {
+      const mockNames = ["Midnight Falls", "The Voidspire"];
+      bossName = mockNames[analysisIndex] || bossName;
+    }
+  } else {
+    bossName = analysisIndexOrName || "Unknown Encounter";
+    // Try to find index by name
+    if (currentReportData && currentReportData.analyses) {
+      const idx = currentReportData.analyses.findIndex(a => a.fight?.name === bossName);
+      if (idx !== -1) {
+        analysisIndex = idx;
+      }
+    }
+  }
 
   // Check if we are premium or using locked mock view
   const lockScreen = document.getElementById("guildSuitePremiumLock");
@@ -8080,8 +8115,8 @@ async function loadMrtNotesForBoss(bossName) {
   }
 
   try {
-    // Call API
-    const response = await fetch(`/api/guild/mrt-notes?job_id=${currentJobId}&analysis_index=${selectedAnalysisIndex}`);
+    // Call API using the specific analysisIndex passed to the function!
+    const response = await fetch(`/api/guild/mrt-notes?job_id=${currentJobId}&analysis_index=${analysisIndex}`);
     if (response.ok) {
       const data = await response.json();
       outputEl.innerText = data.notes;
