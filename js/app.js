@@ -2139,6 +2139,10 @@ function renderRosterItemRow(p) {
   else if (p.grade === "D") { gradeBadgeColor = "rgba(251,146,60,0.1)"; gradeTextColor = "#fb923c"; }
   else if (p.grade === "F") { gradeBadgeColor = "rgba(251,113,133,0.1)"; gradeTextColor = "#fb7185"; }
 
+  const gradeMap = {
+    "S": "Elite", "A": "Master", "B": "Expert", "C": "Adequate", "D": "Fair", "F": "Needs Focus", "-": "Pending"
+  };
+
   return `
     <button class="roster-item-btn ${isActive ? "active" : ""}" data-player-name="${escapeHtml(p.name)}" type="button">
       <div class="roster-item-name-col">
@@ -2147,7 +2151,7 @@ function renderRosterItemRow(p) {
         <span style="font-size: 10px; color: var(--muted); font-weight: 500;">(${escapeHtml(specLabel)})</span>
       </div>
       <span class="roster-item-grade-badge" style="background: ${gradeBadgeColor}; color: ${gradeTextColor}; border-color: ${gradeTextColor}20;">
-        Grade ${p.grade}
+        ${gradeMap[p.grade] || p.grade}
       </span>
     </button>
   `;
@@ -2524,7 +2528,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
         <span class="roster-item-grade-badge" style="background: ${gradeColor}15; color: ${gradeColor}; border-color: ${gradeColor}30; font-size: 16px; padding: 6px 16px; font-weight: 800; border-radius: 12px; box-shadow: 0 0 16px ${gradeColor}08;">
-          Grade ${grade}
+          ${displayGrade}
         </span>
         <span style="font-size: 11px; color: var(--muted); font-weight: 600;">${gradeTitle}</span>
       </div>
@@ -4253,7 +4257,15 @@ function getPlayerDisplayName(playerName, playerLookup) {
 }
 
 function getClassColor(className) {
-  return CLASS_COLORS[className] || "#FFFFFF";
+  if (!className) return "#FFFFFF";
+  const clean = className.replace(/\s+/g, "").toLowerCase();
+  
+  for (const [key, val] of Object.entries(CLASS_COLORS)) {
+    if (key.replace(/\s+/g, "").toLowerCase() === clean) {
+      return val;
+    }
+  }
+  return "#FFFFFF";
 }
 
 function normalizeClassName(className) {
@@ -8201,12 +8213,17 @@ async function renderSpecFlexTab() {
           const ursColor = p.urs >= 80 ? "var(--green)" : (p.urs >= 50 ? "#fbbf24" : "#ef4444");
           const spiColor = p.spi >= 80 ? "var(--green)" : (p.spi >= 50 ? "#fbbf24" : "#ef4444");
 
+          const gradeMap = {
+            "S": "Elite", "A": "Master", "B": "Expert", "C": "Adequate", "D": "Fair", "F": "Needs Focus", "-": "Pending"
+          };
+          const mappedGrade = gradeMap[p.avg_grade] || p.avg_grade;
+
           row.innerHTML = `
             <td style="padding: 12px 14px; font-weight: 600; color: ${classColor};">${name}</td>
             <td style="padding: 12px 14px;">${p.spec} (${p.role})</td>
             <td style="padding: 12px 14px; text-align: right;">${p.fights_count} pulls</td>
             <td style="padding: 12px 14px; text-align: right; color: ${ursColor}; font-weight: 700;">${p.urs}%</td>
-            <td style="padding: 12px 14px; text-align: right; color: ${spiColor}; font-weight: 700;">${p.spi} (Grade ${p.avg_grade})</td>
+            <td style="padding: 12px 14px; text-align: right; color: ${spiColor}; font-weight: 700;">${p.spi} (${mappedGrade})</td>
             <td style="padding: 12px 14px; text-align: center;">
               <span class="flex-badge ${p.is_flex ? '' : 'potential'}" style="${p.is_flex ? '' : 'background: rgba(255,255,255,0.03); color: var(--muted); border: 1px solid rgba(255,255,255,0.05);'}">
                 ${p.is_flex ? 'Flex Active' : 'Single Spec'}
