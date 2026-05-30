@@ -8230,7 +8230,7 @@ async function renderSpecFlexTab() {
           const row = document.createElement("tr");
           row.style.borderBottom = "1px solid var(--border)";
           
-          const classColor = CLASS_COLORS[p.spec.split(" ").pop()] || "var(--foreground)";
+          const classColor = getClassColor(p.class);
           
           // Color code URS and SPI
           const ursColor = p.urs >= 80 ? "var(--green)" : (p.urs >= 50 ? "#fbbf24" : "#ef4444");
