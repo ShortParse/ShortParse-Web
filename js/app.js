@@ -6553,22 +6553,41 @@ function switchToPersonalAnalyzer() {
   if (guildBtn) guildBtn.classList.remove("active");
   
   if (currentJobId) {
-    // We are actively viewing a report - hide setup cards so they don't shove the report down!
-    const analyzeCardEl = document.getElementById("analyzeCard");
-    if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
-    
-    const statusCardEl = document.getElementById("statusCard");
-    if (statusCardEl) statusCardEl.classList.add("hidden");
-    
-    const dashboardCard = document.getElementById("guildDashboardCard");
-    if (dashboardCard) dashboardCard.classList.add("hidden");
+    if (currentReportData) {
+      // We are actively viewing a report - hide setup cards so they don't shove the report down!
+      const analyzeCardEl = document.getElementById("analyzeCard");
+      if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
+      
+      const statusCardEl = document.getElementById("statusCard");
+      if (statusCardEl) statusCardEl.classList.add("hidden");
+      
+      const dashboardCard = document.getElementById("guildDashboardCard");
+      if (dashboardCard) dashboardCard.classList.add("hidden");
 
-    const resultCard = document.getElementById("resultCard");
-    const bossTilesCard = document.getElementById("bossTilesCard");
-    const detailsCard = document.getElementById("detailsCard");
-    if (resultCard) resultCard.classList.remove("hidden");
-    if (bossTilesCard) bossTilesCard.classList.remove("hidden");
-    if (detailsCard) detailsCard.classList.remove("hidden");
+      const resultCard = document.getElementById("resultCard");
+      const bossTilesCard = document.getElementById("bossTilesCard");
+      const detailsCard = document.getElementById("detailsCard");
+      if (resultCard) resultCard.classList.remove("hidden");
+      if (bossTilesCard) bossTilesCard.classList.remove("hidden");
+      if (detailsCard) detailsCard.classList.remove("hidden");
+    } else {
+      // The analysis is still running/polling! Show the status/progress card, hide the setup and report cards!
+      const analyzeCardEl = document.getElementById("analyzeCard");
+      if (analyzeCardEl) analyzeCardEl.classList.add("hidden");
+      
+      const statusCardEl = document.getElementById("statusCard");
+      if (statusCardEl) statusCardEl.classList.remove("hidden");
+      
+      const dashboardCard = document.getElementById("guildDashboardCard");
+      if (dashboardCard) dashboardCard.classList.add("hidden");
+
+      const resultCard = document.getElementById("resultCard");
+      const bossTilesCard = document.getElementById("bossTilesCard");
+      const detailsCard = document.getElementById("detailsCard");
+      if (resultCard) resultCard.classList.add("hidden");
+      if (bossTilesCard) bossTilesCard.classList.add("hidden");
+      if (detailsCard) detailsCard.classList.add("hidden");
+    }
 
     // Restore correct report address bar path
     let path = `/report/${currentJobId}`;
