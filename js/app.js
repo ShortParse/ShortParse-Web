@@ -2035,10 +2035,10 @@ function renderPlayerLoungeWorkspace(analysis, playerLookup) {
 
   entries.forEach(([playerName, metricData]) => {
     const identity = metricData.identity || {};
-    const role = identity.role || "DPS";
+    const role = identity.role || metricData.role || "DPS";
     const scEntry = scorecard.find(row => row.player === playerName) || {};
     const grade = scEntry.grade || "-";
-    const className = identity.class || "Unknown";
+    const className = identity.class || metricData.class || "Unknown";
 
     const playerData = {
       name: playerName,
@@ -2128,7 +2128,7 @@ function renderPlayerLoungeWorkspace(analysis, playerLookup) {
 function renderRosterItemRow(p) {
   const nameColor = getClassColor(p.class);
   const isActive = p.name === loungeSelectedPlayer;
-  const specLabel = p.metricData.identity?.spec || "";
+  const specLabel = p.metricData.identity?.spec || p.metricData.spec || "";
 
   let gradeBadgeColor = "rgba(255,255,255,0.06)";
   let gradeTextColor = "#FFFFFF";
@@ -4393,6 +4393,27 @@ function showNoEncountersScreen(data) {
       </div>
     </div>
   `;
+
+  // Start polling for new pulls if the report is empty (Autopilot polling)
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!currentJobId) return;
+    try {
+      const response = await fetch(`/api/jobs/${currentJobId}/summary`);
+      if (response.ok) {
+        const summary = await response.json();
+        if (summary.status === "queued" || summary.status === "running") {
+          clearInterval(pollTimer);
+          enterReportMode(currentJobId);
+          statusCard().classList.remove("hidden");
+          renderAnalysisConsole(summary);
+          pollTimer = setInterval(pollJob, 3000);
+        }
+      }
+    } catch (e) {
+      console.error("Autopilot polling failed:", e);
+    }
+  }, 10000); // Poll every 10 seconds
 }
 
 
