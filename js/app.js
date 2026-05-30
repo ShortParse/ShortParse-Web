@@ -2144,13 +2144,15 @@ function renderRosterItemRow(p) {
   };
 
   return `
-    <button class="roster-item-btn ${isActive ? "active" : ""}" data-player-name="${escapeHtml(p.name)}" type="button">
-      <div class="roster-item-name-col">
-        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${nameColor}; display: inline-block;"></span>
-        <span style="color: ${nameColor}; font-weight: 700;">${escapeHtml(p.name)}</span>
-        <span style="font-size: 10px; color: var(--muted); font-weight: 500;">(${escapeHtml(specLabel)})</span>
+    <button class="roster-item-btn ${isActive ? "active" : ""}" data-player-name="${escapeHtml(p.name)}" type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px;">
+      <div class="roster-item-name-col" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-right: 4px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${nameColor}; display: inline-block; flex-shrink: 0;"></span>
+        <div style="display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 2px;">
+          <span style="color: ${nameColor}; font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${escapeHtml(p.name)}</span>
+          ${specLabel ? `<span style="font-size: 10.5px; color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">${escapeHtml(specLabel)}</span>` : ""}
+        </div>
       </div>
-      <span class="roster-item-grade-badge" style="background: ${gradeBadgeColor}; color: ${gradeTextColor}; border-color: ${gradeTextColor}20;">
+      <span class="roster-item-grade-badge" style="background: ${gradeBadgeColor}; color: ${gradeTextColor}; border-color: ${gradeTextColor}20; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; min-width: 76px; text-align: center;">
         ${gradeMap[p.grade] || p.grade}
       </span>
     </button>
