@@ -6022,7 +6022,7 @@ function initVisualBuilder() {
   // Bind event listeners to form inputs for live regeneration
   const formFields = [
     "mechVariable", "mechName", "mechSeverity", "mechAppliesTo",
-    "mechAvoidable", "mechCountsAsFailure", "mechCategory", "mechFailureType",
+    "mechAvoidable", "mechCountsAsFailure", "mechMrt", "mechCategory", "mechFailureType",
     "mechMaxHits", "mechScoreHit", "mechSpellIds", "mechWclType",
     "mechMinSoakers", "mechNote", "mechRec"
   ];
@@ -6189,6 +6189,7 @@ function handleMechanicChange() {
     document.getElementById("mechAppliesTo").value = "ALL_ROLES";
     document.getElementById("mechAvoidable").checked = true;
     document.getElementById("mechCountsAsFailure").checked = true;
+    document.getElementById("mechMrt").checked = true;
     document.getElementById("mechCategory").value = "avoidable_damage";
     document.getElementById("mechFailureType").value = "avoidable_damage";
     document.getElementById("mechMaxHits").value = "1";
@@ -6224,6 +6225,7 @@ function handleMechanicChange() {
 
     document.getElementById("mechAvoidable").checked = mech.avoidable;
     document.getElementById("mechCountsAsFailure").checked = mech.counts_as_failure;
+    document.getElementById("mechMrt").checked = mech.mrt !== false;
     document.getElementById("mechCategory").value = mech.category;
     document.getElementById("mechFailureType").value = mech.failure_type;
     document.getElementById("mechMaxHits").value = mech.max_reasonable_hits;
@@ -6266,6 +6268,7 @@ function updateBoilerplatePreviews() {
   const severity = document.getElementById("mechSeverity").value;
   const avoidable = document.getElementById("mechAvoidable").checked ? "True" : "False";
   const countsAsFailure = document.getElementById("mechCountsAsFailure").checked ? "True" : "False";
+  const mrt = document.getElementById("mechMrt").checked ? "True" : "False";
   const category = document.getElementById("mechCategory").value;
   const failureType = document.getElementById("mechFailureType").value;
   const maxHits = parseInt(document.getElementById("mechMaxHits").value) || 0;
@@ -6299,6 +6302,7 @@ function updateBoilerplatePreviews() {
     "note": ${formatPythonString(note)},
     "recommendation": ${formatPythonString(rec)},
     "wcl_type": "${wclType.replace(/"/g, '\\"')}",
+    "mrt": ${mrt},
 }`;
 
   document.getElementById("mechanicBlockPreview").textContent = code;
