@@ -8015,14 +8015,14 @@ function initializeCooldownNotesTab() {
 
   // Defensives registration
   const cooldownSpells = {
-    "Priest": "Divine Hymn / Power Word: Barrier",
-    "Druid": "Tranquility",
-    "Shaman": "Spirit Link / Healing Tide",
-    "Paladin": "Aura Mastery",
-    "Monk": "Revival",
-    "Warrior": "Rallying Cry",
-    "Death Knight": "Anti-Magic Zone",
-    "Demon Hunter": "Darkness"
+    "Priest": "Divine Hymn / Power Word: Barrier (3m CD)",
+    "Druid": "Tranquility (3m CD)",
+    "Shaman": "Spirit Link / Healing Tide (3m CD)",
+    "Paladin": "Aura Mastery (3m CD)",
+    "Monk": "Revival (3m CD)",
+    "Warrior": "Rallying Cry (3m CD)",
+    "Death Knight": "Anti-Magic Zone (2m CD)",
+    "Demon Hunter": "Darkness (3m CD)"
   };
 
   let foundAny = false;
@@ -8032,7 +8032,8 @@ function initializeCooldownNotesTab() {
       foundAny = true;
       const row = document.createElement("div");
       row.style.display = "flex";
-      row.style.justify = "space-between";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
       row.style.padding = "6px 8px";
       row.style.background = "rgba(255,255,255,0.02)";
       row.style.border = "1px solid rgba(255,255,255,0.04)";
