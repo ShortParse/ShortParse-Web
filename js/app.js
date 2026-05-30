@@ -784,7 +784,7 @@ async function copyShareLink() {
 
 function renderReport(data) {
   if (!data.analyses || !data.analyses.length) {
-    showDebug(JSON.stringify(data, null, 2));
+    showNoEncountersScreen(data);
     return;
   }
 
@@ -4346,6 +4346,40 @@ function showDebug(text) {
   document.getElementById("tabContent").innerHTML = `
     <h2 class="tab-panel-title">Debug Output</h2>
     <pre>${escapeHtml(text)}</pre>
+  `;
+}
+
+function showNoEncountersScreen(data) {
+  document.getElementById("detailsCard").classList.remove("hidden");
+
+  const reportCode = data.report?.code || "Unknown";
+  const reportTitle = data.report?.title || "Active Raid Log";
+
+  document.getElementById("tabContent").innerHTML = `
+    <div class="empty-state-container" style="padding: 48px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 360px; background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 8px; backdrop-filter: blur(12px); box-shadow: var(--shadow);">
+      <!-- Glowing Animated Sync Icon -->
+      <div class="empty-state-icon-wrapper" style="position: relative; margin-bottom: 24px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+        <div class="pulse-ring" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; border: 2.5px solid rgba(56, 189, 248, 0.35); animation: pulseGlow 2.2s infinite ease-in-out;"></div>
+        <div style="font-size: 38px; position: relative; z-index: 2; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));">⚔️</div>
+      </div>
+      
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 21px; font-weight: 800; color: var(--text); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        Raid Log Synced <span class="sync-badge" style="background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.25); color: #34d399; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.06em; display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block; animation: blink 1.6s infinite;"></span> Waiting for Pulls</span>
+      </h2>
+      
+      <p style="font-family: 'Inter', sans-serif; font-size: 14px; color: var(--muted); max-width: 480px; line-height: 1.6; margin: 0 0 24px 0;">
+        Successfully connected to Warcraft Logs report <strong style="color: #60a5fa; font-family: monospace;">"${escapeHtml(reportCode)}"</strong> entitled <strong style="color: var(--text);">"${escapeHtml(reportTitle)}"</strong>.
+      </p>
+      
+      <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 18px 22px; max-width: 500px; text-align: left; box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.25);">
+        <h4 style="font-family: 'Outfit', sans-serif; font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text); margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;">
+          🔮 Real-Time Autopilot Active
+        </h4>
+        <p style="font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted); margin: 0; line-height: 1.55;">
+          No boss encounters or combat logs have been generated yet. Pull a boss or complete a fight in World of Warcraft, and ShortParse will automatically analyze it here in real-time as your log uploader processes the stream!
+        </p>
+      </div>
+    </div>
   `;
 }
 
