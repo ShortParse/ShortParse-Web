@@ -21,6 +21,7 @@ let benchmarkSelectedPlayer = null;
 let benchmarkComparisonMode = "high_performer";
 let currentCoachPlayerName = null;
 let isPatreonLinked = false;
+let isLoggedIn = false;
 let isPremium = false;
 let premiumTier = null;
 let priorityQueueEnabled = false;
@@ -254,7 +255,7 @@ function restoreAnalyzeAndGuildCards() {
   if (analyzeCardEl) analyzeCardEl.classList.remove("hidden");
   
   const guildDashboardCardEl = document.getElementById("guildDashboardCard");
-  if (guildDashboardCardEl && isPatreonLinked) {
+  if (guildDashboardCardEl && isLoggedIn) {
     guildDashboardCardEl.classList.remove("hidden");
   }
 }
@@ -738,7 +739,7 @@ function resetToAnalyzeMode() {
   toggleGuildHub(false); // Expand Guild Logs Hub when NOT looking at a report
 
   const guildDashboardCardEl = document.getElementById("guildDashboardCard");
-  if (guildDashboardCardEl && isPatreonLinked) {
+  if (guildDashboardCardEl && isLoggedIn) {
     guildDashboardCardEl.classList.remove("hidden");
   }
 
@@ -4467,6 +4468,7 @@ async function checkUserSession() {
       isPremium = user.is_premium || false;
       premiumTier = user.premium_tier || null;
       isPatreonLinked = user.is_patreon_linked || false;
+      isLoggedIn = true;
       priorityQueueEnabled = user.priority_queue_enabled || false;
 
       const firstLetter = user.username ? user.username.charAt(0) : "U";
@@ -4504,6 +4506,7 @@ async function checkUserSession() {
         loadGuildDashboard();
       }
     } else {
+      isLoggedIn = false;
       renderLoginButton();
       hideGuildDashboard();
       
@@ -4511,6 +4514,7 @@ async function checkUserSession() {
       if (primaryNavbar) primaryNavbar.classList.add("hidden");
     }
   } catch (error) {
+    isLoggedIn = false;
     console.error("Failed to query user authentication status:", error);
     renderLoginButton();
     hideGuildDashboard();
@@ -4543,6 +4547,7 @@ async function logoutUser() {
       method: "POST"
     });
     if (response.ok) {
+      isLoggedIn = false;
       renderLoginButton();
       hideGuildDashboard();
     } else {
@@ -6598,7 +6603,7 @@ function switchToPersonalAnalyzer() {
     if (statusCardEl) statusCardEl.classList.remove("hidden");
     
     const dashboardCard = document.getElementById("guildDashboardCard");
-    if (dashboardCard && isPatreonLinked) {
+    if (dashboardCard && isLoggedIn) {
       dashboardCard.classList.remove("hidden");
     }
 
@@ -6663,10 +6668,10 @@ async function loadGuildSuiteOverview() {
       if (contentArea) contentArea.classList.add("premium-blur");
       
       const mockPlayers = {
-        "TankyMcTank": { spec: "Protection", role: "Tank", fights_count: 8, avg_grade: "S", avg_avoidable_damage: 2500, avg_dps: 18000, avg_hps: 4000, total_deaths: 0, survival_score: 98, panic_healthstone_pct: 100, gold_debt: 0, class: "Warrior" },
-        "DpsGoBrrr": { spec: "Fire", role: "DPS", fights_count: 8, avg_grade: "B", avg_avoidable_damage: 48000, avg_dps: 94000, avg_hps: 0, total_deaths: 3, survival_score: 72, panic_healthstone_pct: 33, gold_debt: 4, class: "Mage" },
-        "SwirlyCatcher": { spec: "Shadow", role: "DPS", fights_count: 8, avg_grade: "D", avg_avoidable_damage: 185000, avg_dps: 55000, avg_hps: 0, total_deaths: 7, survival_score: 25, panic_healthstone_pct: 0, gold_debt: 18, class: "Priest" },
-        "GreenBeamEnjoyer": { spec: "Restoration", role: "Healer", fights_count: 8, avg_grade: "A", avg_avoidable_damage: 18000, avg_dps: 2000, avg_hps: 82000, total_deaths: 1, survival_score: 92, panic_healthstone_pct: 100, gold_debt: 1, class: "Druid" }
+        "TankyMcTank": { spec: "Protection", role: "Tank", fights_count: 8, avg_grade: "S", avg_avoidable_damage: 2500, avg_dps: 18000, avg_hps: 4000, total_deaths: 0, survival_score: 98, panic_healthstone_pct: 100, class: "Warrior" },
+        "DpsGoBrrr": { spec: "Fire", role: "DPS", fights_count: 8, avg_grade: "B", avg_avoidable_damage: 48000, avg_dps: 94000, avg_hps: 0, total_deaths: 3, survival_score: 72, panic_healthstone_pct: 33, class: "Mage" },
+        "SwirlyCatcher": { spec: "Shadow", role: "DPS", fights_count: 8, avg_grade: "D", avg_avoidable_damage: 185000, avg_dps: 55000, avg_hps: 0, total_deaths: 7, survival_score: 25, panic_healthstone_pct: 0, class: "Priest" },
+        "GreenBeamEnjoyer": { spec: "Restoration", role: "Healer", fights_count: 8, avg_grade: "A", avg_avoidable_damage: 18000, avg_dps: 2000, avg_hps: 82000, total_deaths: 1, survival_score: 92, panic_healthstone_pct: 100, class: "Druid" }
       };
       const mockBuffs = {
         active: ["Battle Shout (5% Attack Power)", "Arcane Intellect (5% Intellect)", "Mark of the Wild (3% Versatility)"],
@@ -8272,7 +8277,7 @@ function initAdminDashboard() {
       document.getElementById("analyzeCard").classList.remove("hidden");
       document.getElementById("statusCard").classList.remove("hidden");
       const d = document.getElementById("guildDashboardCard");
-      if (d && isPatreonLinked) d.classList.remove("hidden");
+      if (d && isLoggedIn) d.classList.remove("hidden");
     });
   }
 
