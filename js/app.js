@@ -9351,13 +9351,17 @@ function renderRecruitmentResults(report) {
                 <th style="padding: 8px; text-align: center; font-weight: 600;">Grade</th>
                 <th style="padding: 8px; text-align: right; font-weight: 600;">DPS Output</th>
                 <th style="padding: 8px; text-align: right; font-weight: 600;">Avoidable Dmg</th>
-                <th style="padding: 8px; text-align: center; font-weight: 600;">Panic Cooldown</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; cursor: help;" title="Shows whether the player activated a major defensive cooldown or consumable (healthstone/healing potion) when dropped to low health.">Panic Cooldown ℹ️</th>
               </tr>
             </thead>
             <tbody>
               ${historyRows}
             </tbody>
           </table>
+        </div>
+        <div style="margin-top: 8px; display: flex; gap: 16px; justify-content: flex-end; font-size: 11px; color: var(--muted); padding: 0 4px;">
+          <span><strong>🛡️ Used:</strong> Activated major defensive cooldown or healthstone/pot when HP dropped low.</span>
+          <span><strong>❌ Missed:</strong> Took fatal/dangerous damage without using any self-saves.</span>
         </div>
       </div>
     </div>
