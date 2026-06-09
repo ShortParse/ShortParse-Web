@@ -6749,10 +6749,19 @@ async function loadGuildSuiteOverview() {
         { boss_name: "The Voidspire", is_kill: true, avoidable_damage: 55000, avg_grade: "A", created_at: 1716810000000, duration_seconds: 214 }
       ];
 
+      const mockPrepAudit = [
+        { player_name: "TankyMcTank", has_flask: true, has_food: true, has_rune: true, missing_enchants: [], missing_gems: 0, total_sockets: 2, estimated_output_loss_percent: 0.0, preparation_score: 100 },
+        { player_name: "DpsGoBrrr", has_flask: true, has_food: true, has_rune: false, missing_enchants: ["ring1"], missing_gems: 1, total_sockets: 3, estimated_output_loss_percent: 1.65, preparation_score: 83 },
+        { player_name: "SwirlyCatcher", has_flask: false, has_food: false, has_rune: false, missing_enchants: ["weapon", "chest"], missing_gems: 2, total_sockets: 2, estimated_output_loss_percent: 5.9, preparation_score: 41 },
+        { player_name: "GreenBeamEnjoyer", has_flask: true, has_food: true, has_rune: true, missing_enchants: [], missing_gems: 0, total_sockets: 1, estimated_output_loss_percent: 0.0, preparation_score: 100 }
+      ];
+
       drawRosterMatrix(mockPlayers);
       drawTrendsChart(mockFights);
       renderBuffSynergy(mockBuffs);
       renderPanicAudit(mockPlayers);
+      renderPrepAudit(mockPrepAudit, mockPlayers);
+      populateBenchRosterChecklist(mockPlayers);
       renderWipeDiagnoser(mockWipeAnalytics);
       return;
     }
@@ -6774,6 +6783,8 @@ async function loadGuildSuiteOverview() {
     drawTrendsChart(data.fights_history || []);
     renderBuffSynergy(data.synergy_buffs || { active: [], missing: [], suggestions: [] });
     renderPanicAudit(data.players_history || {});
+    renderPrepAudit(data.prep_audit || [], data.players_history || {});
+    populateBenchRosterChecklist(data.players_history || {});
     renderWipeDiagnoser(data.wipe_analytics || {});
     
   } catch (error) {
@@ -7502,7 +7513,10 @@ document.addEventListener("DOMContentLoaded", () => {
     { btn: "subtabRosterBtn", area: "subtabRosterArea" },
     { btn: "subtabHealerAuditorBtn", area: "subtabHealerAuditorArea" },
     { btn: "subtabCooldownNotesBtn", area: "subtabCooldownNotesArea" },
-    { btn: "subtabSpecFlexBtn", area: "subtabSpecFlexArea" }
+    { btn: "subtabSpecFlexBtn", area: "subtabSpecFlexArea" },
+    { btn: "subtabRecruitmentBtn", area: "subtabRecruitmentArea" },
+    { btn: "subtabBenchBuilderBtn", area: "subtabBenchBuilderArea" },
+    { btn: "subtabSlumpTrackerBtn", area: "subtabSlumpTrackerArea" }
   ];
 
   subtabs.forEach((tab) => {
@@ -7529,6 +7543,12 @@ document.addEventListener("DOMContentLoaded", () => {
           initializeCooldownNotesTab();
         } else if (tab.btn === "subtabSpecFlexBtn") {
           renderSpecFlexTab();
+        } else if (tab.btn === "subtabRecruitmentBtn") {
+          initRecruitmentTab();
+        } else if (tab.btn === "subtabBenchBuilderBtn") {
+          initBenchBuilderTab();
+        } else if (tab.btn === "subtabSlumpTrackerBtn") {
+          renderSlumpTrackerTab();
         }
       });
     }
@@ -8712,6 +8732,741 @@ async function fetchBannerAdmin() {
   } catch (err) {
     console.error("Failed to load current banner message:", err);
   }
+}
+
+/* ==============================================================================
+   ShortParse Progression Suite - Extra Feature Implementations
+   ============================================================================== */
+
+function renderPrepAudit(prepList, playersHistory) {
+  const container = document.getElementById("prepAuditList");
+  if (!container) return;
+  
+  if (!prepList || prepList.length === 0) {
+    container.innerHTML = `<div style="color: var(--muted); font-style: italic; font-size: 12.5px;">No prep data parsed. Analyze reports to populate.</div>`;
+    return;
+  }
+  
+  const sorted = [...prepList].sort((a, b) => a.preparation_score - b.preparation_score);
+  
+  let html = "";
+  sorted.forEach(p => {
+    const name = p.player_name;
+    const score = p.preparation_score;
+    const loss = p.estimated_output_loss_percent;
+    
+    let classColor = "var(--foreground)";
+    if (playersHistory && playersHistory[name]) {
+      const cls = playersHistory[name].class;
+      const cleanClass = cls ? cls.replace(/\s+/g, "") : "";
+      if (CLASS_COLORS[cls]) classColor = CLASS_COLORS[cls];
+      else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    }
+    
+    const flaskIcon = p.has_flask ? `<span style="color: var(--green);" title="Flask Active">🧪</span>` : `<span style="color: var(--red);" title="Flask Missing">❌</span>`;
+    const foodIcon = p.has_food ? `<span style="color: var(--green);" title="Food Buff Active">🍞</span>` : `<span style="color: var(--red);" title="Food Buff Missing">❌</span>`;
+    const runeIcon = p.has_rune ? `<span style="color: var(--green);" title="Rune Active">🌀</span>` : `<span style="color: var(--red);" title="Rune Missing">❌</span>`;
+    
+    let warnings = [];
+    if (p.missing_enchants && p.missing_enchants.length > 0) {
+      warnings.push(`Missing enchants: ${p.missing_enchants.join(", ")}`);
+    }
+    if (p.missing_gems && p.missing_gems > 0) {
+      warnings.push(`${p.missing_gems} empty gem slot${p.missing_gems > 1 ? 's' : ''}`);
+    }
+    
+    let warningText = "";
+    if (warnings.length > 0) {
+      warningText = `<div style="font-size: 11px; color: #fbbf24; margin-top: 3px;">⚠️ ${warnings.join(" · ")}</div>`;
+    }
+    
+    const scoreColor = score >= 90 ? "var(--green)" : (score >= 70 ? "#fbbf24" : "var(--red)");
+    
+    html += `
+      <div class="prep-audit-row" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 700; color: ${classColor};">${escapeHtml(name)}</span>
+            <span style="display: flex; gap: 4px; font-size: 12px;">${flaskIcon}${foodIcon}${runeIcon}</span>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 12.5px; font-weight: 700; color: ${scoreColor};">${score}% Score</span>
+            ${loss > 0 ? `<span style="font-size: 11px; color: var(--muted); margin-left: 6px;">(Est Loss: ~${loss}%)</span>` : ""}
+          </div>
+        </div>
+        ${warningText}
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function populateBenchRosterChecklist(players) {
+  const checklist = document.getElementById("benchRosterChecklist");
+  const countSpan = document.getElementById("activeRosterCount");
+  if (!checklist) return;
+  
+  checklist.innerHTML = "";
+  
+  const entries = Object.entries(players);
+  if (entries.length === 0) {
+    checklist.innerHTML = `<div style="color: var(--muted); font-style: italic; font-size: 12.5px;">No active roster parsed. Analyze reports to populate.</div>`;
+    if (countSpan) countSpan.innerText = "0 Selected";
+    return;
+  }
+  
+  let checkedCount = 0;
+  entries.forEach(([name, p]) => {
+    let classColor = "var(--foreground)";
+    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : "";
+    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    
+    const label = document.createElement("label");
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.gap = "8px";
+    label.style.cursor = "pointer";
+    label.style.fontSize = "13px";
+    label.style.padding = "4px 6px";
+    label.style.borderRadius = "4px";
+    label.style.transition = "background 0.2s";
+    
+    const shouldCheck = checkedCount < 25;
+    if (shouldCheck) checkedCount++;
+    
+    label.innerHTML = `
+      <input type="checkbox" class="bench-roster-checkbox" value="${escapeHtml(name)}" ${shouldCheck ? 'checked' : ''} style="cursor: pointer;" />
+      <span style="color: ${classColor}; font-weight: 600;">${escapeHtml(name)}</span>
+      <span style="color: var(--muted); font-size: 11px;">(${escapeHtml(p.role)})</span>
+    `;
+    
+    label.querySelector("input").addEventListener("change", () => {
+      updateActiveRosterCount();
+    });
+    
+    checklist.appendChild(label);
+  });
+  
+  updateActiveRosterCount();
+}
+
+function updateActiveRosterCount() {
+  const checkboxes = document.querySelectorAll(".bench-roster-checkbox");
+  const countSpan = document.getElementById("activeRosterCount");
+  if (!countSpan) return;
+  
+  let checked = 0;
+  checkboxes.forEach(cb => {
+    if (cb.checked) checked++;
+  });
+  
+  countSpan.innerText = `${checked} Selected`;
+}
+
+function initBenchBuilderTab() {
+  const btn = document.getElementById("btnGenerateComposition");
+  if (!btn || btn.dataset.bound === "true") return;
+  btn.dataset.bound = "true";
+  
+  btn.addEventListener("click", async () => {
+    const bossSelect = document.getElementById("benchBossSelect");
+    if (!bossSelect) return;
+    
+    const encounter_id = parseInt(bossSelect.value, 10);
+    const checkedBoxes = document.querySelectorAll(".bench-roster-checkbox:checked");
+    const player_names = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (player_names.length < 20) {
+      alert("⚠️ Roster builder requires at least 20 active players to compile a composition!");
+      return;
+    }
+    
+    const placeholder = document.getElementById("benchPlaceholder");
+    const benchData = document.getElementById("benchData");
+    
+    if (placeholder) placeholder.classList.add("hidden");
+    if (benchData) {
+      benchData.classList.remove("hidden");
+      benchData.innerHTML = `
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 250px; gap: 12px;">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span style="font-size: 13px; color: var(--muted);">⏳ Optimizing comp & consulting AI coach...</span>
+        </div>
+      `;
+    }
+    
+    const lockScreen = document.getElementById("guildSuitePremiumLock");
+    const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+    
+    if (isLocked) {
+      setTimeout(() => {
+        const mockResponse = {
+          boss_name: bossSelect.options[bossSelect.selectedIndex].text.split(" (")[0],
+          encounter_id: encounter_id,
+          roster: [
+            { name: "TankyMcTank", class: "Warrior", role: "Tank", grade: "S", utility: "Battle Shout (5% Attack Power)" },
+            { name: "OffTankGuy", class: "Paladin", role: "Tank", grade: "A", utility: "Devotion Aura" },
+            { name: "GreenBeamEnjoyer", class: "Druid", role: "Healer", grade: "A", utility: "Mark of the Wild / Rebirth" },
+            { name: "HolyHeals", class: "Priest", role: "Healer", grade: "B", utility: "Power Word: Fortitude" },
+            { name: "Bubbles", class: "Paladin", role: "Healer", grade: "A", utility: "Aura Mastery" },
+            { name: "Mistweaver", class: "Monk", role: "Healer", grade: "B", utility: "Generous Pour" },
+            { name: "Shortwire", class: "Mage", role: "DPS", grade: "S", utility: "Arcane Intellect / Time Warp / Block" },
+            { name: "Locky", class: "Warlock", role: "DPS", grade: "A", utility: "Gateway / Soulstones" },
+            { name: "DpsGoBrrr", class: "Mage", role: "DPS", grade: "B", utility: "Arcane Intellect / Ice Block" },
+            { name: "RogueOne", class: "Rogue", role: "DPS", grade: "A", utility: "Cloak of Shadows / Atrophic" },
+            { name: "ShadowDps", class: "Priest", role: "DPS", grade: "B", utility: "Vampiric Embrace" },
+            { name: "Boomy", class: "Druid", role: "DPS", grade: "C", utility: "Mark of the Wild" },
+            { name: "HunterTwo", class: "Hunter", role: "DPS", grade: "B", utility: "Turtle Shell" },
+            { name: "RetPal", class: "Paladin", role: "DPS", grade: "B", utility: "Blessing of Protection" },
+            { name: "Unbreakable", class: "Death Knight", role: "DPS", grade: "B", utility: "Anti-Magic Zone" },
+            { name: "EnhanceGuy", class: "Shaman", role: "DPS", grade: "A", utility: "Windfury Totem / Heroism" },
+            { name: "HavocDh", class: "Demon Hunter", role: "DPS", grade: "A", utility: "Chaos Brand (5% Magic)" },
+            { name: "EleShaman", class: "Shaman", role: "DPS", grade: "B", utility: "Mana Spring" },
+            { name: "ArmsWar", class: "Warrior", role: "DPS", grade: "B", utility: "Battle Shout" },
+            { name: "AssasRogue", class: "Rogue", role: "DPS", grade: "B", utility: "Cloak of Shadows" }
+          ],
+          bench: [
+            { name: "SwirlyCatcher", class: "Priest", role: "DPS", grade: "D", reason: `Roster rotation to optimize encounter-specific utility and buffs on ${bossSelect.options[bossSelect.selectedIndex].text.split(" (")[0]}. Positioned as primary backup.` }
+          ],
+          ai_directive: `Raid composition optimized for high utility on ${bossSelect.options[bossSelect.selectedIndex].text.split(" (")[0]}. Roster utilizes balanced raid-wide defensive coverage and class-specific immunities to bypass the encounter's soak phases cleanly. Focus on rotational uptime and support SwirlyCatcher in next boss progression!`
+        };
+        renderBenchResults(mockResponse);
+      }, 1000);
+      return;
+    }
+    
+    try {
+      const response = await fetch("/api/guild/bench-builder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ encounter_id, player_names })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        renderBenchResults(data);
+      } else {
+        const err = await response.json();
+        throw new Error(err.detail || `Server returned ${response.status}`);
+      }
+    } catch (e) {
+      console.error(e);
+      if (benchData) {
+        benchData.innerHTML = `
+          <div style="text-align: center; color: var(--red); padding: 20px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <strong style="font-size: 14px;">Failed to compile composition:</strong>
+            <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
+          </div>
+        `;
+      }
+    }
+  });
+}
+
+function renderBenchResults(data) {
+  const container = document.getElementById("benchData");
+  if (!container) return;
+  
+  const tanks = data.roster.filter(p => p.role === "Tank");
+  const healers = data.roster.filter(p => p.role === "Healer");
+  const dps = data.roster.filter(p => p.role !== "Tank" && p.role !== "Healer");
+  
+  const makeListHtml = (list) => {
+    return list.map(p => {
+      let classColor = "var(--foreground)";
+      const cleanClass = p.class ? p.class.replace(/\s+/g, "") : "";
+      if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+      else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+      
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 4px; font-size: 13px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <span style="font-weight: 700; color: ${classColor}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(p.name)}</span>
+            <span style="font-size: 9.5px; opacity: 0.6; background: rgba(255,255,255,0.05); padding: 1px 4px; border-radius: 2px;">Grade ${p.grade}</span>
+          </div>
+          <span style="font-size: 11px; color: var(--muted); text-align: right; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${escapeHtml(p.utility)}">${escapeHtml(p.utility)}</span>
+        </div>
+      `;
+    }).join("");
+  };
+  
+  const benchHtml = data.bench.map(p => {
+    let classColor = "var(--foreground)";
+    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : "";
+    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    
+    return `
+      <div style="padding: 10px; background: rgba(239, 68, 68, 0.02); border: 1px dashed rgba(239, 68, 68, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+          <span style="font-weight: 700; color: ${classColor};">${escapeHtml(p.name)} (${p.role})</span>
+          <span style="font-size: 9.5px; color: var(--muted);">Grade ${p.grade}</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.4;">💬 ${escapeHtml(p.reason)}</div>
+      </div>
+    `;
+  }).join("");
+  
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="background: rgba(99, 102, 241, 0.04); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+        <div style="font-size: 24px; line-height: 1;">🧠</div>
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Strategic Directive</div>
+          <div style="font-size: 13px; color: var(--foreground); line-height: 1.5; font-style: italic;">"${escapeHtml(data.ai_directive)}"</div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--blue);">🛡️ Recommended 20-Man Roster</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; margin-bottom: 2px;">Tanks & Healers</div>
+            ${makeListHtml(tanks)}
+            ${makeListHtml(healers)}
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; margin-bottom: 2px;">Damage Dealers (DPS)</div>
+            ${makeListHtml(dps)}
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 style="font-size: 14px; margin-bottom: 8px; color: #fbbf24;">📋 Supportive Bench Rotation</h4>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${benchHtml || '<div style="font-size: 12.5px; color: var(--muted); font-style: italic;">No players benched. Exact 20-man roster was selected.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function initRecruitmentTab() {
+  const form = document.getElementById("recruitmentForm");
+  if (!form || form.dataset.bound === "true") return;
+  form.dataset.bound = "true";
+  
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const charNameInput = document.getElementById("recruitCharName");
+    const realmInput = document.getElementById("recruitRealm");
+    const regionSelect = document.getElementById("recruitRegion");
+    
+    if (!charNameInput || !realmInput || !regionSelect) return;
+    
+    const character_name = charNameInput.value.trim();
+    const realm = realmInput.value.trim();
+    const region = regionSelect.value;
+    
+    if (!character_name || !realm) return;
+    
+    const placeholder = document.getElementById("recruitmentPlaceholder");
+    const resultsData = document.getElementById("recruitmentData");
+    const submitBtn = document.getElementById("btnRunRecruitmentAudit");
+    
+    if (placeholder) placeholder.classList.add("hidden");
+    if (resultsData) {
+      resultsData.classList.remove("hidden");
+      resultsData.innerHTML = `
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 250px; gap: 12px;">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span id="recruitAuditStatusText" style="font-size: 13px; color: var(--muted);">⏳ Dispatching candidate audit job...</span>
+        </div>
+      `;
+    }
+    
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Auditing logs...";
+    }
+    
+    const lockScreen = document.getElementById("guildSuitePremiumLock");
+    const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+    
+    if (isLocked) {
+      setTimeout(() => {
+        const statusText = document.getElementById("recruitAuditStatusText");
+        if (statusText) statusText.innerText = "⏳ Retrieving character logs profile...";
+        
+        setTimeout(() => {
+          if (statusText) statusText.innerText = "⏳ Running mechanical grading algorithm...";
+          
+          setTimeout(() => {
+            const mockReport = {
+              candidate: {
+                name: character_name,
+                realm: realm,
+                region: region.toUpperCase(),
+                class: "Mage",
+                spec: "Frost",
+                item_level: 628
+              },
+              overall_grade: "A",
+              average_dps: 154000,
+              panic_defensive_rate: 85,
+              preparation_score: 96,
+              history: [
+                { pull_id: 1, boss_name: "Imperator Averzian", grade: "S", dps: 162000, avoidable_damage: 15000, defensive_used_in_panic: true },
+                { pull_id: 2, boss_name: "Vorasius", grade: "A", dps: 155000, avoidable_damage: 28000, defensive_used_in_panic: true },
+                { pull_id: 3, boss_name: "Midnight Falls", grade: "B", dps: 145000, avoidable_damage: 65000, defensive_used_in_panic: false }
+              ],
+              focus_tips: [
+                "Highly reliable mechanical play. Excellent candidate for mythic progression roster.",
+                "Defensive cooldown triggers align correctly with high-damage transition phases."
+              ]
+            };
+            
+            renderRecruitmentResults(mockReport);
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = "Run Candidate Audit";
+            }
+          }, 1000);
+        }, 1000);
+      }, 1000);
+      return;
+    }
+    
+    try {
+      const response = await fetch("/api/recruitment/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ character_name, realm, region })
+      });
+      
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || `Server returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const job_id = data.job_id;
+      
+      pollRecruitmentAudit(job_id, submitBtn);
+      
+    } catch (e) {
+      console.error(e);
+      if (resultsData) {
+        resultsData.innerHTML = `
+          <div style="text-align: center; color: var(--red); padding: 20px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <strong style="font-size: 14px;">Audit failed:</strong>
+            <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
+          </div>
+        `;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Run Candidate Audit";
+      }
+    }
+  });
+}
+
+async function pollRecruitmentAudit(job_id, submitBtn) {
+  const resultsData = document.getElementById("recruitmentData");
+  const statusText = document.getElementById("recruitAuditStatusText");
+  
+  let attempts = 0;
+  const maxAttempts = 30;
+  
+  const interval = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(interval);
+      if (resultsData) {
+        resultsData.innerHTML = `
+          <div style="text-align: center; color: var(--red); padding: 20px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">⏳</div>
+            <strong style="font-size: 14px;">Audit Timed Out</strong>
+            <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">The logs query took too long. Please try again later.</p>
+          </div>
+        `;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Run Candidate Audit";
+      }
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/recruitment/audit/${job_id}`);
+      if (response.ok) {
+        const job = await response.json();
+        
+        if (job.status === "completed") {
+          clearInterval(interval);
+          renderRecruitmentResults(job.result);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Run Candidate Audit";
+          }
+        } else if (job.status === "failed") {
+          clearInterval(interval);
+          throw new Error("Warcraft Logs API query failed or candidate profile was not found.");
+        } else {
+          if (statusText) {
+            statusText.innerText = `⏳ Processing candidate logs (${attempts}s)...`;
+          }
+        }
+      } else {
+        throw new Error(`Server returned ${response.status}`);
+      }
+    } catch (e) {
+      clearInterval(interval);
+      console.error(e);
+      if (resultsData) {
+        resultsData.innerHTML = `
+          <div style="text-align: center; color: var(--red); padding: 20px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <strong style="font-size: 14px;">Audit failed:</strong>
+            <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
+          </div>
+        `;
+      }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Run Candidate Audit";
+      }
+    }
+  }, 1000);
+}
+
+function renderRecruitmentResults(report) {
+  const container = document.getElementById("recruitmentData");
+  if (!container) return;
+  
+  const c = report.candidate;
+  let classColor = "var(--foreground)";
+  const cleanClass = c.class ? c.class.replace(/\s+/g, "") : "";
+  if (CLASS_COLORS[c.class]) classColor = CLASS_COLORS[c.class];
+  else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+  
+  const historyRows = report.history.map(h => {
+    const gradeColor = h.grade === "S" || h.grade === "A" ? "var(--green)" : (h.grade === "B" || h.grade === "C" ? "#fbbf24" : "var(--red)");
+    const defensiveText = h.defensive_used_in_panic ? '<span style="color: var(--green);">🛡️ Used</span>' : '<span style="color: var(--red);">❌ Missed</span>';
+    
+    return `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+        <td style="padding: 10px 8px; font-weight: 500;">${escapeHtml(h.boss_name)}</td>
+        <td style="padding: 10px 8px; text-align: center; color: ${gradeColor}; font-weight: bold;">${h.grade}</td>
+        <td style="padding: 10px 8px; text-align: right;">${formatNumber(h.dps)}</td>
+        <td style="padding: 10px 8px; text-align: right; color: ${h.avoidable_damage > 80000 ? 'var(--orange)' : 'var(--muted)'};">${formatNumber(h.avoidable_damage)}</td>
+        <td style="padding: 10px 8px; text-align: center;">${defensiveText}</td>
+      </tr>
+    `;
+  }).join("");
+  
+  const gradeColor = report.overall_grade === "S" || report.overall_grade === "A" ? "var(--green)" : (report.overall_grade === "B" || report.overall_grade === "C" ? "#fbbf24" : "var(--red)");
+  const prepColor = report.preparation_score >= 90 ? "var(--green)" : (report.preparation_score >= 70 ? "#fbbf24" : "var(--red)");
+  const panicColor = report.panic_defensive_rate >= 80 ? "var(--green)" : (report.panic_defensive_rate >= 50 ? "#fbbf24" : "var(--red)");
+  
+  const tipsHtml = report.focus_tips.map(tip => {
+    return `<div style="margin-bottom: 6px; line-height: 1.5;">• ${escapeHtml(tip)}</div>`;
+  }).join("");
+  
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+        <div>
+          <h2 style="font-size: 22px; font-weight: 800; color: ${classColor}; margin: 0;">${escapeHtml(c.name)}</h2>
+          <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">
+            ${escapeHtml(c.spec)} ${escapeHtml(c.class)} · ${escapeHtml(c.realm.toUpperCase())} (${escapeHtml(c.region)})
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold;">Candidate Item Level</div>
+          <span style="font-size: 18px; font-weight: 800; color: white;">${c.item_level} iLvl</span>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start;">
+        <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+          <span style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; margin-bottom: 8px;">Survival Grade</span>
+          <div style="width: 76px; height: 76px; border-radius: 50%; border: 3px solid ${gradeColor}; background: ${gradeColor}08; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 900; color: ${gradeColor}; filter: drop-shadow(0 0 10px ${gradeColor}25); margin-bottom: 8px;">
+            ${report.overall_grade}
+          </div>
+          <span style="font-size: 12.5px; font-weight: 600; color: var(--foreground);">Overall Performance</span>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+              <span>Average Damage Output</span>
+              <strong style="color: white;">${formatNumber(report.average_dps)} DPS</strong>
+            </div>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+              <span>Preparation & Enchants Score</span>
+              <strong style="color: ${prepColor};">${report.preparation_score}%</strong>
+            </div>
+            <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${report.preparation_score}%; background: ${prepColor};"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+              <span>Panic Defensive Trigger Rate</span>
+              <strong style="color: ${panicColor};">${report.panic_defensive_rate}%</strong>
+            </div>
+            <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${report.panic_defensive_rate}%; background: ${panicColor};"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="background: rgba(52, 211, 153, 0.03); border: 1px solid rgba(52, 211, 153, 0.15); border-radius: 8px; padding: 14px; display: flex; gap: 10px; align-items: flex-start;">
+        <span style="font-size: 20px; line-height: 1;">💡</span>
+        <div>
+          <div style="font-size: 12px; font-weight: bold; color: var(--green); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Recruiter Coaching Directives</div>
+          <div style="font-size: 12.5px; color: var(--foreground);">${tipsHtml}</div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 style="font-size: 13.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Public Logs History (Recent Boss Pulls)</h4>
+        <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; background: rgba(15,23,42,0.3);">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 500px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); color: var(--muted); text-align: left;">
+                <th style="padding: 8px; font-weight: 600;">Boss Encounter</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600;">Grade</th>
+                <th style="padding: 8px; text-align: right; font-weight: 600;">DPS Output</th>
+                <th style="padding: 8px; text-align: right; font-weight: 600;">Avoidable Dmg</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600;">Panic Cooldown</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${historyRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function renderSlumpTrackerTab() {
+  const tbody = document.getElementById("slumpTrackerTableBody");
+  if (!tbody) return;
+  
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" style="padding: 30px; text-align: center; color: var(--muted);">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px;">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span style="font-size: 12.5px;">⏳ Analyzing grade trajectories and linear regressions...</span>
+        </div>
+      </td>
+    </tr>
+  `;
+  
+  const lockScreen = document.getElementById("guildSuitePremiumLock");
+  const isLocked = lockScreen && !lockScreen.classList.contains("hidden");
+  
+  if (isLocked) {
+    setTimeout(() => {
+      const mockTrackerData = [
+        { name: "SwirlyCatcher", class: "Priest", spec: "Shadow", role: "DPS", avg_grade: "D", trend: "down", slope: -0.21, alert: "Mechanical survival grade is in a slump due to rising avoidable damage.", focus_recommendation: "Focus on ground-effect positioning and review phase transition movement guides." },
+        { name: "DpsGoBrrr", class: "Mage", spec: "Fire", role: "DPS", avg_grade: "B", trend: "down", slope: -0.16, alert: "Grade average has slumped over recent fights.", focus_recommendation: "Focus on rotation uptime, cooldown scheduling, and overall active time." },
+        { name: "GreenBeamEnjoyer", class: "Druid", spec: "Restoration", role: "Healer", avg_grade: "A", trend: "up", slope: 0.18, alert: "Mechanical consistency is steadily climbing!", focus_recommendation: "Excellent progression and mechanical consistency. Keep it up!" },
+        { name: "TankyMcTank", class: "Warrior", spec: "Protection", role: "Tank", avg_grade: "S", trend: "stable", slope: 0.02, alert: "Consistent and stable performance.", focus_recommendation: "Maintain current rotational reliability and positioning awareness." }
+      ];
+      populateSlumpTrackerTable(mockTrackerData);
+    }, 600);
+    return;
+  }
+  
+  try {
+    const response = await fetch("/api/guild/slump-tracker");
+    if (response.ok) {
+      const data = await response.json();
+      populateSlumpTrackerTable(data.players || []);
+    } else {
+      throw new Error(`Server returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Failed to load slump tracker statistics:", error);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="padding: 20px; text-align: center; color: var(--red);">
+          ❌ Failed to load slump tracker statistics: ${escapeHtml(error.message)}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function populateSlumpTrackerTable(players) {
+  const tbody = document.getElementById("slumpTrackerTableBody");
+  if (!tbody) return;
+  
+  if (players.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="padding: 20px; text-align: center; color: var(--muted); font-style: italic;">
+          No player performance analytics found in database.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  let html = "";
+  players.forEach(p => {
+    let classColor = "var(--foreground)";
+    const cleanClass = p.class ? p.class.replace(/\s+/g, "") : "";
+    if (CLASS_COLORS[p.class]) classColor = CLASS_COLORS[p.class];
+    else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
+    
+    let trendHtml = "";
+    let alertHtml = "";
+    if (p.trend === "down") {
+      trendHtml = `<span style="color: var(--red); font-weight: bold;">📉 Downward (${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--red); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">⚠️ SLUMP</span>`;
+    } else if (p.trend === "up") {
+      trendHtml = `<span style="color: var(--green); font-weight: bold;">📈 Improving (+${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--green); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">🚀 CLIMBING</span>`;
+    } else {
+      trendHtml = `<span style="color: var(--muted);">➡️ Stable (${p.slope >= 0 ? '+' : ''}${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--muted); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center;">✅ STABLE</span>`;
+    }
+    
+    html += `
+      <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: default;">
+        <td style="padding: 12px 14px; font-weight: 600; color: ${classColor};">${escapeHtml(p.name)}</td>
+        <td style="padding: 12px 14px;">${escapeHtml(p.spec)} (${escapeHtml(p.role)})</td>
+        <td style="padding: 12px 14px; text-align: center; font-weight: bold;">Grade ${p.avg_grade}</td>
+        <td style="padding: 12px 14px; text-align: center;">${trendHtml}</td>
+        <td style="padding: 12px 14px;">${alertHtml}</td>
+        <td style="padding: 12px 14px; color: var(--foreground); font-size: 12.5px; line-height: 1.4;">${escapeHtml(p.focus_recommendation)}</td>
+      </tr>
+    `;
+  });
+  
+  tbody.innerHTML = html;
 }
 
 

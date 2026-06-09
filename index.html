@@ -142,10 +142,13 @@
 
         <!-- Premium Guild Suite Subtabs -->
         <div class="guild-suite-subtabs" style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px; overflow-x: auto;">
-          <button id="subtabRosterBtn" class="nav-subtab active" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--foreground); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">📊 Roster Matrix & Ledger</button>
+          <button id="subtabRosterBtn" class="nav-subtab active" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--foreground); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">📊 Roster Matrix</button>
           <button id="subtabHealerAuditorBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">🛡️ Healer Auditor</button>
           <button id="subtabCooldownNotesBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">📋 Cooldown Notes</button>
           <button id="subtabSpecFlexBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">🧠 Smart Spec-Flex</button>
+          <button id="subtabRecruitmentBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">🔍 Recruitment Auditor</button>
+          <button id="subtabBenchBuilderBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">🎯 AI Bench Builder</button>
+          <button id="subtabSlumpTrackerBtn" class="nav-subtab" type="button" style="background: none; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">📈 Skill Slump Tracker</button>
         </div>
 
         <div id="subtabRosterArea">
@@ -190,6 +193,15 @@
               <p class="card-desc" style="margin-bottom: 12px;">Evaluates defensive and potion usage percentages during panic windows (&lt;20% HP) on wipe fights.</p>
               <div id="panicAuditList" class="panic-audit-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
                 <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Consumable & Gear Prep Audit -->
+            <div class="sub-card" style="margin-top: 16px; background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+              <h3 style="font-size: 15px; margin-bottom: 4px;">Consumable & Gear Prep Audit</h3>
+              <p class="card-desc" style="margin-bottom: 12px;">Checks for active Flask/Food/Rune buffs, missing enchants, and empty gem sockets.</p>
+              <div id="prepAuditList" class="prep-audit-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                <div style="color: var(--muted); font-style: italic; font-size: 12.5px;">No prep data parsed. Analyze reports to populate.</div>
               </div>
             </div>
           </div>
@@ -338,6 +350,135 @@
                     <!-- Dynamically populated -->
                     <tr>
                       <td colspan="6" style="padding: 20px; text-align: center; color: var(--muted); font-style: italic;">No leaderboard data available. Analyze reports to populate.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End of subtabSpecFlexArea -->
+
+        <!-- Recruitment Auditor Area -->
+        <div id="subtabRecruitmentArea" class="hidden">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+            <!-- Left panel: Form -->
+            <div class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; align-self: start;">
+              <h3 style="font-size: 16px; margin-bottom: 4px;">🔍 Audit Trial Candidate</h3>
+              <p class="card-desc" style="margin-bottom: 16px;">Query Warcraft Logs public records for a candidate character's history.</p>
+              
+              <form id="recruitmentForm" onsubmit="event.preventDefault();">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--muted); font-weight: 600;">Character Name</label>
+                    <input type="text" id="recruitCharName" placeholder="e.g. Shortwire" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: var(--radius); outline: none; font-size: 13px;" required />
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--muted); font-weight: 600;">Realm / Server Slug</label>
+                    <input type="text" id="recruitRealm" placeholder="e.g. illidan" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: var(--radius); outline: none; font-size: 13px;" required />
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 12px; color: var(--muted); font-weight: 600;">Region</label>
+                    <select id="recruitRegion" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: var(--radius); outline: none; font-size: 13px; cursor: pointer; height: 38px;">
+                      <option value="us">US (United States)</option>
+                      <option value="eu">EU (Europe)</option>
+                      <option value="kr">KR (Korea)</option>
+                      <option value="tw">TW (Taiwan)</option>
+                    </select>
+                  </div>
+                  <button type="submit" id="btnRunRecruitmentAudit" style="background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-weight: bold; cursor: pointer; transition: opacity 0.2s; font-size: 13.5px; margin-top: 8px;">Run Candidate Audit</button>
+                </div>
+              </form>
+            </div>
+            
+            <!-- Right panel: Results Card -->
+            <div id="recruitmentResults" class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--muted);">
+              <div id="recruitmentPlaceholder">
+                <span style="font-size: 48px; display: block; margin-bottom: 12px;">🔍</span>
+                <h3>No Candidate Audited</h3>
+                <p class="card-desc" style="max-width: 320px; margin: 6px auto 0;">Submit a character details form on the left to extract their latest raid combat scores.</p>
+              </div>
+              <div id="recruitmentData" class="hidden" style="width: 100%; text-align: left; color: var(--foreground);">
+                <!-- Dynamic contents populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Bench Builder Area -->
+        <div id="subtabBenchBuilderArea" class="hidden">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+            <!-- Left panel: Configuration -->
+            <div class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; align-self: start;">
+              <h3 style="font-size: 16px; margin-bottom: 4px;">🎯 Setup Encounter Roster</h3>
+              <p class="card-desc" style="margin-bottom: 16px;">Select active players and the boss encounter to calculate optimized roster.</p>
+              
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--muted); font-weight: 600;">Boss Encounter</label>
+                  <select id="benchBossSelect" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 10px; border-radius: var(--radius); outline: none; font-size: 13px; cursor: pointer; height: 38px;">
+                    <option value="3182">Crown of the Cosmos (Soaks/Speed)</option>
+                    <option value="3183">Midnight Falls (Hero/Lust)</option>
+                    <option value="3184">Imperator Averzian (Immunities/Res)</option>
+                    <option value="3185">Vorasius (Speed/Movement)</option>
+                    <option value="3186">Fallen-King Salhadaar (Immunities)</option>
+                    <option value="3187">Vaelgor & Ezzorak (Raid Defensives)</option>
+                    <option value="3188">Lightblinded Vanguard (Utility)</option>
+                  </select>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <label style="font-size: 12px; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between;">
+                    <span>Active Roster</span>
+                    <span id="activeRosterCount" style="color: var(--primary);">0 Selected</span>
+                  </label>
+                  <div id="benchRosterChecklist" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(0,0,0,0.2); padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Filled dynamically by JS -->
+                    <div style="color: var(--muted); font-style: italic; font-size: 12.5px;">No active roster parsed. Analyze reports to populate.</div>
+                  </div>
+                </div>
+                
+                <button id="btnGenerateComposition" style="background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 13.5px;">Compile Optimized Composition</button>
+              </div>
+            </div>
+            
+            <!-- Right panel: Recommended Roster and directive -->
+            <div id="benchResults" class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--muted);">
+              <div id="benchPlaceholder">
+                <span style="font-size: 48px; display: block; margin-bottom: 12px;">🎯</span>
+                <h3>No Composition Generated</h3>
+                <p class="card-desc" style="max-width: 320px; margin: 6px auto 0;">Configure your active roster list on the left to compute the optimal 20-man team setup.</p>
+              </div>
+              <div id="benchData" class="hidden" style="width: 100%; text-align: left; color: var(--foreground); height: 100%;">
+                <!-- Dynamic contents populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skill Slump Tracker Area -->
+        <div id="subtabSlumpTrackerArea" class="hidden">
+          <div class="sub-card" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-height: 350px;">
+            <div style="margin-bottom: 20px;">
+              <h3 style="font-size: 16px; margin-bottom: 4px;">📈 Roster Skill Decay & Slump Tracker</h3>
+              <p class="card-desc">Tracks player grade trends chronologically to identify and assist struggling raiders early.</p>
+            </div>
+            
+            <div id="slumpTrackerResults">
+              <div class="ledger-table-wrapper" style="overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: rgba(15,23,42,0.3);">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 750px;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                      <th style="padding: 12px 14px; text-align: left; font-weight: bold; color: var(--muted);">Player Name</th>
+                      <th style="padding: 12px 14px; text-align: left; font-weight: bold; color: var(--muted);">Class/Spec</th>
+                      <th style="padding: 12px 14px; text-align: center; font-weight: bold; color: var(--muted);">Avg Grade</th>
+                      <th style="padding: 12px 14px; text-align: center; font-weight: bold; color: var(--muted);">Trajectory Trend</th>
+                      <th style="padding: 12px 14px; text-align: left; font-weight: bold; color: var(--muted);">Slump Alert Status</th>
+                      <th style="padding: 12px 14px; text-align: left; font-weight: bold; color: var(--muted);">Supportive Action Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody id="slumpTrackerTableBody">
+                    <tr>
+                      <td colspan="6" style="padding: 30px; text-align: center; color: var(--muted); font-style: italic;">No performance analytics available. Analyze reports to populate.</td>
                     </tr>
                   </tbody>
                 </table>
