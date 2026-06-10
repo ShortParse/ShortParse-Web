@@ -1,3 +1,36 @@
+const SVG_ICONS = {
+  bell: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+  megaphone: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`,
+  chart: `<svg class="inline-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>`,
+  shield: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+  star: `<svg class="inline-icon" style="stroke: #fbbf24; fill: #fbbf24;" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+  lock: `<svg class="inline-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+  clipboard: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>`,
+  brain: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2z"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"></path></svg>`,
+  search: `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+  target: `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>`,
+  trend: `<svg class="inline-icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`,
+  fire: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`,
+  snowflake: `<svg class="inline-icon" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line><polyline points="10 4 12 6 14 4"></polyline><polyline points="14 20 12 18 10 20"></polyline><polyline points="4 10 6 12 4 14"></polyline><polyline points="20 14 18 12 20 10"></polyline></svg>`,
+  skull: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8v4a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4a8 8 0 0 0-8-8zM9 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3 5h.01"></path></svg>`,
+  gear: `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+  crystalBall: `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="10" r="8"></circle><path d="M5 18h14M8 22h8M12 18v4"></path></svg>`,
+  save: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`,
+  bolt: `<svg class="inline-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+  user: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
+  chat: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+  heartbeat: `<svg class="inline-icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
+  trophy: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2a5 5 0 0 1 5 5v5a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"></path></svg>`,
+  info: `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+  warning: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+  book: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5v-15z"></path></svg>`,
+  heart: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+  users: `<svg class="inline-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+  checkCircle: `<svg class="inline-icon" style="stroke: var(--green);" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+  crown: `<svg class="inline-icon" style="stroke: #fbbf24;" viewBox="0 0 24 24"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z"></path></svg>`,
+  swords: `<svg class="inline-icon inline-icon-no-margin" viewBox="0 0 24 24"><polygon points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polygon><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="20" y2="20"></line><line x1="19" y1="21" x2="21" y2="19"></line><polygon points="9.5 17.5 21 6 21 3 18 3 6.5 14.5"></polygon><line x1="11" y1="19" x2="5" y2="13"></line><line x1="8" y1="16" x2="4" y2="20"></line><line x1="5" y1="21" x2="3" y2="19"></line></svg>`
+};
+
 let currentJobId = null;
 let pollTimer = null;
 let currentReportData = null;
@@ -518,7 +551,7 @@ function renderAnalysisConsole(summary) {
   let queueBadgeHtml = "";
   if (priorityQueueEnabled) {
     if (isPremium) {
-      queueBadgeHtml = `<span class="priority-badge active" style="margin-top: 4px;">⭐ Premium Priority</span>`;
+      queueBadgeHtml = `<span class="priority-badge active" style="margin-top: 4px;">${SVG_ICONS.star} Premium Priority</span>`;
     } else {
       queueBadgeHtml = `<span class="priority-badge standard" style="margin-top: 4px;">Standard Queue</span>`;
     }
@@ -797,7 +830,7 @@ function renderBossTiles(data) {
       : `Wipe (${fight.boss_percentage ?? "?"}%)`;
 
     if (fight.total_pulls && fight.total_pulls > 1) {
-      resultLabel = `${fight.kills_count > 0 ? "🏆 Kill" : "Wipe"} (${fight.total_pulls} pulls: ${fight.kills_count} K, ${fight.wipes_count} W)`;
+      resultLabel = `${fight.kills_count > 0 ? "${SVG_ICONS.trophy} Kill" : "Wipe"} (${fight.total_pulls} pulls: ${fight.kills_count} K, ${fight.wipes_count} W)`;
     }
 
     return `
@@ -916,7 +949,7 @@ function updatePullDrilldownDropdown(analysis) {
     ${pulls.map((pull, idx) => {
       const isKill = pull.fight?.kill;
       const pct = pull.fight?.boss_percentage;
-      const label = isKill ? `Pull ${idx + 1} (Kill 🏆)` : `Pull ${idx + 1} (Wipe - ${pct ?? "?"}%)`;
+      const label = isKill ? `Pull ${idx + 1} (Kill ${SVG_ICONS.trophy})` : `Pull ${idx + 1} (Wipe - ${pct ?? "?"}%)`;
       return `<option value="${idx}">${escapeHtml(label)}</option>`;
     }).join("")}
   `;
@@ -977,22 +1010,22 @@ function renderSubTabBar() {
   let subTabs = [];
   if (currentHub === "hubRaid") {
     subTabs = [
-      { id: "scorecard", label: "📊 Overview & Scorecard" },
-      { id: "progression", label: "📈 Wipe Progression" },
-      { id: "issues", label: "⚠️ Top Issues" },
-      { id: "raw", label: "🔍 Raw JSON" }
+      { id: "scorecard", label: `${SVG_ICONS.chart} Overview & Scorecard` },
+      { id: "progression", label: `${SVG_ICONS.trend} Wipe Progression` },
+      { id: "issues", label: `${SVG_ICONS.warning} Top Issues` },
+      { id: "raw", label: `${SVG_ICONS.search} Raw JSON` }
     ];
   } else if (currentHub === "hubPlayer") {
     subTabs = [
-      { id: "playerMetrics", label: "👤 Player Metrics" },
-      { id: "benchmarks", label: "🎯 Benchmarks" },
-      { id: "timeline", label: "☠ Avoidable Death Timeline" }
+      { id: "playerMetrics", label: `${SVG_ICONS.user} Player Metrics` },
+      { id: "benchmarks", label: `${SVG_ICONS.target} Benchmarks` },
+      { id: "timeline", label: `${SVG_ICONS.skull} Avoidable Death Timeline` }
     ];
   } else if (currentHub === "hubStrategy") {
     subTabs = [
-      { id: "cooldowns", label: "🔮 Cooldown Visualizer" },
-      { id: "calibrator", label: "🛡️ Defensive Calibrator" },
-      { id: "mechanics", label: "⚙️ Mechanics" }
+      { id: "cooldowns", label: `${SVG_ICONS.crystalBall} Cooldown Visualizer` },
+      { id: "calibrator", label: `${SVG_ICONS.shield} Defensive Calibrator` },
+      { id: "mechanics", label: `${SVG_ICONS.gear} Mechanics` }
     ];
   }
 
@@ -1314,33 +1347,33 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <div class="glossary-banner" style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; padding: 14px 20px; font-family: inherit;">
       <div id="glossaryToggle" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
         <span style="font-weight: 600; color: var(--blue); font-size: 14px; display: flex; align-items: center; gap: 8px;">
-          📖 Understanding the Terms & Numbers (Jargon-Free Glossary)
+          ${SVG_ICONS.book} Understanding the Terms & Numbers (Jargon-Free Glossary)
         </span>
         <span id="glossaryChevron" style="font-size: 14px; opacity: 0.6; transition: transform 0.2s;">▶</span>
       </div>
       <div id="glossaryContent" style="display: none; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 12.5px; line-height: 1.5;">
         <div>
-          <strong style="color: #f1f5f9;">🛡️ Performance Level (Grade):</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.shield} Performance Level (Grade):</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">How well this player did compared to players worldwide wearing the **exact same gear level**. It rates output (damage/healing) and ignores unhelpful stats.</p>
         </div>
         <div>
-          <strong style="color: #f1f5f9;">⚠️ Issue Penalty:</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.warning} Issue Penalty:</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">Points added when a player stands in avoidable damage, forgets to interrupt a spell, or dies early. **Lower is better (0 is perfect).**</p>
         </div>
         <div>
-          <strong style="color: #f1f5f9;">🔥 DPS (Damage):</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.fire} DPS (Damage):</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">"Damage Per Second" — How fast this player hits the boss. Higher DPS means the boss dies faster before healers run out of mana.</p>
         </div>
         <div>
-          <strong style="color: #f1f5f9;">💚 HPS (Healing):</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.heart} HPS (Healing):</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">"Healing Per Second" — How fast this player saves teammates from dying. We adjust this based on the healer size so it stays fair.</p>
         </div>
         <div>
-          <strong style="color: #f1f5f9;">💥 Avoidable Damage (Mistakes):</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.warning} Avoidable Damage (Mistakes):</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">Damage taken from standing in glowing ground fire, swirls, cones, or mechanics that are 100% dodgeable.</p>
         </div>
         <div>
-          <strong style="color: #f1f5f9;">🌀 RSI (Raid Stress Index):</strong>
+          <strong style="color: #f1f5f9;">${SVG_ICONS.heartbeat} RSI (Raid Stress Index):</strong>
           <p style="color: var(--muted); margin: 4px 0 0 0;">Raid Stress Index. Measures how close your raid came to wiping based on unavoidable spikes and player positioning stress.</p>
         </div>
       </div>
@@ -1353,7 +1386,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <div class="trophy-shelf" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 14px 0 28px 0;">
       <!-- MVP Card -->
       <div class="trophy-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">🏆</div>
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.trophy}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--blue); font-weight: 700; letter-spacing: 0.05em;">Raid MVP</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(mvpClass) || '#fff'};">${escapeHtml(mvpName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mvpName !== '—' ? `Survived with ${mvpValue}` : 'No survivors'}</div>
@@ -1361,7 +1394,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
       
       <!-- Survival Star Card -->
       <div class="trophy-card" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">🛡️</div>
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.shield}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--green); font-weight: 700; letter-spacing: 0.05em;">Survival Star</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(survivorClass) || '#fff'};">${escapeHtml(survivorName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${survivorName !== '—' ? `Cleanest run: ${formatNumber(survivorDamage)} avoidable dmg` : 'No survivors'}</div>
@@ -1369,7 +1402,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Mechanical Mastery Card -->
       <div class="trophy-card" style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">⚡</div>
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.bolt}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: #eab308; font-weight: 700; letter-spacing: 0.05em;">Mechanical Master</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: #fff;">${mechMasterNames.length > 0 ? `${mechMasterNames.length} Players` : '—'}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mechMasterNames.length > 0 ? 'Took 0 avoidable damage hits!' : 'Every player took avoidable damage'}</div>
@@ -1377,7 +1410,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Coaching Focus Card -->
       <div class="trophy-card" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">⚠️</div>
+        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.warning}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--red); font-weight: 700; letter-spacing: 0.05em;">Needs Coaching</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(coachingFocusClass) || '#fff'};">${escapeHtml(coachingFocusName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Score: ${coachingFocusScore} • ${escapeHtml(coachingFocusIssue)}</div>
@@ -1388,7 +1421,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <div class="raid-coach-grid-cols" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 28px;">
       <!-- Raid Coach Quick Read -->
       <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
-        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--blue); font-weight: 600; display: flex; align-items: center; gap: 8px;">📋 Tactical Coaching Read</h3>
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--blue); font-weight: 600; display: flex; align-items: center; gap: 8px;">${SVG_ICONS.clipboard} Tactical Coaching Read</h3>
         <p style="font-size: 13px; line-height: 1.6; color: #f1f5f9; margin-bottom: 14px;">
           ${escapeHtml(analysis.raid_coach?.overall_read || "No overall coaching summary generated yet.")}
         </p>
@@ -1401,10 +1434,10 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Action Items Checklist -->
       <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
-        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--orange); font-weight: 600; display: flex; align-items: center; gap: 8px;">🎯 Pull Focus & Recommendations</h3>
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--orange); font-weight: 600; display: flex; align-items: center; gap: 8px;">${SVG_ICONS.target} Pull Focus & Recommendations</h3>
         <ul style="padding-left: 20px; font-size: 12.5px; color: #f1f5f9; line-height: 1.8; margin-bottom: 0;">
           ${(analysis.raid_coach?.next_pull_focus || []).map(focus => `
-            <li style="margin-bottom: 8px; list-style-type: '🔸 ';">${escapeHtml(focus)}</li>
+            <li style="margin-bottom: 8px; list-style-type: '• ';">${escapeHtml(focus)}</li>
           `).join("")}
         </ul>
       </div>
@@ -1441,7 +1474,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
             if (deathCount > 0) {
               deathsCell = `
                 <button type="button" class="death-recap-trigger-cell" onclick="showPlayerDeathsRecap('${escapeHtml(row.player)}')">
-                  ${deathCount} <span style="font-size: 10px;">☠</span>
+                  ${deathCount} <span style="font-size: 10px;">${SVG_ICONS.skull}</span>
                 </button>
               `;
             } else {
@@ -1760,7 +1793,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
   if (isOverhealed) {
     recs.push({
       type: "rec-positive",
-      text: `🛡️ **Calibrated Coaching Active:** Since the raid took extremely low avoidable damage or ran a very safe healer ratio, HPS benchmark targets are paused. Great job maintaining high utility/dispels and conserving mana!`
+      text: `${SVG_ICONS.shield} **Calibrated Coaching Active:** Since the raid took extremely low avoidable damage or ran a very safe healer ratio, HPS benchmark targets are paused. Great job maintaining high utility/dispels and conserving mana!`
     });
   } else if (playerValue < activeBaselineVal * 0.85) {
     recs.push({
@@ -1816,13 +1849,13 @@ function renderBenchmarksTab(analysis, playerLookup) {
 
   const healerDisclaimer = role === "Healer" ? `
     <div style="font-size: 12px; color: var(--muted); margin-top: 10px; background: rgba(56, 189, 248, 0.03); border: 1px solid rgba(56, 189, 248, 0.1); padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px;">
-      💚 <strong>Healer Comparative Logic Active:</strong> This baseline dynamically adapts HPS metrics against raid size and healer counts to prevent unfair speedkill or over-healed parsing biases.
+      ${SVG_ICONS.heart} <strong>Healer Comparative Logic Active:</strong> This baseline dynamically adapts HPS metrics against raid size and healer counts to prevent unfair speedkill or over-healed parsing biases.
     </div>
   ` : "";
 
   const rsiBadgeHtml = isProgression 
-    ? `<span class="rsi-badge progression">🔥 Progression Run (RSI: ${rsi})</span>` 
-    : `<span class="rsi-badge farm">🌾 Farm Run (RSI: ${rsi})</span>`;
+    ? `<span class="rsi-badge progression">${SVG_ICONS.fire} Progression Run (RSI: ${rsi})</span>` 
+    : `<span class="rsi-badge farm">${SVG_ICONS.shield} Farm Run (RSI: ${rsi})</span>`;
 
   document.getElementById("tabContent").innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -1861,7 +1894,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
         <div class="executive-messaging">
           This compares your absolute raw output globally against the entire logged raiding population for this spec and class.
           <div class="filter-pills-list" style="margin-top: 10px;">
-            <span class="filter-pill-item" style="background: rgba(163, 53, 238, 0.06); border-color: rgba(163, 53, 238, 0.15); color: #a335ee;">Historical Locked 🔒</span>
+            <span class="filter-pill-item" style="background: rgba(163, 53, 238, 0.06); border-color: rgba(163, 53, 238, 0.15); color: #a335ee;">Historical Locked ${SVG_ICONS.lock}</span>
           </div>
         </div>
       </div>
@@ -1870,7 +1903,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
       <div class="coach-score-card optimization">
         <div class="card-title-row">
           <h3>ShortParse Optimization Analysis</h3>
-          ${isOverhealed ? `<span class="card-tag" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); font-weight: 750;">Capacity Capped 🛡️</span>` : `<span class="card-tag" style="background: rgba(74, 222, 128, 0.1); color: var(--green);">COACHING MATRIX</span>`}
+          ${isOverhealed ? `<span class="card-tag" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); font-weight: 750;">Capacity Capped ${SVG_ICONS.shield}</span>` : `<span class="card-tag" style="background: rgba(74, 222, 128, 0.1); color: var(--green);">COACHING MATRIX</span>`}
         </div>
         <div class="executive-metric-wrapper">
           <div class="executive-main-metric">${executionScore}%</div>
@@ -1886,12 +1919,12 @@ function renderBenchmarksTab(analysis, playerLookup) {
           </div>
           ${isOverhealed ? `
             <div style="font-size: 11.5px; margin-top: 10px; color: var(--blue); background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); padding: 8px 12px; border-radius: 8px; line-height: 1.4;">
-              ⚠️ <strong>Healing Capacity Capped:</strong> Low raid damage taken or safe healer ratios naturally limited your throughput. Optimization focus is automatically shifted to defensive survival and active casting efficiency.
+              ${SVG_ICONS.warning} <strong>Healing Capacity Capped:</strong> Low raid damage taken or safe healer ratios naturally limited your throughput. Optimization focus is automatically shifted to defensive survival and active casting efficiency.
             </div>
           ` : ""}
           ${isCoHealerCarry ? `
             <div class="cohealer-synergy-panel">
-              🤝 <strong>Co-Healer Synergy Active:</strong> Co-healer ${escapeHtml(maxOtherHealerName)} absorbed exceptionally high throughput (${formatNumber(maxOtherHealerHps)} HPS) in this fight, naturally limiting your healing opportunities. Your HPS reflects solid coordination, survival focus, and mana efficiency!
+              ${SVG_ICONS.users} <strong>Co-Healer Synergy Active:</strong> Co-healer ${escapeHtml(maxOtherHealerName)} absorbed exceptionally high throughput (${formatNumber(maxOtherHealerHps)} HPS) in this fight, naturally limiting your healing opportunities. Your HPS reflects solid coordination, survival focus, and mana efficiency!
             </div>
           ` : ""}
           ${healerDisclaimer}
@@ -1907,19 +1940,19 @@ function renderBenchmarksTab(analysis, playerLookup) {
           class="comparison-toggle-btn elite ${benchmarkComparisonMode === 'elite' ? 'active' : ''}" 
           onclick="selectBenchmarkComparisonMode('elite')"
         >
-          🌟 Elite Players
+          ${SVG_ICONS.star} Elite Players
         </button>
         <button 
           class="comparison-toggle-btn high ${benchmarkComparisonMode === 'high_performer' ? 'active' : ''}" 
           onclick="selectBenchmarkComparisonMode('high_performer')"
         >
-          🎯 Similar High Performers
+          ${SVG_ICONS.target} Similar High Performers
         </button>
         <button 
           class="comparison-toggle-btn median ${benchmarkComparisonMode === 'median' ? 'active' : ''}" 
           onclick="selectBenchmarkComparisonMode('median')"
         >
-          👥 Median Players
+          ${SVG_ICONS.users} Median Players
         </button>
       </div>
       <p class="comparison-desc-text">
@@ -1961,7 +1994,7 @@ function renderBenchmarksTab(analysis, playerLookup) {
               let displayDelta = d.delta === 0 ? "—" : `${badgePrefix}${formattedDelta}${d.unit}`;
 
               if (d.isOverhealedCalibrated) {
-                displayDelta = `<span class="delta-badge positive" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); border-color: rgba(56, 189, 248, 0.3); font-weight: 750;">Calibrated 🛡️</span>`;
+                displayDelta = `<span class="delta-badge positive" style="background: rgba(56, 189, 248, 0.1); color: var(--blue); border-color: rgba(56, 189, 248, 0.3); font-weight: 750;">Calibrated ${SVG_ICONS.shield}</span>`;
               } else {
                 displayDelta = `<span class="delta-badge ${badgeClass}">${displayDelta}</span>`;
               }
@@ -2224,7 +2257,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
   if (playerIssues.length === 0) {
     issuesListHtml = `
       <div class="coach-perfect-play" style="text-align: center; padding: 16px; background: rgba(74,222,128,0.02); border: 1px dashed rgba(74,222,128,0.2); border-radius: 12px; margin-bottom: 10px;">
-        <div class="coach-perfect-icon" style="font-size: 24px; margin-bottom: 4px;">🛡️</div>
+        <div class="coach-perfect-icon" style="font-size: 24px; margin-bottom: 4px;">${SVG_ICONS.shield}</div>
         <div class="coach-perfect-title" style="font-weight: 700; color: var(--green); font-size: 14px;">Perfect Mechanical Run</div>
         <div class="coach-perfect-desc" style="color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.4;">Flawless performance! Zero rotational or mechanical issues detected in this fight.</div>
       </div>
@@ -2246,15 +2279,15 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
       <div class="coach-ledger-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto;">
         ${playerIssues.length === 0 ? `
           <div class="coach-ledger-item" style="color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 0;">
-            🟢 No active mechanical or rotational penalties.
+            ${SVG_ICONS.checkCircle} No active mechanical or rotational penalties.
           </div>
         ` : playerIssues.map(issue => {
           const score = severityWeights[issue.severity] || 0;
           let sevClass = (issue.severity || "info").toLowerCase();
           let icon = "✦";
-          if (issue.severity === "Critical") icon = "☠";
-          else if (issue.severity === "Major") icon = "⚠";
-          else if (issue.severity === "Info") icon = "ℹ";
+          if (issue.severity === "Critical") icon = SVG_ICONS.skull;
+          else if (issue.severity === "Major") icon = SVG_ICONS.warning;
+          else if (issue.severity === "Info") icon = SVG_ICONS.info;
 
           let mathText = `${issue.severity} × ${score}`;
           if (!isProgression && issue.severity === "Warning") mathText = `Warning × 10 (Relaxed)`;
@@ -2298,7 +2331,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
         <span class="coach-progression-value" style="color: var(--yellow);">${formatNumber(playerVal)} ${metric}</span>
       </div>
       <div style="text-align: center; padding: 12px; background: rgba(254, 240, 138, 0.03); border: 1px solid rgba(254, 240, 138, 0.15); border-radius: 12px; display: flex; flex-direction: column; gap: 4px; align-items: center;">
-        <span style="font-size: 20px;">👑</span>
+        <span style="font-size: 20px; color: var(--yellow); display: inline-flex;">${SVG_ICONS.crown}</span>
         <strong style="color: var(--yellow); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Peak Performance Level</strong>
         <p style="margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">Matching or exceeding the high-performing Top 10% benchmark of active players globally.</p>
       </div>
@@ -2370,7 +2403,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
 
   let gapsHtml = "";
   if (filteredGaps.length === 0) {
-    gapsHtml = `<li style="list-style: none; color: var(--green); font-size: 12.5px; font-weight: 600;">🟢 Flawless casting rotation! No inactivity gaps recorded.</li>`;
+    gapsHtml = `<li style="list-style: none; color: var(--green); font-size: 12.5px; font-weight: 600;">${SVG_ICONS.checkCircle} Flawless casting rotation! No inactivity gaps recorded.</li>`;
   } else {
     gapsHtml = filteredGaps.slice(0, 3).map(gap => {
       const mins = Math.floor(gap.start_seconds / 60);
@@ -2394,7 +2427,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
   let deathRecapHtml = "";
 
   if (!deathEvents.length) {
-    deathRecapHtml = `<div style="text-align: center; color: var(--muted); padding: 32px; font-size: 13px;">🏆 Zero deaths logged! Perfect survival run.</div>`;
+    deathRecapHtml = `<div style="text-align: center; color: var(--muted); padding: 32px; font-size: 13px;">${SVG_ICONS.checkCircle} Zero deaths logged! Perfect survival run.</div>`;
   } else {
     if (!loungeSelectedDeathTimestamp) {
       loungeSelectedDeathTimestamp = deathEvents[0].timestamp;
@@ -2438,7 +2471,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
               eventTitle = e.ability_name;
               amountText = `<span class="death-event-amount damage-text" style="color: var(--red); font-weight: 700;">-${formatNumber(e.amount)}</span>`;
               if (e.avoidable) {
-                amountText += `<span class="death-event-amount avoidable-flag" style="color: var(--yellow); margin-left: 6px; font-size: 10px; font-weight: bold; background: rgba(250,204,21,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(250,204,21,0.2);">Avoidable ⚠️</span>`;
+                amountText += `<span class="death-event-amount avoidable-flag" style="color: var(--yellow); margin-left: 6px; font-size: 10px; font-weight: bold; background: rgba(250,204,21,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(250,204,21,0.2);">Avoidable ${SVG_ICONS.warning}</span>`;
               }
               if (e.overkill > 0) {
                 amountText += `<span class="death-event-amount overkill-text" style="color: var(--red); font-size: 10px; margin-left: 6px;">Overkill</span>`;
@@ -2490,11 +2523,11 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
     deathRecapHtml = `
       ${selectorBarHtml}
       <div style="font-size: 12.5px; font-weight: 700; color: var(--red); display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-        <span>☠ Died at ${formattedTime} into the fight</span>
+        <span>${SVG_ICONS.skull} Died at ${formattedTime} into the fight</span>
       </div>
       ${activeDeath.recap_analysis && activeDeath.recap_analysis.summary ? `
         <div class="death-recap-summary-card" style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 8px; padding: 10px; font-size: 12px; margin-bottom: 12px; line-height: 1.4; color: var(--text);">
-          <span style="font-weight: 700; color: var(--red); margin-right: 4px;">⚠️ Catalyst:</span>
+          <span style="font-weight: 700; color: var(--red); margin-right: 4px;">${SVG_ICONS.warning} Catalyst:</span>
           <span>${escapeHtml(activeDeath.recap_analysis.summary)}</span>
         </div>
       ` : ""}
@@ -2512,7 +2545,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
     <div class="diag-hero-banner">
       <div class="diag-hero-profile">
         <div style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid ${gradeColor}40; background: ${gradeColor}10; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 12px ${gradeColor}18;">
-          ${identity.role === "Healer" ? "🛡️" : identity.role === "Tank" ? "🛡️" : "⚔️"}
+          ${identity.role === "Healer" ? SVG_ICONS.shield : identity.role === "Tank" ? SVG_ICONS.shield : SVG_ICONS.bolt}
         </div>
         <div>
           <h2 class="diag-hero-name" style="color: ${getClassColor(className)};">${escapeHtml(playerName)}</h2>
@@ -2533,7 +2566,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
       <div style="display: flex; flex-direction: column; gap: 20px;">
         <!-- AI Core Recommendations -->
         <div class="diag-section-card">
-          <h3 class="diag-section-title" style="color: var(--blue);">📋 Core Action Items & Coaching</h3>
+          <h3 class="diag-section-title" style="color: var(--blue);">${SVG_ICONS.clipboard} Core Action Items & Coaching</h3>
           <div class="coach-action-items-list" style="display: flex; flex-direction: column; gap: 10px;">
             ${issuesListHtml}
           </div>
@@ -2542,7 +2575,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
 
         <!-- Comparative Benchmarks -->
         <div class="diag-section-card">
-          <h3 class="diag-section-title" style="color: var(--yellow);">🎯 Percentile Benchmarks</h3>
+          <h3 class="diag-section-title" style="color: var(--yellow);">${SVG_ICONS.target} Percentile Benchmarks</h3>
           ${benchmarkHtml}
         </div>
       </div>
@@ -2551,7 +2584,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
       <div style="display: flex; flex-direction: column; gap: 20px;">
         <!-- Rotational Gaps & Uptime -->
         <div class="diag-section-card">
-          <h3 class="diag-section-title" style="color: ${uptimeColor};">📈 Casting Activity & Rotational Gaps</h3>
+          <h3 class="diag-section-title" style="color: ${uptimeColor};">${SVG_ICONS.trend} Casting Activity & Rotational Gaps</h3>
           <div class="coach-inactivity-wrapper">
             <div style="display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 6px;">
               <span style="color: var(--muted);">Casting Uptime</span>
@@ -2568,7 +2601,7 @@ function renderLoungeDiagnosticPane(playerName, analysis, playerLookup) {
 
         <!-- Avoidable Deaths Timeline Recap -->
         <div class="diag-section-card">
-          <h3 class="diag-section-title" style="color: var(--red);">☠ Death Recap Breakdown (Final 8s)</h3>
+          <h3 class="diag-section-title" style="color: var(--red);">${SVG_ICONS.skull} Death Recap Breakdown (Final 8s)</h3>
           ${deathRecapHtml}
         </div>
       </div>
@@ -2632,7 +2665,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 
             const deathsCount = performance.deaths || 0;
             const deathsContent = deathsCount > 0
-              ? `<button class="death-trigger-btn" type="button" onclick="showPlayerDeathsRecap('${escapeHtml(playerName)}')">☠ ${deathsCount}</button>`
+              ? `<button class="death-trigger-btn" type="button" onclick="showPlayerDeathsRecap('${escapeHtml(playerName)}')">${SVG_ICONS.skull} ${deathsCount}</button>`
               : "0";
 
             return `
@@ -2970,32 +3003,32 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
         <div class="cooldowns-spell-view-grid">
           ${spellList.map(spell => {
             const cat = spell.category || "unknown";
-            let catIcon = "🛡️";
+            let catIcon = SVG_ICONS.shield;
             let catLabel = "Personal";
             let catClass = "badge-personal";
 
             if (cat === "raid_defensive" || cat === "raid_healing") {
-              catIcon = "⭐";
+              catIcon = SVG_ICONS.star;
               catLabel = "Raid CD";
               catClass = "badge-raid";
             } else if (cat === "external_defensive") {
-              catIcon = "💖";
+              catIcon = SVG_ICONS.heart;
               catLabel = "External";
               catClass = "badge-external";
             } else if (cat === "raid_movement") {
-              catIcon = "🏃";
+              catIcon = SVG_ICONS.bolt;
               catLabel = "Movement";
               catClass = "badge-movement";
             } else if (cat === "raid_utility") {
-              catIcon = "⚡";
+              catIcon = SVG_ICONS.bolt;
               catLabel = "Utility";
               catClass = "badge-utility";
             } else if (cat === "personal_immunity") {
-              catIcon = "💎";
+              catIcon = SVG_ICONS.crystalBall;
               catLabel = "Immune";
               catClass = "badge-immune";
             } else if (cat === "tank_defensive") {
-              catIcon = "🧱";
+              catIcon = SVG_ICONS.shield;
               catLabel = "Tank CD";
               catClass = "badge-tank";
             }
@@ -3152,32 +3185,32 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
         const cat = spell.category || "unknown";
         const weight = spell.weight || "medium";
 
-        let catIcon = "🛡️";
+        let catIcon = SVG_ICONS.shield;
         let catLabel = "Personal";
         let catClass = "badge-personal";
 
         if (cat === "raid_defensive" || cat === "raid_healing") {
-          catIcon = "⭐";
+          catIcon = SVG_ICONS.star;
           catLabel = "Raid CD";
           catClass = "badge-raid";
         } else if (cat === "external_defensive") {
-          catIcon = "💖";
+          catIcon = SVG_ICONS.heart;
           catLabel = "External";
           catClass = "badge-external";
         } else if (cat === "raid_movement") {
-          catIcon = "🏃";
+          catIcon = SVG_ICONS.bolt;
           catLabel = "Movement";
           catClass = "badge-movement";
         } else if (cat === "raid_utility") {
-          catIcon = "⚡";
+          catIcon = SVG_ICONS.bolt;
           catLabel = "Utility";
           catClass = "badge-utility";
         } else if (cat === "personal_immunity") {
-          catIcon = "💎";
+          catIcon = SVG_ICONS.crystalBall;
           catLabel = "Immune";
           catClass = "badge-immune";
         } else if (cat === "tank_defensive") {
-          catIcon = "🧱";
+          catIcon = SVG_ICONS.shield;
           catLabel = "Tank CD";
           catClass = "badge-tank";
         }
@@ -3242,7 +3275,7 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
               <span class="cooldown-player-name" style="color: ${classColor}" onclick="showPlayerCoachCard('${escapeHtml(playerName)}')">${escapeHtml(playerName)}</span>
               <span class="cooldown-player-badge">${escapeHtml(pSpec)}</span>
             </div>
-            <span class="cooldown-player-role-tag">${pRole === "TANK" ? "🛡️ Tank" : pRole === "HEALER" ? "💚 Healer" : "⚔️ DPS"}</span>
+            <span class="cooldown-player-role-tag">${pRole === "TANK" ? `${SVG_ICONS.shield} Tank` : pRole === "HEALER" ? `${SVG_ICONS.heart} Healer` : `${SVG_ICONS.bolt} DPS`}</span>
           </div>
           <div class="cooldown-player-spells">
             ${spellsHtml}
@@ -3339,7 +3372,7 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
         ${stats.missedCount > 0 ? `
           <div class="cooldown-alerts-panel">
             <div class="alerts-panel-title">
-              <span class="alert-icon">⚠️</span> Critical Cooldown Failures
+              <span class="alert-icon">${SVG_ICONS.warning}</span> Critical Cooldown Failures
             </div>
             <div class="alerts-list">
               ${stats.missedAlerts.map(alert => {
@@ -3358,7 +3391,7 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
         ` : `
           <div class="cooldown-alerts-panel success">
             <div class="alerts-panel-title">
-              <span class="alert-icon">✨</span> Perfect Key Cooldown Execution!
+              <span class="alert-icon">${SVG_ICONS.star}</span> Perfect Key Cooldown Execution!
             </div>
             <div class="alerts-panel-body">
               All high-priority defensive and utility raid cooldowns were cast at least once. Outstanding!
@@ -3371,14 +3404,14 @@ function renderCooldownsTab(playerMetrics, playerLookup) {
       <div class="cooldown-controls-bar">
         <!-- Search -->
         <div class="cooldown-search-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon">${SVG_ICONS.search}</span>
           <input type="text" id="cooldownSearchInput" placeholder="Search players, specs, or spells..." value="${escapeHtml(searchF)}" oninput="setCooldownSearchQuery(this.value)">
         </div>
 
         <!-- View Mode Toggle -->
         <div class="cooldown-view-toggle">
-          <button class="cooldown-toggle-btn ${viewF === "player" ? "active" : ""}" onclick="setCooldownViewMode('player')">👤 Player View</button>
-          <button class="cooldown-toggle-btn ${viewF === "spell" ? "active" : ""}" onclick="setCooldownViewMode('spell')">🔮 Spell View</button>
+          <button class="cooldown-toggle-btn ${viewF === "player" ? "active" : ""}" onclick="setCooldownViewMode('player')">${SVG_ICONS.user} Player View</button>
+          <button class="cooldown-toggle-btn ${viewF === "spell" ? "active" : ""}" onclick="setCooldownViewMode('spell')">${SVG_ICONS.crystalBall} Spell View</button>
         </div>
       </div>
 
@@ -3507,19 +3540,19 @@ function renderTimelineTab(timeline, playerLookup) {
     ];
 
     if (ev.type === "death") {
-      tooltipTitle = `☠ Death: ${ev.target}`;
+      tooltipTitle = `Death: ${ev.target}`;
       tooltipFields = [
         { label: "Time", value: ev.time },
-        { label: "Action", value: "Click to open Death Recap! ☠" }
+        { label: "Action", value: "Click to open Death Recap!" }
       ];
     } else if (ev.type === "cooldown") {
-      tooltipTitle = `🛡️ Cooldown: ${spellLabel}`;
+      tooltipTitle = `Cooldown: ${spellLabel}`;
       tooltipFields = [
         { label: "Cast By", value: ev.source },
         { label: "Time", value: ev.time }
       ];
     } else if (ev.type === "mechanic") {
-      tooltipTitle = `⚠️ Mechanic: ${spellLabel}`;
+      tooltipTitle = `Mechanic: ${spellLabel}`;
       tooltipFields = [
         { label: "Target", value: ev.target },
         { label: "Amount", value: `${formatNumber(ev.amount)} dmg` },
@@ -3534,7 +3567,7 @@ function renderTimelineTab(timeline, playerLookup) {
   const svgHtml = `
     <div class="timeline-visual-ruler-card">
       <div class="timeline-visual-ruler-title">Combat Timeline Visualizer</div>
-      <div class="timeline-visual-ruler-subtitle">Visual overview of key fight events. Hover dots for details; click skulls (☠) to view Death Recaps.</div>
+      <div class="timeline-visual-ruler-subtitle">Visual overview of key fight events. Hover dots for details; click skulls (${SVG_ICONS.skull}) to view Death Recaps.</div>
       
       <div class="timeline-svg-container">
         <svg viewBox="0 0 ${width} ${height}" class="timeline-svg">
@@ -3569,7 +3602,7 @@ function renderTimelineTab(timeline, playerLookup) {
         <tbody>
           ${timeline.map(event => {
             const summaryContent = event.type === "death"
-              ? `<button class="death-trigger-btn" type="button" onclick="showDeathRecap('${escapeHtml(event.target)}', ${event.timestamp})">☠ Died (Recap)</button>`
+              ? `<button class="death-trigger-btn" type="button" onclick="showDeathRecap('${escapeHtml(event.target)}', ${event.timestamp})">${SVG_ICONS.skull} Died (Recap)</button>`
               : escapeHtml(event.summary || "Unknown event");
 
             return `
@@ -3760,9 +3793,9 @@ function renderPlayerName(playerName, playerLookup) {
 function renderIssueActionItemMarkup(issue) {
   const sevClass = (issue.severity || "warning").toLowerCase();
   let icon = "✦";
-  if (issue.severity === "Critical") icon = "☠";
-  else if (issue.severity === "Major") icon = "⚠";
-  else if (issue.severity === "Info") icon = "ℹ";
+  if (issue.severity === "Critical") icon = SVG_ICONS.skull;
+  else if (issue.severity === "Major") icon = SVG_ICONS.warning;
+  else if (issue.severity === "Info") icon = SVG_ICONS.info;
 
   return `
     <div class="coach-action-item ${sevClass}">
@@ -3935,7 +3968,7 @@ function showPlayerCoachCard(playerName) {
     if (playerIssues.length === 0) {
       coachActionItems.innerHTML = `
         <div class="coach-perfect-play">
-          <div class="coach-perfect-icon">🛡️</div>
+          <div class="coach-perfect-icon">${SVG_ICONS.shield}</div>
           <div class="coach-perfect-title">Perfect Mechanical Run</div>
           <div class="coach-perfect-desc">Flawless performance! Zero rotational or mechanical issues detected in this fight.</div>
         </div>
@@ -4014,15 +4047,15 @@ function showPlayerCoachCard(playerName) {
         <div class="coach-ledger-list">
           ${playerIssues.length === 0 ? `
             <div class="coach-ledger-item" style="color: var(--muted); font-size: 12.5px; font-style: italic; padding: 4px 0;">
-              🟢 No active mechanical or rotational penalties.
+              ${SVG_ICONS.checkCircle} No active mechanical or rotational penalties.
             </div>
           ` : playerIssues.map(issue => {
             const score = severityWeights[issue.severity] || 0;
             let sevClass = (issue.severity || "info").toLowerCase();
             let icon = "✦";
-            if (issue.severity === "Critical") icon = "☠";
-            else if (issue.severity === "Major") icon = "⚠";
-            else if (issue.severity === "Info") icon = "ℹ";
+            if (issue.severity === "Critical") icon = SVG_ICONS.skull;
+            else if (issue.severity === "Major") icon = SVG_ICONS.warning;
+            else if (issue.severity === "Info") icon = SVG_ICONS.info;
 
             let mathText = `${issue.severity} × ${score}`;
             if (!isProgression && issue.severity === "Warning") mathText = `Warning × 10 (Relaxed)`;
@@ -4074,7 +4107,7 @@ function showPlayerCoachCard(playerName) {
           <span class="coach-progression-value">${formatNumber(playerVal)} ${metric}</span>
         </div>
         <div style="text-align: center; padding: 16px; background: rgba(254, 240, 138, 0.03); border: 1px solid rgba(254, 240, 138, 0.15); border-radius: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
-          <span style="font-size: 24px;">👑</span>
+          <span style="font-size: 24px;">${SVG_ICONS.crown}</span>
           <strong style="color: var(--yellow); font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Peak Performance Level</strong>
           <p style="margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5;">You are currently matching or exceeding the high-performing Top 10% benchmark of active players globally. Sensational effort!</p>
         </div>
@@ -4164,7 +4197,7 @@ function showPlayerCoachCard(playerName) {
     if (filteredGaps.length === 0) {
       gapsHtml = `
         <li class="inactivity-gap-item" style="color: var(--green); font-weight: 600;">
-          🟢 Flawless casting rotation! No inactivity gaps recorded.
+          ${SVG_ICONS.checkCircle} Flawless casting rotation! No inactivity gaps recorded.
         </li>
       `;
     } else {
@@ -4194,7 +4227,7 @@ function showPlayerCoachCard(playerName) {
     if (gapsFilteredCount > 0) {
       gapsHtml += `
         <li class="inactivity-gap-item" style="color: var(--blue); font-weight: 650; display: flex; align-items: center; gap: 6px;">
-          🛡️ Paused ${gapsFilteredCount} gap(s) overlapping with global boss intermissions.
+          ${SVG_ICONS.shield} Paused ${gapsFilteredCount} gap(s) overlapping with global boss intermissions.
         </li>
       `;
     }
@@ -4204,7 +4237,7 @@ function showPlayerCoachCard(playerName) {
         <div class="coach-inactivity-header">
           <span class="coach-inactivity-title" style="color: var(--muted); display: inline-flex; align-items: center;">
             Casting Activity
-            <span class="coaching-tooltip-icon" onclick="toggleRotationalGapTooltip(event)">ℹ</span>
+            <span class="coaching-tooltip-icon" onclick="toggleRotationalGapTooltip(event)">i</span>
           </span>
           <strong style="font-size: 14px; font-family: monospace;">${adjustedUptimePct.toFixed(1)}% ${gapsFilteredCount > 0 ? `<span style="font-size: 10px; color: var(--blue);">(Calibrated)</span>` : ""}</strong>
         </div>
@@ -4365,7 +4398,7 @@ function showNoEncountersScreen(data) {
       <!-- Glowing Animated Sync Icon -->
       <div class="empty-state-icon-wrapper" style="position: relative; margin-bottom: 24px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
         <div class="pulse-ring" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; border: 2.5px solid rgba(56, 189, 248, 0.35); animation: pulseGlow 2.2s infinite ease-in-out;"></div>
-        <div style="font-size: 38px; position: relative; z-index: 2; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));">⚔️</div>
+        <div style="font-size: 38px; position: relative; z-index: 2; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5)); color: var(--blue); display: flex; align-items: center; justify-content: center;">${SVG_ICONS.swords}</div>
       </div>
       
       <h2 style="font-family: 'Outfit', sans-serif; font-size: 21px; font-weight: 800; color: var(--text); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;">
@@ -4378,7 +4411,7 @@ function showNoEncountersScreen(data) {
       
       <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 18px 22px; max-width: 500px; text-align: left; box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.25);">
         <h4 style="font-family: 'Outfit', sans-serif; font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text); margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;">
-          🔮 Real-Time Autopilot Active
+          ${SVG_ICONS.crystalBall} Real-Time Autopilot Active
         </h4>
         <p style="font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted); margin: 0; line-height: 1.55;">
           No boss encounters or combat logs have been generated yet. Pull a boss or complete a fight in World of Warcraft, and ShortParse will automatically analyze it here in real-time as your log uploader processes the stream!
@@ -5157,7 +5190,7 @@ function renderProgressionTab(progression) {
 
   const avgSurvivalText = formatTime(avgSurvivalSeconds);
   const totalProgressionTimeText = formatHrsTime(totalSeconds);
-  const bestHpText = bestHp === 0.0 ? "Kill 🏆" : `${bestHp.toFixed(1)}% HP`;
+  const bestHpText = bestHp === 0.0 ? "Kill ${SVG_ICONS.trophy}" : `${bestHp.toFixed(1)}% HP`;
 
   document.getElementById("tabContent").innerHTML = `
     <h2 class="tab-panel-title">Wipe Progression Tracker</h2>
@@ -5372,7 +5405,7 @@ function drawProgressionChart(pulls) {
     const mins = Math.floor(p.duration_seconds / 60);
     const rem = p.duration_seconds % 60;
     const durationText = `${mins}:${String(rem).padStart(2, "0")}`;
-    const resultLabel = p.kill ? "Kill 🏆" : "Wipe";
+    const resultLabel = p.kill ? "Kill ${SVG_ICONS.trophy}" : "Wipe";
     const hpText = p.kill ? "0.0%" : (p.boss_percentage !== null ? `${p.boss_percentage.toFixed(1)}%` : "—");
 
     showTooltip(e, `Attempt #${p.pull_number} (${resultLabel})`, [
@@ -5404,7 +5437,7 @@ function updateDiscordWebhookUI() {
     if (controls) controls.classList.add("hidden");
     if (premiumLock) premiumLock.classList.remove("hidden");
     if (postDiscordBtn) {
-      postDiscordBtn.textContent = "Post to Discord 🔒";
+      postDiscordBtn.textContent = "Post to Discord ${SVG_ICONS.lock}";
       postDiscordBtn.classList.add("premium-locked");
     }
   }
@@ -5487,7 +5520,7 @@ function openSettingsDrawer() {
         tierBadge.style.color = isPremium ? "var(--green)" : "var(--red)";
       }
       if (accountName) {
-        accountName.textContent = isPremium ? "ShortParse Premium tier active! ⭐" : "Patreon linked, but no active campaign tier detected.";
+        accountName.textContent = isPremium ? "ShortParse Premium tier active! ${SVG_ICONS.star}" : "Patreon linked, but no active campaign tier detected.";
       }
     } else {
       unlinkedBlock.classList.remove("hidden");
@@ -5640,7 +5673,7 @@ async function testWebhookSettings() {
       throw new Error(errData.detail || "Failed to send test webhook.");
     }
 
-    statusMsg.textContent = "Test message posted successfully in Discord! 🚀";
+    statusMsg.textContent = "Test message posted successfully in Discord!";
     statusMsg.className = "status-msg-success";
     statusMsg.classList.remove("hidden");
   } catch (error) {
@@ -5702,7 +5735,7 @@ async function syncPatreonSubscription() {
     }
     
     if (accountName) {
-      accountName.textContent = isPremium ? "ShortParse Premium tier active! ⭐" : "Patreon linked, but no active campaign tier detected.";
+      accountName.textContent = isPremium ? "ShortParse Premium tier active! ${SVG_ICONS.star}" : "Patreon linked, but no active campaign tier detected.";
     }
 
     statusMsg.textContent = "Subscription synced successfully!";
@@ -5730,7 +5763,7 @@ async function postActiveReportToDiscord() {
   if (!postBtn || !currentJobId) return;
 
   if (!isPremium) {
-    alert("⭐ Discord Webhook integration is a Premium feature. Support us on Patreon to automatically dispatch high-fidelity raid summaries directly to your guild channels!");
+    alert("Discord Webhook integration is a Premium feature. Support us on Patreon to automatically dispatch high-fidelity raid summaries directly to your guild channels!");
     openSettingsDrawer();
     const patreonSection = document.getElementById("patreonUnlinkedBlock") || document.getElementById("patreonLinkedBlock");
     if (patreonSection) {
@@ -5767,20 +5800,20 @@ async function postActiveReportToDiscord() {
       throw new Error(errData.detail || "Failed to post report to Discord.");
     }
 
-    postBtn.textContent = "Posted! 🚀";
+    postBtn.textContent = "Posted!";
     postBtn.style.background = "var(--green)";
     postBtn.style.color = "#0f1218";
 
     setTimeout(() => {
       postBtn.disabled = false;
-      postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord 🔒";
+      postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord ${SVG_ICONS.lock}";
       postBtn.style.background = "";
       postBtn.style.color = "";
     }, 2500);
   } catch (error) {
     alert(`Failed to share to Discord: ${error.message}`);
     postBtn.disabled = false;
-    postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord 🔒";
+    postBtn.textContent = isPremium ? "Post to Discord" : "Post to Discord ${SVG_ICONS.lock}";
   }
 }
 
@@ -5828,7 +5861,7 @@ function showDeathRecap(playerName, timestamp) {
   if (!drawer || !playerEl || !metaEl || !eventsEl) return;
 
   // Render header values
-  playerEl.innerText = `☠ Death Recap: ${playerName}`;
+  playerEl.innerText = `${SVG_ICONS.skull} Death Recap: ${playerName}`;
   
   const mins = Math.floor(deathEvent.seconds_into_fight / 60);
   const secs = Math.floor(deathEvent.seconds_into_fight % 60);
@@ -5837,7 +5870,7 @@ function showDeathRecap(playerName, timestamp) {
   if (deathEvent.recap_analysis && deathEvent.recap_analysis.summary) {
     metaEl.innerHTML += `
       <div class="death-recap-summary-card">
-        <span class="warning-icon">⚠️</span>
+        <span class="warning-icon" style="color: #fbbf24; display: inline-flex;">${SVG_ICONS.warning.replace('class="inline-icon"', 'class="inline-icon inline-icon-no-margin"')}</span>
         <span class="summary-text">${escapeHtml(deathEvent.recap_analysis.summary)}</span>
       </div>
     `;
@@ -5858,7 +5891,7 @@ function showDeathRecap(playerName, timestamp) {
         eventTitle = e.ability_name;
         amountText = `<span class="death-event-amount damage-text">-${formatNumber(e.amount)}</span>`;
         if (e.avoidable) {
-          amountText += `<span class="death-event-amount overkill-text" style="color: var(--yellow); margin-left: 6px;">Avoidable ⚠️</span>`;
+          amountText += `<span class="death-event-amount overkill-text" style="color: var(--yellow); margin-left: 6px;">Avoidable ${SVG_ICONS.warning}</span>`;
         }
         if (e.overkill > 0) {
           amountText += `<span class="death-event-amount overkill-text">Overkill</span>`;
@@ -6379,7 +6412,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
     const y = height - margin.bottom - (val / maxVal) * graphHeight;
 
     const colorClass = spike.covered ? "covered" : "unmitigated";
-    const icon = spike.covered ? "🛡️" : "⚠️";
+    const icon = spike.covered ? SVG_ICONS.shield : SVG_ICONS.warning;
 
     return `
       <g class="calibrator-svg-spike-group" style="cursor: pointer;" onmouseenter="showCalibratorSpikeTooltip(event, '${escapeHtml(spike.time)}', '${escapeHtml(spike.spell_name)}', ${spike.amount}, ${spike.covered})" onmouseleave="hideTooltip()" onmousemove="moveTooltip(event)">
@@ -6431,7 +6464,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
         const cdList = spike.active_cooldowns.map(cd => `<strong>${escapeHtml(cd.player)}</strong> (${escapeHtml(cd.spell_name)})`).join(", ");
         return `
           <div class="calibrator-spike-card covered">
-            <div class="card-icon">🛡️</div>
+            <div class="card-icon">${SVG_ICONS.shield}</div>
             <div class="card-body">
               <div class="card-meta">${escapeHtml(spike.time)} · COVERED SPIKE</div>
               <div class="card-title">${escapeHtml(spike.spell_name)}</div>
@@ -6445,7 +6478,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
   const unmitigatedHtml = unmitigatedSpikes.length === 0
     ? `
       <div class="calibrator-perfect-mitigation">
-        <div class="perfect-icon">👑</div>
+        <div class="perfect-icon">${SVG_ICONS.crown}</div>
         <div class="perfect-title">Perfect Defensive Coverage!</div>
         <div class="perfect-desc">Sensational execution! Every single massive damage spike during this encounter was mitigated by at least one major defensive cooldown.</div>
       </div>
@@ -6453,7 +6486,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
     : unmitigatedSpikes.map(spike => {
         return `
           <div class="calibrator-spike-card unmitigated">
-            <div class="card-icon">⚠️</div>
+            <div class="card-icon">${SVG_ICONS.warning}</div>
             <div class="card-body">
               <div class="card-meta">${escapeHtml(spike.time)} · UNMITIGATED SPIKE</div>
               <div class="card-title">${escapeHtml(spike.spell_name)}</div>
@@ -6503,7 +6536,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
     <div class="calibrator-grid">
       <!-- Unmitigated Spikes (Raid concerns) -->
       <div class="calibrator-column warning-col">
-        <h3 class="column-title">⚠️ Mitigation Gaps (Critical Gaps)</h3>
+        <h3 class="column-title">${SVG_ICONS.warning} Mitigation Gaps (Critical Gaps)</h3>
         <p class="column-desc">Spikes where the raid took heavy damage with no major defensives running. Plan cooldowns here.</p>
         <div class="calibrator-cards-list">
           ${unmitigatedHtml}
@@ -6512,7 +6545,7 @@ function renderCalibratorTab(calibrator, playerLookup) {
 
       <!-- Covered Spikes -->
       <div class="calibrator-column success-col">
-        <h3 class="column-title">🛡️ Successful Mitigations</h3>
+        <h3 class="column-title">${SVG_ICONS.shield} Successful Mitigations</h3>
         <p class="column-desc">Raid damage spikes that were correctly covered by healer/tank defensive rotations.</p>
         <div class="calibrator-cards-list">
           ${coveredHtml}
@@ -6523,11 +6556,11 @@ function renderCalibratorTab(calibrator, playerLookup) {
 }
 
 window.showCalibratorSpikeTooltip = (e, time, spellName, amount, covered) => {
-  const title = `${time} · ${covered ? "🛡️ Covered Spike" : "⚠️ Mitigation Gap"}`;
+  const title = `${time} · ${covered ? `${SVG_ICONS.shield} Covered Spike` : `${SVG_ICONS.warning} Mitigation Gap`}`;
   const fields = [
     { label: "Boss Ability", value: spellName },
     { label: "Raid Damage Taken", value: `${formatNumber(amount)} total` },
-    { label: "Coverage Status", value: covered ? "🛡️ Mitigated successfully" : "❌ Zero active raid defensives" }
+    { label: "Coverage Status", value: covered ? `${SVG_ICONS.shield} Mitigated successfully` : "<svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Zero active raid defensives" }
   ];
   showTooltip(e, title, fields);
 };
@@ -7201,7 +7234,7 @@ function renderBuffSynergy(synergyData) {
   grid.innerHTML = gridHtml;
   
   if (recs.length === 0) {
-    suggestions.innerHTML = "🏆 Perfect Synergy! Your raid roster contains all vital class utility buffs.";
+    suggestions.innerHTML = `${SVG_ICONS.checkCircle} Perfect Synergy! Your raid roster contains all vital class utility buffs.";
   } else {
     let recsHtml = `<div style="font-weight: 700; color: #fbbf24; margin-bottom: 6px;">Utility Suggestions:</div>`;
     recs.forEach(r => {
@@ -7252,7 +7285,7 @@ function renderPanicAudit(players) {
     `;
   });
   
-  container.innerHTML = html || `<div style="text-align: center; color: var(--green); padding: 10px;">🛡️ Clean Raid Survival! Zero roster deaths recorded in these fights.</div>`;
+  container.innerHTML = html || `<div style="text-align: center; color: var(--green); padding: 10px;">${SVG_ICONS.shield} Clean Raid Survival! Zero roster deaths recorded in these fights.</div>`;
 }
 
 
@@ -7273,7 +7306,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
     sidebar.innerHTML = `<div style="color: var(--muted); font-size: 13px; font-weight: 600; padding: 12px; text-align: center; width: 100%;">No progression wipes recorded.</div>`;
     panel.innerHTML = `
       <div style="text-align: center; color: var(--green); padding: 32px; border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(52,211,153,0.02);">
-        <div style="font-size: 32px; margin-bottom: 12px;">🎉</div>
+        <div style="margin-bottom: 16px; color: var(--green); display: inline-block;"><svg class="inline-icon inline-icon-no-margin" style="width: 32px; height: 32px;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
         <div style="font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--green); margin-bottom: 6px;">Zero Progression Wipes!</div>
         <p style="font-size: 13px; color: var(--muted); margin: 0; max-width: 320px; line-height: 1.6; display: inline-block;">All analyzed boss fights in this historical dataset resulted in clean boss kills.</p>
       </div>
@@ -7370,11 +7403,11 @@ function renderWipeDiagnoser(wipeAnalytics) {
   const distributionsHtml = `
     <div class="wipe-distribution-section">
       <div class="distribution-card">
-        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">📈 Pull HP progression distribution</h4>
+        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">${SVG_ICONS.trend} Pull HP progression distribution</h4>
         ${hpDistHtml}
       </div>
       <div class="distribution-card">
-        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">🛡️ Bottleneck Phase audits</h4>
+        <h4 style="font-size: 13.5px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue);">${SVG_ICONS.shield} Bottleneck Phase audits</h4>
         ${phaseHtml}
       </div>
     </div>
@@ -7394,7 +7427,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
       }
       playerListHtml += `
         <div class="accolade-item">
-          <span class="accolade-item-name" style="color: ${classColor};"><span style="font-size: 12px; margin-right: 4px;">👤</span> ${escapeHtml(p.player)}</span>
+          <span class="accolade-item-name" style="color: ${classColor};"><span style="margin-right: 4px;">${SVG_ICONS.user}</span> ${escapeHtml(p.player)}</span>
           <span class="accolade-item-count">${p.count} Wipes</span>
         </div>
       `;
@@ -7409,7 +7442,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
     topAbilities.slice(0, 3).forEach(a => {
       abilityListHtml += `
         <div class="accolade-item">
-          <span class="accolade-item-name" style="color: var(--red);"><span style="font-size: 12px; margin-right: 4px;">⚔️</span> ${escapeHtml(a.ability)}</span>
+          <span class="accolade-item-name" style="color: var(--red);"><span style="margin-right: 4px;">${SVG_ICONS.bolt}</span> ${escapeHtml(a.ability)}</span>
           <span class="accolade-item-count">${a.count} Wipes</span>
         </div>
       `;
@@ -7419,7 +7452,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
   const accoladesHtml = `
     <div class="wipe-accolades-section">
       <div class="accolades-pane">
-        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="font-size: 16px;">🩸</span> Wipe Catalyst Leaders</h4>
+        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="color: var(--red);">${SVG_ICONS.warning}</span> Wipe Catalyst Leaders</h4>
         <p class="card-desc">Players who died first, triggering the initial raid failure check.</p>
         <div class="accolade-list">
           ${playerListHtml}
@@ -7427,7 +7460,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
       </div>
       
       <div class="accolades-pane">
-        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="font-size: 16px;">⚡</span> Top Wipe Trigger Abilities</h4>
+        <h4 style="font-size: 14px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;"><span style="color: var(--blue);">${SVG_ICONS.bolt}</span> Top Wipe Trigger Abilities</h4>
         <p class="card-desc">Mechanical abilities causing the first raid death most frequently.</p>
         <div class="accolade-list">
           ${abilityListHtml}
@@ -7454,17 +7487,17 @@ function renderWipeDiagnoser(wipeAnalytics) {
     const late = timestamps.filter(t => t >= 180).length;
     
     if (early >= mid && early >= late) {
-      recText = `🚨 **Early encounter check failure:** Most pull failures are triggered in the **first 90 seconds**. This points to rotational gaps, unmitigated initial tank-busters, or standing in early swirls. Assign basic mechanics focus.`;
+      recText = `${SVG_ICONS.warning} **Early encounter check failure:** Most pull failures are triggered in the **first 90 seconds**. This points to rotational gaps, unmitigated initial tank-busters, or standing in early swirls. Assign basic mechanics focus.`;
     } else if (mid >= early && mid >= late) {
-      recText = `⚠️ **Mid-fight cooldown bottleneck:** Failures cluster heavily between **1:30 and 3:00**. This is typically when high-damage mechanics overlap and healer cooldowns run dry. Review Healer CD sheets and assign major survivals here.`;
+      recText = `${SVG_ICONS.warning} **Mid-fight cooldown bottleneck:** Failures cluster heavily between **1:30 and 3:00**. This is typically when high-damage mechanics overlap and healer cooldowns run dry. Review Healer CD sheets and assign major survivals here.`;
     } else {
-      recText = `💔 **Endgame execution exhaustion:** Wipes cluster consistently in **late-fight/execute phases**. Rotations and mechanical errors are clean early, but healer mana or player fatigue is causing wipes. Prioritize DPS potions/execution uptime.`;
+      recText = `${SVG_ICONS.warning} **Endgame execution exhaustion:** Wipes cluster consistently in **late-fight/execute phases**. Rotations and mechanical errors are clean early, but healer mana or player fatigue is causing wipes. Prioritize DPS potions/execution uptime.`;
     }
   }
   
   const heatmapHtml = `
     <div class="wipe-heatmap-section">
-      <h4 style="font-size: 13.5px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">⏱️ Wipe Catalyst Timeline Heatmap</h4>
+      <h4 style="font-size: 13.5px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">${SVG_ICONS.heartbeat} Wipe Catalyst Timeline Heatmap</h4>
       <p class="card-desc">Visual density of when the first deaths occur during pull timelines (Max display: 6 mins).</p>
       <div class="heatmap-bar-container">
         <div class="heatmap-track">
@@ -7481,7 +7514,7 @@ function renderWipeDiagnoser(wipeAnalytics) {
       
       <!-- Tactician coaching card -->
       <div class="wipe-rec-drawer">
-        <span class="wipe-rec-icon" style="margin-right: 8px;">💡</span>
+        <span class="wipe-rec-icon" style="margin-right: 8px;">${SVG_ICONS.info}</span>
         <div class="wipe-rec-text">${recText}</div>
       </div>
     </div>
@@ -7672,7 +7705,7 @@ function renderHealerAuditorPanel() {
 
   // Populate Overlaps
   if (overlaps.length === 0) {
-    overlapsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">🌟 Zero concurrent healer overlaps logged! co-healers rotated perfectly.</div>`;
+    overlapsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">${SVG_ICONS.star} Zero concurrent healer overlaps logged! co-healers rotated perfectly.</div>`;
   } else {
     overlaps.forEach((o) => {
       const card = document.createElement("div");
@@ -7692,7 +7725,7 @@ function renderHealerAuditorPanel() {
 
   // Populate Dry Spells
   if (drySpells.length === 0) {
-    drySpellsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">🌟 Zero dry spell gaps logged! heavy damage was always covered.</div>`;
+    drySpellsContainer.innerHTML = `<div style="color: var(--green); font-size: 13px; font-style: italic; padding: 10px;">${SVG_ICONS.star} Zero dry spell gaps logged! heavy damage was always covered.</div>`;
   } else {
     drySpells.forEach((d) => {
       const card = document.createElement("div");
@@ -7713,7 +7746,7 @@ function renderHealerAuditorPanel() {
   // Populate Advice
   advice.forEach((line) => {
     const li = document.createElement("li");
-    li.innerHTML = `🛡️ ${line}`;
+    li.innerHTML = `${SVG_ICONS.shield} ${line}`;
     adviceList.appendChild(li);
   });
 }
@@ -7829,7 +7862,7 @@ function initializeCooldownNotesTab() {
       const code = document.getElementById("mrtNotesOutput").innerText;
       navigator.clipboard.writeText(code).then(() => {
         const oldText = copyBtn.textContent;
-        copyBtn.textContent = "Copied! 📋";
+        copyBtn.textContent = "Copied! ✓";
         copyBtn.style.background = "var(--green)";
         copyBtn.style.color = "#0f1218";
         setTimeout(() => {
@@ -7944,7 +7977,7 @@ async function renderSpecFlexTab() {
             Class: <strong style="color: white;">Priest</strong> | Specs Played: <strong style="color: #34d399;">Holy, Shadow</strong>
           </div>
           <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
-            💬 <strong>Flex Recommendation:</strong> Excellent Shadow DPS, but flexes to Holy Healer with 88% Uptime rating when raid is healer-starved.
+            ${SVG_ICONS.chat} <strong>Flex Recommendation:</strong> Excellent Shadow DPS, but flexes to Holy Healer with 88% Uptime rating when raid is healer-starved.
           </div>
         </div>
         <div class="flex-card">
@@ -7956,7 +7989,7 @@ async function renderSpecFlexTab() {
             Class: <strong style="color: white;">Paladin</strong> | Spec Played: <strong style="color: #fbbf24;">Retribution</strong>
           </div>
           <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
-            💬 <strong>Flex Recommendation:</strong> Dual spec identified in logs! Can flex to Protection Tank if extra tank support is required.
+            ${SVG_ICONS.chat} <strong>Flex Recommendation:</strong> Dual spec identified in logs! Can flex to Protection Tank if extra tank support is required.
           </div>
         </div>
       `;
@@ -8020,7 +8053,7 @@ async function renderSpecFlexTab() {
               Class: <strong style="color: white;">${rec.class}</strong> | Active Spec: <strong style="color: #60a5fa;">${rec.current_spec}</strong>
             </div>
             <div style="font-size: 11.5px; line-height: 1.4; color: var(--text); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 6px; margin-top: 4px;">
-              💬 <strong>Specs History:</strong> Played: ${rec.specs_played.join(", ") || "None"} | Potential Specs: ${potSpecText}
+              ${SVG_ICONS.chat} <strong>Specs History:</strong> Played: ${rec.specs_played.join(", ") || "None"} | Potential Specs: ${potSpecText}
             </div>
             <div style="font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; margin-top: 4px;">
               <span>URS Survival: <strong>${rec.urs}%</strong></span>
@@ -8309,7 +8342,7 @@ function initAdminDashboard() {
       if (!confirm("Are you sure you want to pull the latest changes for the Website (Frontend) repository?")) return;
       const btn = document.getElementById("btnActionWebPull");
       const originalText = btn.textContent;
-      btn.textContent = "⏳ Updating Website...";
+      btn.textContent = "Updating Website...";
       btn.disabled = true;
       try {
         const res = await fetch("/api/admin/actions/git-pull", {
@@ -8320,15 +8353,15 @@ function initAdminDashboard() {
         const data = await res.json();
         if (res.ok) {
           if (data.status === "skipped") {
-            alert(`ℹ️ Update Skipped:\n\n${data.message}`);
+            alert(`[Info] Update Skipped:\n\n${data.message}`);
           } else {
-            alert(`✅ Website Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+            alert(`[Success] Website Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
           }
         } else {
-          alert(`❌ Web Git Pull Failed: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] Web Git Pull Failed: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`❌ Network/Server Error: ${err.message}`);
+        alert(`[Error] Network/Server Error: ${err.message}`);
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
@@ -8343,7 +8376,7 @@ function initAdminDashboard() {
       if (!confirm("Are you sure you want to pull the latest changes for the API (Backend) repository?")) return;
       const btn = document.getElementById("btnActionAPIPull");
       const originalText = btn.textContent;
-      btn.textContent = "⏳ Updating API...";
+      btn.textContent = "Updating API...";
       btn.disabled = true;
       try {
         const res = await fetch("/api/admin/actions/git-pull", {
@@ -8353,12 +8386,12 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ API Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
+          alert(`[Success] API Git Pull Successful!\nBranch: ${data.branch}\n\nOutput:\n${data.output}`);
         } else {
-          alert(`❌ API Git Pull Failed: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] API Git Pull Failed: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`❌ Network/Server Error: ${err.message}`);
+        alert(`[Error] Network/Server Error: ${err.message}`);
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
@@ -8373,7 +8406,7 @@ function initAdminDashboard() {
       if (!confirm("Are you sure you want to restart the API service? The site will be temporarily offline for a few seconds.")) return;
       const btn = document.getElementById("btnActionAPIRestart");
       const originalText = btn.textContent;
-      btn.textContent = "⏳ Restarting API...";
+      btn.textContent = "Restarting API...";
       btn.disabled = true;
       try {
         const res = await fetch("/api/admin/actions/restart-api", {
@@ -8382,12 +8415,12 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ API Restart Dispatched!\n\n${data.message}`);
+          alert(`[Success] API Restart Dispatched!\n\n${data.message}`);
         } else {
-          alert(`❌ API Restart Failed: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] API Restart Failed: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`ℹ️ Restart Dispatched. The server is reloading. Please refresh the page in 5-10 seconds.`);
+        alert(`[Info] Restart Dispatched. The server is reloading. Please refresh the page in 5-10 seconds.`);
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
@@ -8402,7 +8435,7 @@ function initAdminDashboard() {
       const inputZone = document.getElementById("inputZoneId");
       const zoneId = parseInt(inputZone ? inputZone.value : "46");
       if (!zoneId || isNaN(zoneId)) {
-        alert("⚠️ Please enter a valid WCL Zone ID first.");
+        alert("Please enter a valid WCL Zone ID first.");
         return;
       }
       
@@ -8410,7 +8443,7 @@ function initAdminDashboard() {
       
       const btn = document.getElementById("btnActionUpdateEncounters");
       const originalText = btn.innerHTML;
-      btn.innerHTML = "⏳ AI Auto-Compiling...";
+      btn.innerHTML = "AI Auto-Compiling...";
       btn.disabled = true;
       btn.style.opacity = "0.7";
       
@@ -8422,13 +8455,13 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Raid Encounters Compiled Successfully!\n\nRaid: ${data.raid_name}\n\nSummary:\n${data.message}`);
+          alert(`[Success] Raid Encounters Compiled Successfully!\n\nRaid: ${data.raid_name}\n\nSummary:\n${data.message}`);
           fetchAdminStats(); // Refresh stats registry counts!
         } else {
-          alert(`❌ Encounters Compile Failed: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] Encounters Compile Failed: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`❌ Network/Server Error: ${err.message}`);
+        alert(`[Error] Network/Server Error: ${err.message}`);
       } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -8445,7 +8478,7 @@ function initAdminDashboard() {
       
       const btn = document.getElementById("btnActionUpdateCooldowns");
       const originalText = btn.innerHTML;
-      btn.innerHTML = "⏳ Auditing Cooldowns...";
+      btn.innerHTML = "Auditing Cooldowns...";
       btn.disabled = true;
       btn.style.opacity = "0.7";
       
@@ -8456,13 +8489,13 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Cooldowns Discovery Complete!\n\nSummary:\n${data.message}`);
+          alert(`[Success] Cooldowns Discovery Complete!\n\nSummary:\n${data.message}`);
           fetchAdminStats(); // Refresh stats
         } else {
-          alert(`❌ Cooldowns Audit Failed: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] Cooldowns Audit Failed: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`❌ Network/Server Error: ${err.message}`);
+        alert(`[Error] Network/Server Error: ${err.message}`);
       } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -8479,7 +8512,7 @@ function initAdminDashboard() {
       const msg = document.getElementById("inputBannerMessage").value;
       const btn = document.getElementById("btnSaveBannerMessage");
       const originalText = btn.textContent;
-      btn.textContent = "⏳ Saving...";
+      btn.textContent = "Saving...";
       btn.disabled = true;
       try {
         const res = await fetch("/api/admin/banner", {
@@ -8489,16 +8522,16 @@ function initAdminDashboard() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✅ Announcement banner updated successfully!");
+          alert("Announcement banner updated successfully!");
           if (data.banner_message !== undefined) {
             document.getElementById("inputBannerMessage").value = data.banner_message || "";
           }
           checkAndDisplayBanner();
         } else {
-          alert(`❌ Failed to update banner: ${data.detail || "Unknown Error"}`);
+          alert(`[Error] Failed to update banner: ${data.detail || "Unknown Error"}`);
         }
       } catch (err) {
-        alert(`❌ Network/Server Error: ${err.message}`);
+        alert(`[Error] Network/Server Error: ${err.message}`);
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;
@@ -8519,7 +8552,7 @@ async function fetchAdminStats() {
       // Access Denied! Render beautiful error overlay
       adminCard.innerHTML = `
         <div style="text-align: center; padding: 60px 20px; background: rgba(15, 23, 42, 0.4); border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.2); backdrop-filter: blur(20px);">
-          <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+          <div style="margin-bottom: 20px; display: flex; justify-content: center; color: var(--blue);"><svg class="inline-icon inline-icon-no-margin" style="width: 64px; height: 64px; stroke-width: 1.5;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
           <h2 style="color: #f87171; font-size: 24px; font-weight: 800; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Administrative Access Restricted</h2>
           <p style="color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto 24px; line-height: 1.6;">
             This portal is reserved strictly for authenticated administrators. Your Warcraft Logs account lacks the required privileges to view these statistics.
@@ -8763,9 +8796,9 @@ function renderPrepAudit(prepList, playersHistory) {
       else if (CLASS_COLORS[cleanClass]) classColor = CLASS_COLORS[cleanClass];
     }
     
-    const flaskIcon = p.has_flask ? `<span style="color: var(--green);" title="Flask Active">🧪</span>` : `<span style="color: var(--red);" title="Flask Missing">❌</span>`;
-    const foodIcon = p.has_food ? `<span style="color: var(--green);" title="Food Buff Active">🍞</span>` : `<span style="color: var(--red);" title="Food Buff Missing">❌</span>`;
-    const runeIcon = p.has_rune ? `<span style="color: var(--green);" title="Rune Active">🌀</span>` : `<span style="color: var(--red);" title="Rune Missing">❌</span>`;
+    const flaskIcon = p.has_flask ? `<span style="color: var(--green);" title="Flask Active"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;" viewBox="0 0 24 24"><path d="M10 2v7.586l-4 4V19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5.414l-4-4V2zM8 9h8"></path></svg></span>` : `<span style="color: var(--red);" title="Flask Missing"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>`;
+    const foodIcon = p.has_food ? `<span style="color: var(--green);" title="Food Buff Active"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8zM6 1v3M10 1v3M14 1v3"></path></svg></span>` : `<span style="color: var(--red);" title="Food Buff Missing"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>`;
+    const runeIcon = p.has_rune ? `<span style="color: var(--green);" title="Rune Active"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8M8 12h8"></path></svg></span>` : `<span style="color: var(--red);" title="Rune Missing"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>`;
     
     let warnings = [];
     if (p.missing_enchants && p.missing_enchants.length > 0) {
@@ -8777,7 +8810,7 @@ function renderPrepAudit(prepList, playersHistory) {
     
     let warningText = "";
     if (warnings.length > 0) {
-      warningText = `<div style="font-size: 11px; color: #fbbf24; margin-top: 3px;">⚠️ ${warnings.join(" · ")}</div>`;
+      warningText = `<div style="font-size: 11px; color: #fbbf24; margin-top: 3px;">${SVG_ICONS.warning} ${warnings.join(" · ")}</div>`;
     }
     
     const scoreColor = score >= 90 ? "var(--green)" : (score >= 70 ? "#fbbf24" : "var(--red)");
@@ -8879,7 +8912,7 @@ function initBenchBuilderTab() {
     const player_names = Array.from(checkedBoxes).map(cb => cb.value);
     
     if (player_names.length < 20) {
-      alert("⚠️ Roster builder requires at least 20 active players to compile a composition!");
+      alert("Roster builder requires at least 20 active players to compile a composition!");
       return;
     }
     
@@ -8896,7 +8929,7 @@ function initBenchBuilderTab() {
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
           </div>
-          <span style="font-size: 13px; color: var(--muted);">⏳ Optimizing comp & consulting AI coach...</span>
+          <span style="font-size: 13px; color: var(--muted);">Optimizing comp & consulting AI coach...</span>
         </div>
       `;
     }
@@ -8960,7 +8993,7 @@ function initBenchBuilderTab() {
       if (benchData) {
         benchData.innerHTML = `
           <div style="text-align: center; color: var(--red); padding: 20px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <div style="font-size: 32px; margin-bottom: 8px;"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
             <strong style="font-size: 14px;">Failed to compile composition:</strong>
             <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
           </div>
@@ -9009,7 +9042,7 @@ function renderBenchResults(data) {
           <span style="font-weight: 700; color: ${classColor};">${escapeHtml(p.name)} (${p.role})</span>
           <span style="font-size: 9.5px; color: var(--muted);">Grade ${p.grade}</span>
         </div>
-        <div style="font-size: 12px; color: var(--muted); line-height: 1.4;">💬 ${escapeHtml(p.reason)}</div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.4;">${SVG_ICONS.chat} ${escapeHtml(p.reason)}</div>
       </div>
     `;
   }).join("");
@@ -9017,7 +9050,7 @@ function renderBenchResults(data) {
   container.innerHTML = `
     <div style="display: flex; flex-direction: column; gap: 20px;">
       <div style="background: rgba(99, 102, 241, 0.04); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
-        <div style="font-size: 24px; line-height: 1;">🧠</div>
+        <div style="font-size: 24px; line-height: 1;">${SVG_ICONS.brain}</div>
         <div>
           <div style="font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;">AI Strategic Directive</div>
           <div style="font-size: 13px; color: var(--foreground); line-height: 1.5; font-style: italic;">"${escapeHtml(data.ai_directive)}"</div>
@@ -9025,7 +9058,7 @@ function renderBenchResults(data) {
       </div>
       
       <div>
-        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--blue);">🛡️ Recommended 20-Man Roster</h4>
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--blue);">${SVG_ICONS.shield} Recommended 20-Man Roster</h4>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; margin-bottom: 2px;">Tanks & Healers</div>
@@ -9040,7 +9073,7 @@ function renderBenchResults(data) {
       </div>
       
       <div>
-        <h4 style="font-size: 14px; margin-bottom: 8px; color: #fbbf24;">📋 Supportive Bench Rotation</h4>
+        <h4 style="font-size: 14px; margin-bottom: 8px; color: #fbbf24;">${SVG_ICONS.clipboard} Supportive Bench Rotation</h4>
         <div style="display: flex; flex-direction: column; gap: 8px;">
           ${benchHtml || '<div style="font-size: 12.5px; color: var(--muted); font-style: italic;">No players benched. Exact 20-man roster was selected.</div>'}
         </div>
@@ -9083,7 +9116,7 @@ function initRecruitmentTab() {
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
           </div>
-          <span id="recruitAuditStatusText" style="font-size: 13px; color: var(--muted);">⏳ Dispatching candidate audit job...</span>
+          <span id="recruitAuditStatusText" style="font-size: 13px; color: var(--muted);">Dispatching candidate audit job...</span>
         </div>
       `;
     }
@@ -9099,10 +9132,10 @@ function initRecruitmentTab() {
     if (isLocked) {
       setTimeout(() => {
         const statusText = document.getElementById("recruitAuditStatusText");
-        if (statusText) statusText.innerText = "⏳ Retrieving character logs profile...";
+        if (statusText) statusText.innerText = "Retrieving character logs profile...";
         
         setTimeout(() => {
-          if (statusText) statusText.innerText = "⏳ Running mechanical grading algorithm...";
+          if (statusText) statusText.innerText = "Running mechanical grading algorithm...";
           
           setTimeout(() => {
             const mockReport = {
@@ -9162,7 +9195,7 @@ function initRecruitmentTab() {
       if (resultsData) {
         resultsData.innerHTML = `
           <div style="text-align: center; color: var(--red); padding: 20px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <div style="font-size: 32px; margin-bottom: 8px;"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
             <strong style="font-size: 14px;">Audit failed:</strong>
             <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
           </div>
@@ -9190,7 +9223,7 @@ async function pollRecruitmentAudit(job_id, submitBtn) {
       if (resultsData) {
         resultsData.innerHTML = `
           <div style="text-align: center; color: var(--red); padding: 20px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">⏳</div>
+            <div style="margin-bottom: 12px; color: var(--muted); display: inline-block;"><svg class="inline-icon inline-icon-no-margin" style="width: 32px; height: 32px;" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
             <strong style="font-size: 14px;">Audit Timed Out</strong>
             <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">The logs query took too long. Please try again later.</p>
           </div>
@@ -9220,7 +9253,7 @@ async function pollRecruitmentAudit(job_id, submitBtn) {
           throw new Error("Warcraft Logs API query failed or candidate profile was not found.");
         } else {
           if (statusText) {
-            statusText.innerText = `⏳ Processing candidate logs (${attempts}s)...`;
+            statusText.innerText = `Processing candidate logs (${attempts}s)...`;
           }
         }
       } else {
@@ -9232,7 +9265,7 @@ async function pollRecruitmentAudit(job_id, submitBtn) {
       if (resultsData) {
         resultsData.innerHTML = `
           <div style="text-align: center; color: var(--red); padding: 20px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">❌</div>
+            <div style="font-size: 32px; margin-bottom: 8px;"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
             <strong style="font-size: 14px;">Audit failed:</strong>
             <p style="font-size: 12.5px; color: var(--muted); margin-top: 4px;">${escapeHtml(e.message)}</p>
           </div>
@@ -9258,7 +9291,7 @@ function renderRecruitmentResults(report) {
   
   const historyRows = report.history.map(h => {
     const gradeColor = h.grade === "S" || h.grade === "A" ? "var(--green)" : (h.grade === "B" || h.grade === "C" ? "#fbbf24" : "var(--red)");
-    const defensiveText = h.defensive_used_in_panic ? '<span style="color: var(--green);">🛡️ Used</span>' : '<span style="color: var(--red);">❌ Missed</span>';
+    const defensiveText = h.defensive_used_in_panic ? `<span style="color: var(--green);">${SVG_ICONS.shield} Used</span>` : '<span style="color: var(--red);"><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Missed</span>';
     
     return `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
@@ -9334,7 +9367,7 @@ function renderRecruitmentResults(report) {
       </div>
       
       <div style="background: rgba(52, 211, 153, 0.03); border: 1px solid rgba(52, 211, 153, 0.15); border-radius: 8px; padding: 14px; display: flex; gap: 10px; align-items: flex-start;">
-        <span style="font-size: 20px; line-height: 1;">💡</span>
+        <span style="font-size: 20px; line-height: 1; color: var(--green); display: inline-flex;">${SVG_ICONS.info.replace('class="inline-icon"', 'class="inline-icon inline-icon-no-margin"')}</span>
         <div>
           <div style="font-size: 12px; font-weight: bold; color: var(--green); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Recruiter Coaching Directives</div>
           <div style="font-size: 12.5px; color: var(--foreground);">${tipsHtml}</div>
@@ -9351,7 +9384,7 @@ function renderRecruitmentResults(report) {
                 <th style="padding: 8px; text-align: center; font-weight: 600;">Grade</th>
                 <th style="padding: 8px; text-align: right; font-weight: 600;">DPS Output</th>
                 <th style="padding: 8px; text-align: right; font-weight: 600;">Avoidable Dmg</th>
-                <th style="padding: 8px; text-align: center; font-weight: 600; cursor: help;" title="Shows whether the player activated a major defensive cooldown or consumable (healthstone/healing potion) when dropped to low health.">Panic Cooldown ℹ️</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; cursor: help;" title="Shows whether the player activated a major defensive cooldown or consumable (healthstone/healing potion) when dropped to low health.">Panic Cooldown</th>
               </tr>
             </thead>
             <tbody>
@@ -9360,8 +9393,8 @@ function renderRecruitmentResults(report) {
           </table>
         </div>
         <div style="margin-top: 8px; display: flex; gap: 16px; justify-content: flex-end; font-size: 11px; color: var(--muted); padding: 0 4px;">
-          <span><strong>🛡️ Used:</strong> Activated major defensive cooldown or healthstone/pot when HP dropped low.</span>
-          <span><strong>❌ Missed:</strong> Took fatal/dangerous damage without using any self-saves.</span>
+          <span><strong>${SVG_ICONS.shield} Used:</strong> Activated major defensive cooldown or healthstone/pot when HP dropped low.</span>
+          <span><strong><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Missed:</strong> Took fatal/dangerous damage without using any self-saves.</span>
         </div>
       </div>
     </div>
@@ -9381,7 +9414,7 @@ async function renderSlumpTrackerTab() {
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
           </div>
-          <span style="font-size: 12.5px;">⏳ Analyzing grade trajectories and linear regressions...</span>
+          <span style="font-size: 12.5px;">Analyzing grade trajectories and linear regressions...</span>
         </div>
       </td>
     </tr>
@@ -9416,7 +9449,7 @@ async function renderSlumpTrackerTab() {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" style="padding: 20px; text-align: center; color: var(--red);">
-          ❌ Failed to load slump tracker statistics: ${escapeHtml(error.message)}
+          <svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Failed to load slump tracker statistics: ${escapeHtml(error.message)}
         </td>
       </tr>
     `;
@@ -9448,14 +9481,14 @@ function populateSlumpTrackerTable(players) {
     let trendHtml = "";
     let alertHtml = "";
     if (p.trend === "down") {
-      trendHtml = `<span style="color: var(--red); font-weight: bold;">📉 Downward (${p.slope})</span>`;
-      alertHtml = `<span style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--red); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">⚠️ SLUMP</span>`;
+      trendHtml = `<span style="color: var(--red); font-weight: bold;">${SVG_ICONS.trend} Downward (${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--red); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">${SVG_ICONS.warning} SLUMP</span>`;
     } else if (p.trend === "up") {
-      trendHtml = `<span style="color: var(--green); font-weight: bold;">📈 Improving (+${p.slope})</span>`;
-      alertHtml = `<span style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--green); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">🚀 CLIMBING</span>`;
+      trendHtml = `<span style="color: var(--green); font-weight: bold;">${SVG_ICONS.trend} Improving (+${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--green); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">${SVG_ICONS.bolt} CLIMBING</span>`;
     } else {
-      trendHtml = `<span style="color: var(--muted);">➡️ Stable (${p.slope >= 0 ? '+' : ''}${p.slope})</span>`;
-      alertHtml = `<span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--muted); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center;">✅ STABLE</span>`;
+      trendHtml = `<span style="color: var(--muted);">${SVG_ICONS.checkCircle} Stable (${p.slope >= 0 ? '+' : ''}${p.slope})</span>`;
+      alertHtml = `<span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--muted); padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center;">${SVG_ICONS.checkCircle} STABLE</span>`;
     }
     
     html += `
@@ -9473,4 +9506,4 @@ function populateSlumpTrackerTable(players) {
   tbody.innerHTML = html;
 }
 
-
+

@@ -25,6 +25,25 @@
 	--radius: 16px;
 }
 
+/* Inline SVG Icon System */
+.inline-icon {
+	width: 1.1em;
+	height: 1.1em;
+	vertical-align: -0.15em;
+	display: inline-block;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 2.25;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	margin-right: 8px;
+	flex-shrink: 0;
+}
+
+.inline-icon-no-margin {
+	margin-right: 0;
+}
+
 /* Custom Scrollbars */
 @supports not selector(::-webkit-scrollbar) {
 	* {
@@ -2221,8 +2240,7 @@ body {
 }
 
 .quadrant-tl { fill: rgba(74, 222, 128, 0.4); } /* Elite Execution (Green) */
-.quadrant-tr { fill: rgba(250, 204, 黄, 0.4); } /* Glass Cannons (Yellow) - Wait, we will use plain color name yellow */
-.quadrant-tr { fill: rgba(250, 204, 21, 0.4); }
+.quadrant-tr { fill: rgba(250, 204, 21, 0.4); } /* Glass Cannons (Yellow) */
 .quadrant-bl { fill: rgba(156, 163, 175, 0.4); } /* Passive Survival (Gray) */
 .quadrant-br { fill: rgba(251, 113, 133, 0.4); } /* High Risk (Red) */
 
