@@ -1386,7 +1386,6 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <div class="trophy-shelf" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 14px 0 28px 0;">
       <!-- MVP Card -->
       <div class="trophy-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.trophy}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--blue); font-weight: 700; letter-spacing: 0.05em;">Raid MVP</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(mvpClass) || '#fff'};">${escapeHtml(mvpName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mvpName !== '—' ? `Survived with ${mvpValue}` : 'No survivors'}</div>
@@ -1394,7 +1393,6 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
       
       <!-- Survival Star Card -->
       <div class="trophy-card" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.shield}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--green); font-weight: 700; letter-spacing: 0.05em;">Survival Star</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(survivorClass) || '#fff'};">${escapeHtml(survivorName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${survivorName !== '—' ? `Cleanest run: ${formatNumber(survivorDamage)} avoidable dmg` : 'No survivors'}</div>
@@ -1402,7 +1400,6 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Mechanical Mastery Card -->
       <div class="trophy-card" style="background: rgba(234, 179, 8, 0.05); border: 1px solid rgba(234, 179, 8, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.bolt}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: #eab308; font-weight: 700; letter-spacing: 0.05em;">Mechanical Master</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: #fff;">${mechMasterNames.length > 0 ? `${mechMasterNames.length} Players` : '—'}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted);">${mechMasterNames.length > 0 ? 'Took 0 avoidable damage hits!' : 'Every player took avoidable damage'}</div>
@@ -1410,7 +1407,6 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Coaching Focus Card -->
       <div class="trophy-card" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 16px; text-align: center; position: relative; transition: transform 0.2s;">
-        <div class="trophy-icon" style="font-size: 28px; margin-bottom: 8px;">${SVG_ICONS.warning}</div>
         <div class="trophy-title" style="font-size: 12px; text-transform: uppercase; color: var(--red); font-weight: 700; letter-spacing: 0.05em;">Needs Coaching</div>
         <div class="trophy-winner" style="font-size: 17px; font-weight: 700; margin: 6px 0; color: ${getClassColor(coachingFocusClass) || '#fff'};">${escapeHtml(coachingFocusName)}</div>
         <div class="trophy-sub" style="font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Score: ${coachingFocusScore} • ${escapeHtml(coachingFocusIssue)}</div>
