@@ -7234,7 +7234,7 @@ function renderBuffSynergy(synergyData) {
   grid.innerHTML = gridHtml;
   
   if (recs.length === 0) {
-    suggestions.innerHTML = `${SVG_ICONS.checkCircle} Perfect Synergy! Your raid roster contains all vital class utility buffs.";
+    suggestions.innerHTML = `${SVG_ICONS.checkCircle} Perfect Synergy! Your raid roster contains all vital class utility buffs.`;
   } else {
     let recsHtml = `<div style="font-weight: 700; color: #fbbf24; margin-bottom: 6px;">Utility Suggestions:</div>`;
     recs.forEach(r => {
