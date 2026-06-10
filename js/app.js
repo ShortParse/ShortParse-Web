@@ -1346,8 +1346,8 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <!-- Jargon-Free Glossary Banner -->
     <div class="glossary-banner" style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; padding: 14px 20px; font-family: inherit;">
       <div id="glossaryToggle" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
-        <span style="font-weight: 600; color: var(--blue); font-size: 14px; display: flex; align-items: center; gap: 8px;">
-          ${SVG_ICONS.book} Understanding the Terms & Numbers (Jargon-Free Glossary)
+        <span style="font-weight: 600; color: var(--blue); font-size: 14px;">
+          Understanding the Terms & Numbers (Jargon-Free Glossary)
         </span>
         <span id="glossaryChevron" style="font-size: 14px; opacity: 0.6; transition: transform 0.2s;">▶</span>
       </div>
@@ -1421,7 +1421,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
     <div class="raid-coach-grid-cols" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 28px;">
       <!-- Raid Coach Quick Read -->
       <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
-        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--blue); font-weight: 600; display: flex; align-items: center; gap: 8px;">${SVG_ICONS.clipboard} Tactical Coaching Read</h3>
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--blue); font-weight: 600;">Tactical Coaching Read</h3>
         <p style="font-size: 13px; line-height: 1.6; color: #f1f5f9; margin-bottom: 14px;">
           ${escapeHtml(analysis.raid_coach?.overall_read || "No overall coaching summary generated yet.")}
         </p>
@@ -1434,7 +1434,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
 
       <!-- Action Items Checklist -->
       <div class="coaching-column-card" style="background: rgba(30, 41, 59, 0.15); border: 1px solid var(--border); border-radius: 12px; padding: 18px;">
-        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--orange); font-weight: 600; display: flex; align-items: center; gap: 8px;">${SVG_ICONS.target} Pull Focus & Recommendations</h3>
+        <h3 style="font-size: 14.5px; margin-top: 0; margin-bottom: 12px; color: var(--orange); font-weight: 600;">Pull Focus & Recommendations</h3>
         <ul style="padding-left: 20px; font-size: 12.5px; color: #f1f5f9; line-height: 1.8; margin-bottom: 0;">
           ${(analysis.raid_coach?.next_pull_focus || []).map(focus => `
             <li style="margin-bottom: 8px; list-style-type: '• ';">${escapeHtml(focus)}</li>
