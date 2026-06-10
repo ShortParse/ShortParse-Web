@@ -6556,11 +6556,11 @@ function renderCalibratorTab(calibrator, playerLookup) {
 }
 
 window.showCalibratorSpikeTooltip = (e, time, spellName, amount, covered) => {
-  const title = `${time} · ${covered ? `${SVG_ICONS.shield} Covered Spike` : `${SVG_ICONS.warning} Mitigation Gap`}`;
+  const title = `${time} · ${covered ? "Covered Spike" : "Mitigation Gap"}`;
   const fields = [
     { label: "Boss Ability", value: spellName },
     { label: "Raid Damage Taken", value: `${formatNumber(amount)} total` },
-    { label: "Coverage Status", value: covered ? `${SVG_ICONS.shield} Mitigated successfully` : "<svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Zero active raid defensives" }
+    { label: "Coverage Status", value: covered ? "Mitigated successfully" : "Zero active raid defensives" }
   ];
   showTooltip(e, title, fields);
 };
