@@ -1470,7 +1470,7 @@ function renderScorecardTab(scorecard, playerLookup, analysis) {
             if (deathCount > 0) {
               deathsCell = `
                 <button type="button" class="death-recap-trigger-cell" onclick="showPlayerDeathsRecap('${escapeHtml(row.player)}')">
-                  ${deathCount} <span style="font-size: 10px;">${SVG_ICONS.skull}</span>
+                  ${deathCount}
                 </button>
               `;
             } else {
@@ -2661,7 +2661,7 @@ function renderPlayerMetricsTab(playerMetrics, playerLookup) {
 
             const deathsCount = performance.deaths || 0;
             const deathsContent = deathsCount > 0
-              ? `<button class="death-trigger-btn" type="button" onclick="showPlayerDeathsRecap('${escapeHtml(playerName)}')">${SVG_ICONS.skull} ${deathsCount}</button>`
+              ? `<button class="death-trigger-btn" type="button" onclick="showPlayerDeathsRecap('${escapeHtml(playerName)}')">${deathsCount}</button>`
               : "0";
 
             return `
@@ -5819,14 +5819,32 @@ async function postActiveReportToDiscord() {
    ============================================================================= */
 
 function showDeathRecap(playerName, timestamp) {
-  const analysis = getActiveAnalysis();
-  if (!analysis) return;
+  const activeAnalysis = getActiveAnalysis();
+  if (!activeAnalysis) return;
 
-  const playerMetrics = analysis.player_metrics || {};
-  const data = playerMetrics[playerName];
-  if (!data || !data.performance) return;
+  let targetAnalysis = activeAnalysis;
+  let playerMetrics = targetAnalysis.player_metrics || {};
+  let data = playerMetrics[playerName];
+  let deathEvents = data?.performance?.death_events || [];
 
-  const deathEvents = data.performance.death_events || [];
+  // Fallback: If no death events found on active analysis (e.g. it is aggregated), scan individual pulls
+  if (!deathEvents.length) {
+    const baseAnalysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+    if (baseAnalysis && baseAnalysis.pulls_details) {
+      for (const pull of baseAnalysis.pulls_details) {
+        const pMetric = pull.player_metrics?.[playerName];
+        const pDeaths = pMetric?.performance?.death_events || [];
+        if (pDeaths.some(d => Math.abs(d.timestamp - timestamp) < 1000 || timestamp === undefined)) {
+          targetAnalysis = pull;
+          playerMetrics = pull.player_metrics || {};
+          data = pMetric;
+          deathEvents = pDeaths;
+          break;
+        }
+      }
+    }
+  }
+
   const deathEvent = deathEvents.find(d => Math.abs(d.timestamp - timestamp) < 1000) || deathEvents[0];
   if (!deathEvent) return;
 
@@ -5857,7 +5875,7 @@ function showDeathRecap(playerName, timestamp) {
   if (!drawer || !playerEl || !metaEl || !eventsEl) return;
 
   // Render header values
-  playerEl.innerText = `${SVG_ICONS.skull} Death Recap: ${playerName}`;
+  playerEl.innerText = `Death Recap: ${playerName}`;
   
   const mins = Math.floor(deathEvent.seconds_into_fight / 60);
   const secs = Math.floor(deathEvent.seconds_into_fight % 60);
@@ -5941,11 +5959,25 @@ function showPlayerDeathsRecap(playerName) {
   const tennis = getActiveAnalysis();
   if (!tennis) return;
 
-  const playerMetrics = tennis.player_metrics || {};
-  const data = playerMetrics[playerName];
-  if (!data || !data.performance) return;
+  let playerMetrics = tennis.player_metrics || {};
+  let data = playerMetrics[playerName];
+  let deathEvents = data?.performance?.death_events || [];
 
-  const deathEvents = data.performance.death_events || [];
+  // Fallback: If no death events found on active analysis (e.g. it is aggregated), scan individual pulls
+  if (!deathEvents.length) {
+    const baseAnalysis = currentReportData?.analyses?.[selectedAnalysisIndex];
+    if (baseAnalysis && baseAnalysis.pulls_details) {
+      for (const pull of baseAnalysis.pulls_details) {
+        const pMetric = pull.player_metrics?.[playerName];
+        const pDeaths = pMetric?.performance?.death_events || [];
+        if (pDeaths.length > 0) {
+          deathEvents = pDeaths;
+          break;
+        }
+      }
+    }
+  }
+
   if (!deathEvents.length) return;
 
   // Intercept and render inline if in Hub 2 (Player Lounge)
