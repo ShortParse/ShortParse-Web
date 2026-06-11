@@ -948,12 +948,12 @@
     <div class="report-dashboard-layout">
       <div class="report-left-col">
         <section id="bossTilesCard" class="card hidden">
-          <div class="section-header" style="margin-bottom: 12px; align-items: center; display: flex; justify-content: space-between; gap: 16px;">
-            <div>
-              <h2>Encounters</h2>
-              <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
+          <div class="section-header" style="margin-bottom: 12px; flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;">
+              <h2 style="margin: 0;">Encounters</h2>
+              <button id="analyzeAnotherButton" class="settings-button" type="button" style="margin-top: 0; white-space: nowrap; height: fit-content; padding: 6px 12px; font-size: 12px;">Analyze a New Log</button>
             </div>
-            <button id="analyzeAnotherButton" class="settings-button" type="button" style="margin-top: 0; white-space: nowrap; height: fit-content;">Analyze a New Log</button>
+            <p class="section-description" style="margin: 0; line-height: 1.4;"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
           </div>
           <div class="encounter-nav-wrapper">
             <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>

@@ -822,6 +822,7 @@ function renderBossTiles(data) {
 
   bossTiles.innerHTML = data.analyses.map((analysis, index) => {
     const fight = analysis.fight || {};
+    const cleanBossName = (fight.name || "Unknown Boss").split(",")[0].split("(")[0].trim();
 
     const difficulty = formatDifficulty(fight.difficulty);
     const resultClass = fight.kill ? "kill" : "wipe";
@@ -840,7 +841,7 @@ function renderBossTiles(data) {
         onclick="selectBoss(${index})"
       >
         <span class="encounter-nav-name">
-          ${escapeHtml(fight.name || "Unknown Boss")}
+          ${escapeHtml(cleanBossName)}
         </span>
 
         <span class="encounter-nav-meta">

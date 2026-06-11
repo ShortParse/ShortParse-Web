@@ -420,6 +420,7 @@ button:disabled {
 	gap: 12px;
 
 	flex: 1;
+	min-width: 0;
 
 	overflow-x: auto;
 	overflow-y: hidden;
