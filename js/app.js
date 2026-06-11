@@ -7135,8 +7135,8 @@ function drawTrendsChart(fights) {
     let labelHtml = "";
     if (pointCount <= 12 || idx === 0 || idx === pointCount - 1 || p.is_kill || idx % Math.ceil(pointCount / 6) === 0) {
       labelHtml = `
-        <text x="${p.x}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle" font-size="9">${escapeHtml(p.boss_name)}</text>
-        <text x="${p.x}" y="${margin.top + graphHeight + 28}" class="chart-tick-text" text-anchor="middle" font-size="8" font-weight="bold" fill="${dotColor}">${resultLabel}</text>
+        <text x="${p.x}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle" font-size="7">${escapeHtml(p.boss_name)}</text>
+        <text x="${p.x}" y="${margin.top + graphHeight + 28}" class="chart-tick-text" text-anchor="middle" font-size="6.5" font-weight="bold" fill="${dotColor}">${resultLabel}</text>
       `;
     }
 
