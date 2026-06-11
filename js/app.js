@@ -7051,7 +7051,7 @@ function drawTrendsChart(fights) {
     return;
   }
 
-  const margin = { top: 40, right: 40, bottom: 50, left: 65 };
+  const margin = { top: 40, right: 55, bottom: 50, left: 65 };
   const graphWidth = width - margin.left - margin.right;
   const graphHeight = height - margin.top - margin.bottom;
 
@@ -7131,11 +7131,12 @@ function drawTrendsChart(fights) {
   const nodesHtml = plottedFights.map((p, idx) => {
     const dotColor = p.is_kill ? "#34d399" : "#f87171";
     const resultLabel = p.is_kill ? "Kill" : "Wipe";
+    const cleanBossName = p.boss_name.split(",")[0].split("(")[0].trim();
 
     let labelHtml = "";
     if (pointCount <= 12 || idx === 0 || idx === pointCount - 1 || p.is_kill || idx % Math.ceil(pointCount / 6) === 0) {
       labelHtml = `
-        <text x="${p.x}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle" style="font-size: 7px;">${escapeHtml(p.boss_name)}</text>
+        <text x="${p.x}" y="${margin.top + graphHeight + 16}" class="chart-tick-text" text-anchor="middle" style="font-size: 7px;">${escapeHtml(cleanBossName)}</text>
         <text x="${p.x}" y="${margin.top + graphHeight + 28}" class="chart-tick-text" text-anchor="middle" style="font-size: 6.5px; font-weight: bold; fill: ${dotColor};">${resultLabel}</text>
       `;
     }
