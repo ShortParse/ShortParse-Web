@@ -64,7 +64,6 @@
         <div id="headerActions" class="header-actions hidden">
           <button id="copyShareButton" type="button">Share This Report</button>
           <button id="postDiscordButton" class="discord-post-btn" type="button">Post to Discord</button>
-          <button id="analyzeAnotherButton" type="button">Analyze Another Report</button>
         </div>
       </div>
     </header>
@@ -949,11 +948,12 @@
     <div class="report-dashboard-layout">
       <div class="report-left-col">
         <section id="bossTilesCard" class="card hidden">
-          <div class="section-header" style="margin-bottom: 12px;">
+          <div class="section-header" style="margin-bottom: 12px; align-items: center; display: flex; justify-content: space-between; gap: 16px;">
             <div>
               <h2>Encounters</h2>
               <p class="section-description"> Select a boss encounter to view its scorecard, issues, and summaries. </p>
             </div>
+            <button id="analyzeAnotherButton" class="settings-button" type="button" style="margin-top: 0; white-space: nowrap; height: fit-content;">Analyze a New Log</button>
           </div>
           <div class="encounter-nav-wrapper">
             <button id="bossScrollLeft" class="encounter-scroll-button" type="button"> &#10094; </button>
