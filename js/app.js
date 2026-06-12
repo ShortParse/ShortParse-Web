@@ -9205,9 +9205,9 @@ function initRecruitmentTab() {
             
             const name_lower = character_name.toLowerCase();
             if (name_lower === "callmeshorty") {
-              mockReport.candidate.class = "Paladin";
-              mockReport.candidate.spec = "Retribution";
-              mockReport.candidate.item_level = 622;
+              mockReport.candidate.class = "Demon Hunter";
+              mockReport.candidate.spec = "Vengeance";
+              mockReport.candidate.item_level = 620;
               mockReport.mythic_plus_score = 2150.5;
               mockReport.raid_progression = "9/9H";
               mockReport.badges = ["AOTC"];
