@@ -9189,8 +9189,71 @@ function initRecruitmentTab() {
               focus_tips: [
                 "Highly reliable mechanical play. Excellent candidate for mythic progression roster.",
                 "Defensive cooldown triggers align correctly with high-damage transition phases."
-              ]
+              ],
+              mythic_plus_score: 2240.5,
+              raid_progression: "9/9 H",
+              badges: ["AOTC"],
+              log_integrity: {
+                score: 15,
+                level: "Low",
+                reasons: [
+                  "Active time (activity index) is consistently high (avg 94%) across all encounters.",
+                  "Damage and defensive cooldown usage align well with boss mechanics."
+                ]
+              }
             };
+            
+            const name_lower = character_name.toLowerCase();
+            if (name_lower === "callmeshorty") {
+              mockReport.candidate.class = "Paladin";
+              mockReport.candidate.spec = "Retribution";
+              mockReport.candidate.item_level = 622;
+              mockReport.mythic_plus_score = 2150.5;
+              mockReport.raid_progression = "9/9H";
+              mockReport.badges = ["AOTC"];
+              mockReport.log_integrity = {
+                score: 12,
+                level: "Low",
+                reasons: [
+                  "Active time (activity index) is consistently high (avg 94%) across all encounters.",
+                  "Damage and defensive cooldown usage align well with boss mechanics.",
+                  "Progression curve shows normal wipe distributions before first kills."
+                ]
+              };
+            } else if (name_lower === "carriednoob") {
+              mockReport.candidate.class = "Mage";
+              mockReport.candidate.spec = "Frost";
+              mockReport.candidate.item_level = 630;
+              mockReport.mythic_plus_score = 820.0;
+              mockReport.raid_progression = "9/9M";
+              mockReport.badges = ["CE", "AOTC"];
+              mockReport.log_integrity = {
+                score: 87,
+                level: "High",
+                reasons: [
+                  "Extremely low active time (avg 24%) on final boss kills, indicating early death or passive status.",
+                  "Performance dissonance: Equipped item level (630) and 9/9M raid completion do not correlate with a low Mythic+ score (820.0).",
+                  "Highly anomalous kill timeline: final boss killed in same lockout window as first kills without progressive wipe history.",
+                  "Parse percentile is consistently gray (< 5th percentile) on all mythic kills while other raid members averaged purple/orange."
+                ]
+              };
+            } else if (name_lower === "altpro") {
+              mockReport.candidate.class = "Priest";
+              mockReport.candidate.spec = "Shadow";
+              mockReport.candidate.item_level = 626;
+              mockReport.mythic_plus_score = 2850.0;
+              mockReport.raid_progression = "3/9M";
+              mockReport.badges = ["CE"];
+              mockReport.log_integrity = {
+                score: 5,
+                level: "Low",
+                reasons: [
+                  "Main character has active Cutting Edge achievements (verified account link).",
+                  "Excellent active time (98%) and active defensive usage on all progress pulls.",
+                  "Performance parses are in the purple/orange range relative to current item level."
+                ]
+              };
+            }
             
             renderRecruitmentResults(mockReport);
             if (submitBtn) {
@@ -9338,6 +9401,35 @@ function renderRecruitmentResults(report) {
   const prepColor = report.preparation_score >= 90 ? "var(--green)" : (report.preparation_score >= 70 ? "#fbbf24" : "var(--red)");
   const panicColor = report.panic_defensive_rate >= 80 ? "var(--green)" : (report.panic_defensive_rate >= 50 ? "#fbbf24" : "var(--red)");
   
+  const mplusScore = report.mythic_plus_score !== undefined ? report.mythic_plus_score : 0;
+  let mplusColor = "#94a3b8";
+  if (mplusScore >= 2500) mplusColor = "#fbbf24";
+  else if (mplusScore >= 2000) mplusColor = "#a855f7";
+  else if (mplusScore >= 1000) mplusColor = "#3b82f6";
+  else if (mplusScore > 0) mplusColor = "var(--green)";
+
+  const badges = report.badges || [];
+  const badgeHtml = badges.map(b => {
+    if (b === "CE") {
+      return `<span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 6px; display: inline-block; vertical-align: middle;">CE</span>`;
+    } else if (b === "AOTC") {
+      return `<span style="background: rgba(52, 211, 153, 0.15); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 6px; display: inline-block; vertical-align: middle;">AOTC</span>`;
+    }
+    return "";
+  }).join("");
+
+  const integrity = report.log_integrity || { score: 0, level: "Low", reasons: [] };
+  let integrityColor = "var(--green)";
+  if (integrity.level === "High" || integrity.score >= 70) {
+    integrityColor = "var(--red)";
+  } else if (integrity.level === "Moderate" || integrity.score >= 35) {
+    integrityColor = "var(--orange)";
+  }
+
+  const integrityReasonsHtml = (integrity.reasons || []).map(r => `
+    <li style="margin-bottom: 6px; line-height: 1.4;">${escapeHtml(r)}</li>
+  `).join("");
+  
   const tipsHtml = report.focus_tips.map(tip => {
     return `<div style="margin-bottom: 6px; line-height: 1.5;">• ${escapeHtml(tip)}</div>`;
   }).join("");
@@ -9357,7 +9449,7 @@ function renderRecruitmentResults(report) {
         </div>
       </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start;">
+      <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; gap: 16px; align-items: start;">
         <div style="background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; align-items: center; text-align: center;">
           <span style="font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: bold; margin-bottom: 8px;">Survival Grade</span>
           <div style="width: 76px; height: 76px; border-radius: 50%; border: 3px solid ${gradeColor}; background: ${gradeColor}08; display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: 900; color: ${gradeColor}; filter: drop-shadow(0 0 10px ${gradeColor}25); margin-bottom: 8px;">
@@ -9394,6 +9486,43 @@ function renderRecruitmentResults(report) {
             </div>
           </div>
         </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; align-items: center;">
+              <span>Mythic+ Season Score</span>
+              <strong style="color: ${mplusColor}; font-size: 13.5px; font-weight: bold;">${mplusScore.toFixed(1)}</strong>
+            </div>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; align-items: center;">
+              <span>Raid Progression</span>
+              <div style="display: flex; align-items: center;">
+                <strong style="color: white; font-size: 13.5px;">${escapeHtml(report.raid_progression || '0/9 N')}</strong>
+                ${badgeHtml}
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; align-items: center;">
+              <span class="tooltip-trigger" style="display: inline-flex; align-items: center; gap: 4px; cursor: help; border-bottom: 1px dashed var(--muted);">
+                Log Integrity Rating ${SVG_ICONS.info}
+                <span class="tooltip-card">
+                  <strong style="color: white; font-size: 12px; display: block; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Log Consistency Details</strong>
+                  <ul style="margin: 0; padding-left: 14px; color: var(--muted); list-style-type: disc;">
+                    ${integrityReasonsHtml}
+                  </ul>
+                </span>
+              </span>
+              <strong style="color: ${integrityColor};">${integrity.level} Risk (${integrity.score}%)</strong>
+            </div>
+            <div style="height: 6px; background: rgba(0,0,0,0.3); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${integrity.score}%; background: ${integrityColor};"></div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div style="background: rgba(52, 211, 153, 0.03); border: 1px solid rgba(52, 211, 153, 0.15); border-radius: 8px; padding: 14px; display: flex; gap: 10px; align-items: flex-start;">
@@ -9426,6 +9555,10 @@ function renderRecruitmentResults(report) {
           <span><strong>${SVG_ICONS.shield} Used:</strong> Activated major defensive cooldown or healthstone/pot when HP dropped low.</span>
           <span><strong><svg class="inline-icon inline-icon-no-margin" style="width:14px;height:14px;vertical-align:-0.15em;stroke:var(--red);" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Missed:</strong> Took fatal/dangerous damage without using any self-saves.</span>
         </div>
+      </div>
+
+      <div style="font-size: 11px; color: var(--muted); line-height: 1.5; padding: 12px; background: rgba(255, 255, 255, 0.01); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 6px; margin-top: 10px; text-align: justify;">
+        <strong>Disclaimer:</strong> The Log Integrity / Progression Consistency metric calculates a statistical carry probability based on combat active times, wipe distribution curve anomalies, Raider.io profile rankings, and performance variations relative to current gear levels. It is intended solely as a helper tool for recruiters to verify progression consistency and does <strong>not</strong> guarantee or prove external assistance or carries. Recruiters are encouraged to manually review logs and interview candidates before making roster decisions.
       </div>
     </div>
   `;
